@@ -15,6 +15,9 @@ const ChatModel: Schema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
     },
+    roomId:{
+      type:String,
+    },
     groupAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "userdetail" },
   },
   {

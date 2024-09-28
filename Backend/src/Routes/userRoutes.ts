@@ -10,6 +10,8 @@ import dotenv from 'dotenv'
 import { generateAccessToken } from "../utils/jwt";
 import AuthenticationMiddleware from "../middlewares/userAuthmiddleware";
 
+
+
  dotenv.config()
 
 interface MulterRequest extends Request {
@@ -18,7 +20,7 @@ interface MulterRequest extends Request {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "../images"); 
+    cb(null, "../../SECOND-PROJECT/Backend/src/images"); 
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + path.extname(file.originalname)); // Rename file to avoid name conflicts

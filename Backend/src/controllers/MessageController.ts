@@ -36,7 +36,6 @@ class MessageControllers {
       }
       const { content, chatId } = req.body;
  
-       // Files uploaded (images and videos)
        const files = req.files as {
          images?: Express.Multer.File[];
          videos?: Express.Multer.File[];
@@ -46,17 +45,14 @@ class MessageControllers {
              cloudinary.uploader.upload(file.path, { resource_type: "image" })
            )
          : [];
-       // Handle video upload to Cloudinary
        const videoUploadPromises = files?.videos
          ? files.videos.map((file) =>
              cloudinary.uploader.upload(file.path, { resource_type: "video" })
            ) 
          : [];
-       // Wait for all uploads to complete
        const uploadedImages = await Promise.all(imageUploadPromises);
        const uploadedVideos = await Promise.all(videoUploadPromises);
 
-       // Extract Cloudinary URLs for images and videos, default to empty arrays if no uploads
        const imageUrls: string[] =
          uploadedImages.length > 0
            ? uploadedImages.map((upload) => upload.secure_url)
@@ -65,29 +61,16 @@ class MessageControllers {
          uploadedVideos.length > 0
            ? uploadedVideos.map((upload) => upload.secure_url)
            : [];
-
        console.log(imageUrls, "Images URLs1111111111111");
        console.log(videoUrls, "Videos URLs");
 
-      const newMessage = {
-        sender: userId,
-        content,
-        chat: chatId,
-        image: imageUrls,
-        videos: videoUrls,
-      };
-
-      let message = await messageSchemaModel.create(newMessage);      
-      message = await message.populate("sender", "name image");
-      message = await message.populate("chat");
-
-      await ChatSchemamodel.findByIdAndUpdate(chatId, {
-        latestMessage: message,
-      });
-
-      
-
-      // Send the response
+    const message =await this.messageservise.sendAllmessages(
+           userId,
+           content,
+           chatId,
+           imageUrls,
+           videoUrls
+         );
       res.status(200).json(message);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -98,8 +81,8 @@ class MessageControllers {
   async getUserInfo(req: Request, res: Response) {
     try {
       const userInfo = req.params.chatId;
-
-      const userinfo = await UserSchemadata.findById(userInfo);
+      const userinfo = await this.messageservise.getUserInfomation(userInfo);
+      // const userinfo = await UserSchemadata.findById(userInfo);
       console.log(userinfo, "userdata");
       res.json(userinfo);
     } catch (error) {
@@ -114,8 +97,6 @@ class MessageControllers {
         id: string;
       };
       const userId = decoded.id;
-
-      console.log(userId, "userid getbaxxxxxxxxxxxxxxxxxxxxxxxxxx");
       res.json(userId);
     } catch (error) {
       console.log(error);
@@ -125,11 +106,9 @@ class MessageControllers {
   async allChats(req: Request, res: Response) {
     try {
       try {
-        const messages = await messageSchemaModel
-          .find({ chat: req.params.chatId })
-          .populate("sender", "name image email")
-          .populate("chat");
-
+      const chatid = req.params.chatId;
+      const messages = await this.messageservise.findAllmessages(chatid);
+        // const message = await messageSchemaModel.find({ chat: req.params.chatId }).populate("sender", "name image email").populate("chat");
         res.json(messages);
       } catch (error) {
         res.status(400);

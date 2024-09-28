@@ -9,13 +9,12 @@ import {
 import { MdOutlinePostAdd } from "react-icons/md";
 import { Button } from "@mui/material";
 import toast from "react-hot-toast";
-import { FormEvent, ReactElement, useEffect, useState } from "react";
+import { FormEvent, ReactElement,useCallback, useEffect, useState } from "react";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
 import ThreeDot from "react-loading";
 import { useDispatch, useSelector } from "react-redux";
-import { setChats, setSelectedChat } from "../../Redux-store/redux-slice";
+import { Chats, setChats, setSelectedChat } from "../../Redux-store/redux-slice";
 import { store } from "../../Redux-store/reduxstore";
-import ChatPage from "./ChatpageUI";
 const MessagePage = () => {
   interface IUser {
     _id: any;
@@ -29,6 +28,7 @@ const MessagePage = () => {
     createdAt?: Date;
     updatedAt?: Date;
   }
+
   const [Loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState<IUser[]>([]);
@@ -46,6 +46,9 @@ const MessagePage = () => {
   );
 
   // Example of setting chats
+
+
+
 
  
 
@@ -75,11 +78,15 @@ const MessagePage = () => {
   };
 
 
+   
+
+
    useEffect(()=>{
 
+    
     const getAllPost =async()=>{
       const { data } = await ClientNew.get(
-        `http://localhost:3000/api/chat/allusers`,
+        `http://localhost:3000/api/chat/allusers`, 
         {
           headers: {
             "Content-type": "application/json",
@@ -200,6 +207,7 @@ const MessagePage = () => {
             >
               Messages
             </h1>
+           
             <div className="space-y-4">
               {/* Loading or Results */}
               {Loading ? (
@@ -228,7 +236,7 @@ const MessagePage = () => {
                         <p className="text-gray-400"></p>
                       </div>
                     </div>
-                    <div className="text-blue-500 text-xl font-bold">0</div>
+                    <div className="text-blue-500 text-xl font-bold"></div>
                   </div>
                 ))
               )}

@@ -17,20 +17,20 @@ interface MulterRequest extends Request {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "../images");
+    cb(null, "../../SECOND-PROJECT/Backend/src/medias");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Rename file to avoid name conflicts
+    cb(null, Date.now() + path.extname(file.originalname)); 
   },
 });
 
 const upload = multer({
   storage,
   limits: {
-    fileSize: 500 * 1024 * 1024, // Set file size limit to 500MB (adjust as needed)
+    fileSize: 500 * 1024 * 1024, 
   },
   fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|gif|mp4|avi|mov/; // Add allowed file types
+    const filetypes = /jpeg|jpg|png|gif|mp4|avi|mov/;
     const extname = filetypes.test(
       path.extname(file.originalname).toLowerCase()
     );
@@ -48,13 +48,7 @@ const upload = multer({
 
 const router = Router();
 
-router.post(
-  "/",
-  AuthenticationMiddleware,
-  upload.fields([
-    { name: "images", maxCount: 10 },
-    { name: "videos", maxCount: 2 },
-  ]),
+router.post("/",AuthenticationMiddleware,upload.fields([ { name: "images", maxCount: 10 },{ name: "videos", maxCount: 2 },]),
   async (req, res) =>{ const multerReq = req as Request & { files: { images?: Express.Multer.File[], videos?: Express.Multer.File[] } };
     if (multerReq.files?.images) {
       multerReq.files.images.forEach((file) => {
@@ -72,12 +66,9 @@ router.post(
     }await MessageController.sendMessage(req, res)}
 );
 
+
 router.get("/:chatId", AuthenticationMiddleware, async (req, res) =>MessageController.allChats(req, res));
-router.get("/getuserId/:userTocken", async (req, res) =>
-  MessageController.getId(req, res)
-);
-router.get("/getuserimage/:chatId", async (req, res) =>
-  MessageController.getUserInfo(req, res)
-);
+router.get("/getuserId/:userTocken", async (req, res) =>MessageController.getId(req, res));
+router.get("/getuserimage/:chatId", async (req, res) =>MessageController.getUserInfo(req, res));
 
 export default router;

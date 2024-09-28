@@ -23,6 +23,9 @@ import Newsmanagement from './Components/AdminSide/Newsmanagemant';
 import MessagePage from './Components/UserSide/Message';
 import Reportmanagement from './Components/AdminSide/ReportPost';
 import ChatPage from './Components/UserSide/ChatpageUI';
+import { Videopage } from './Components/UserSide/Videopage';
+import RoomPage from './Components/Zego-cloud/RoomPage';
+
 
 
 
@@ -65,6 +68,9 @@ function App() {
           <Route path="/homepage" element={<HomeLoginPage />} />
           <Route path="/chatpage/:chatId/:dataId" element={<ChatPage />} />
           <Route path="/profile" element={<HomeProfilepage />} />
+          {/* <Route path="/videopage/:roomId" element={<Videopage />} /> */}
+          <Route path="/room/:roomId" element={<RoomPage />} />
+
           <Route path="/editprofile" />
           <Route
             path="/createpost"

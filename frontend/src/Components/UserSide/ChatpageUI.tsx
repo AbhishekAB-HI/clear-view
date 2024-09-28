@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   FaBell,
   FaEnvelope,
@@ -10,7 +10,7 @@ import { FaImage, FaVideo, FaSmile } from "react-icons/fa";
 import { MdOutlinePostAdd } from "react-icons/md";
 import { Button } from "@mui/material";
 import { useParams } from "react-router-dom";
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
 import { useSelector } from "react-redux";
 import { store } from "../../Redux-store/reduxstore";
@@ -22,7 +22,6 @@ import ThreeDot from "react-loading";
 import { IoSend } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-
 import { OrbitProgress } from "react-loading-indicators";
 
 
@@ -49,7 +48,7 @@ const ChatPage = () => {
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [userinfo, setuserinfo] = useState<userInfo | null>(null);
-
+   const navigate = useNavigate()
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const [typing, setTyping] = useState(false);
@@ -69,6 +68,22 @@ const ChatPage = () => {
     };
     Getuserimage();
   }, []);
+
+
+
+   const handleJoinRoom = useCallback(() => {
+     navigate(`/room/${dataId}`);
+   }, [navigate, dataId]);
+
+
+
+
+
+
+
+
+
+
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -328,7 +343,10 @@ const ChatPage = () => {
               <button className="bg-green-600 p-3 rounded-full text-white hover:bg-green-500 transition">
                 📞 Call
               </button>
-              <button className="bg-red-600 p-3 rounded-full text-white hover:bg-red-500 transition">
+              <button
+                onClick={handleJoinRoom}
+                className="bg-red-600 p-3 rounded-full text-white hover:bg-red-500 transition"
+              >
                 📹 Video
               </button>
             </div>

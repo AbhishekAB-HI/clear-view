@@ -1,4 +1,4 @@
-import { Chats } from "../entities/userEntities";
+import { Chats, IUser } from "../entities/userEntities";
 import chatRepository from "../Repository/ChatRepository";
 
 class ChatServices {
@@ -10,15 +10,31 @@ class ChatServices {
         userId,
         chatId
       );
-      console.log(
-        chatRepository,
-        "chat repoooooooooooooooooooooooooooooooooooooooooo"
-      );
-
       if (!chatRepository) {
         throw new Error("Cannot find the chatschema");
       }
       return chatRepository;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+
+  async getAllChats(userId:string):Promise <IUser[]| undefined>{
+ const chatrecivefromRepo = await this.chatRepository.findAllchats(userId)
+   if(!chatrecivefromRepo){
+    throw  new Error ("no chat get")
+   }
+   return chatrecivefromRepo
+  }
+
+  async getOtherusers(userId: string):Promise<IUser[] | undefined>{
+    try {
+      const getAllusershere = await this.chatRepository.findOtherusers(userId);
+
+      if (getAllusershere) {
+        return getAllusershere;
+      }
     } catch (error) {
       console.log(error);
     }

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { NumberExpression } from "mongoose";
 import { ObjectId } from "mongoose";
 import { Document, Types } from "mongoose";
 
@@ -17,6 +17,12 @@ export interface tockens {
   refreshToken:string;
 }
 
+export interface Comments {
+  _id: ObjectId; 
+  user: ObjectId;
+  parentComment?: ObjectId; 
+  content: string; 
+}
 
 export interface Posts {
   _id: ObjectId;
@@ -24,7 +30,13 @@ export interface Posts {
   description: string;
   image: string;
   videos: string;
-  Reportpost:Boolean
+  Reportpost: Boolean;
+  text: string;
+  likes: Types.ObjectId[];
+  comments: Comments[];
+  likeCount: number;
+  LikeStatement: boolean;
+  userName:string
 }
 
 
@@ -59,6 +71,14 @@ export interface Postsget {
 
 
 
+export interface IReportUser {
+  userId: Types.ObjectId;
+  reportReason: string;
+}
+
+
+
+
 export interface IUser extends Document {
   id: ObjectId;
   name: string;
@@ -69,7 +89,11 @@ export interface IUser extends Document {
   isVerified?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
-  image?:string
+  image?: string;
+  followers: IUser[];
+  following: IUser[];
+  blockedUser: IUser[];
+  ReportUser: IReportUser[];
 }
 
 
@@ -83,7 +107,12 @@ export interface IUserReturn extends Document {
   createdAt?: Date;
   updatedAt?: Date;
   otp?: number;
+  followers: IUser[];
+  following: IUser[];
+  blockedUser: IUser[];
+  ReportUser: IReportUser[];
 }
+
 
 
 

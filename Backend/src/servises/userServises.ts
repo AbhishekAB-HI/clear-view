@@ -97,9 +97,77 @@ class userServises {
     //  const getUser = await this.userRepository.checkingmail(getData);
   }
 
-  async passPostID(postId: string) {
+  async replyComments(
+    commentId: string,
+    replymessage: string,
+    postId: string,
+    userId: string,
+    username: string
+  ): Promise<void> {
+    const getComment = await this.userRepository.replythecomment(
+      commentId,
+      replymessage,
+      postId,
+      userId,
+      username
+    );
+    if (!getComment) {
+      throw new Error("no comments get");
+    }
+  }
+
+  async userService() {}
+
+  async getAllReplyhere(): Promise<Posts[]> {
+    const findReply = await this.userRepository.findAllReply();
+
+    if (!findReply || findReply.length === 0) {
+      throw new Error("No posts found");
+    }
+
+    return findReply;
+  }
+
+  async sendReportReason(userId: string, text: string, logeduserId:string) {
+    try {
+      const userDetails = await this.userRepository.sendTheData(
+        userId,
+        text,
+        logeduserId
+      );
+
+     
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async passLikePostID(postId: string, userId: mongoose.Types.ObjectId) {
+    const LikedPost = await this.userRepository.LikethePost(postId, userId);
+    if (!LikedPost) {
+      throw new Error("No post found");
+    }
+    return LikedPost;
+  }
+  async passCommentPostID(
+    postId: string,
+    userId: mongoose.Types.ObjectId,
+    comment: string
+  ) {
+    const commentPost = await this.userRepository.commentthePost(
+      postId,
+      userId,
+      comment
+    );
+    if (!commentPost) {
+      throw new Error("No post found");
+    }
+    return commentPost;
+  }
+
+  async passPostID(postId: string, text: string) {
     console.log(postId, "ppppppppppppppp");
-    const Reported = this.userRepository.RepostPost(postId);
+    const Reported = await this.userRepository.RepostPost(postId, text);
     if (!Reported) {
       throw new Error("No post found");
     }
@@ -197,7 +265,10 @@ class userServises {
     }
   }
 
-  async findSearchedusers(search: unknown, userId: unknown): Promise<IUser[] | undefined> {
+  async findSearchedusers(
+    search: unknown,
+    userId: unknown
+  ): Promise<IUser[] | undefined> {
     try {
       let getAllusershere = await this.userRepository.getAlltheUsers(
         search,

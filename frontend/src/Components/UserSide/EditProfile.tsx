@@ -10,11 +10,13 @@ import { FaSpinner } from "react-icons/fa"; // Optional spinner icon
 
 interface EditProfileModalProps {
   toggleModal: () => void;
+  updateProfileState: () => void;
   userid: string | null;
 }
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({
   toggleModal,
+  updateProfileState,
   userid,
 }) => {
   // Define Yup validation schema
@@ -35,7 +37,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       .min(8, "New password must be at least 8 characters long")
       .required("New password is required"),
   });
-   const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
   const formik = useFormik({
     initialValues: {
       name: "",
@@ -43,17 +45,15 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       newpassword: "",
       image: null as File | null,
     },
-  
+
     validationSchema: validationSchema,
     onSubmit: async (values) => {
-        
-
       try {
         const formData = new FormData();
         formData.append("name", values.name);
         formData.append("password", values.password);
         formData.append("newpassword", values.newpassword);
-  
+
         if (values.image) {
           formData.append("image", values.image);
         }
@@ -62,20 +62,21 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         }
         setLoading(true);
         try {
-            const {data} = await Clintnew.post(
-              `http://localhost:3000/api/user/updateProfile`,
-              formData,
-              {
-                headers: {
-                  "Content-Type": "multipart/form-data",
-                },
-              }
-            );
-
-            if(data.message==='userupdated successfully'){
-              toast.success('Profile updated')
-              window.location.reload()
+          const { data } = await Clintnew.post(
+            `http://localhost:3000/api/user/updateProfile`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
             }
+          );
+
+          if (data.message === "userupdated successfully") {
+            toast.success("Profile updated");
+            updateProfileState();
+            toggleModal();
+          }
         } catch (error) {
           console.log(error);
           if (axios.isAxiosError(error)) {
@@ -86,12 +87,11 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             toast.error("Unknown error occurred");
           }
           console.error("Error verifying OTP:", error);
-          
-        } finally{
-         setLoading(true); 
+        } finally {
+          setLoading(true);
         }
       } catch (error) {
-       console.log(error)
+        console.log(error);
       }
     },
   });

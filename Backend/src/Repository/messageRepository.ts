@@ -33,6 +33,42 @@ class messageRepository {
     return userinfo;
   }
 
+  async findUserBlock(userId: string, logedUserId: string):Promise<boolean|undefined>{
+     const UserFounded = await  UserSchemadata.findById(logedUserId);
+
+   const Blocked =  UserFounded?.blockedUser.some(
+       (blockedUser) => blockedUser.toString() === userId
+     );
+
+
+     console.log(Blocked,'2222222222222222222222222222222222222');
+     
+
+ let updateBlock
+     if(Blocked){
+      updateBlock = await UserSchemadata.findByIdAndUpdate(logedUserId,{
+        $pull:{blockedUser:userId}},{new:true}
+      );
+
+     }else{
+       updateBlock = await UserSchemadata.findByIdAndUpdate(logedUserId,{
+        $addToSet:{blockedUser:userId}},{new:true}
+      );
+     }
+
+
+
+       return Blocked;
+
+  
+      // const isAlreadyFollowers = followerUser.followers.some(
+      //   (followers) => followers.toString() === loggedUserId
+      // );
+
+     
+  }
+
+
   async getAllmessages(chatid: string): Promise<Message[] | undefined> {
     const messages = await messageSchemaModel
       .find({ chat: chatid })

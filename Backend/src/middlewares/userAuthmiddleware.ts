@@ -23,9 +23,6 @@ const AuthenticationMiddleware = async (
       process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
     ) as userPayload;
 
-
-    
-
     const userdata = await UserSchemadata.findById(decoded.id);
     
     if (!userdata) {

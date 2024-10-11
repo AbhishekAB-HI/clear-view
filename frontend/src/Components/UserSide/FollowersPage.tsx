@@ -9,13 +9,12 @@ import {
 import { MdOutlinePostAdd } from "react-icons/md";
 import { Button } from "@mui/material";
 import toast from "react-hot-toast";
-import { FormEvent, ReactElement,useCallback, useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
 import ThreeDot from "react-loading";
-import { useDispatch, useSelector } from "react-redux";
-import { Chats, setChats, setSelectedChat } from "../../Redux-store/redux-slice";
 import { store } from "../../Redux-store/reduxstore";
-const MessagePage = () => {
+
+const FollowersPage = () => {
   interface IUser {
     _id: any;
     name: string;
@@ -27,38 +26,50 @@ const MessagePage = () => {
     isVerified?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
+    following: boolean;
   }
 
   const [Loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState<IUser[]>([]);
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
-  const dispatch = useDispatch();
-    const navigate = useNavigate(); 
+  const [userID, setuserID] = useState<string>("");
+  const [userFound, setuserFound] = useState(false);
   type RootState = ReturnType<typeof store.getState>;
 
-  const getchat = useSelector((state: RootState) => state.accessTocken.chats);
 
- 
+  useEffect(() => {
+    const findUsers = async () => {
+      const { data } = await ClientNew.get(
+        "http://localhost:3000/api/chat/getUserdata"
+      );
+      if (data.message === "userId get") {
+        setuserID(data.userId);
+      }
+    };
+    findUsers();
+  }, []);
 
-  const getselectedchat = useSelector(
-    (state: RootState) => state.accessTocken.SelectedChat
+
+const updateUsers = async () => {
+  const { data } = await ClientNew.get(
+    `http://localhost:3000/api/chat/findFollowers`,
+    {
+      headers: {
+        "Content-type": "application/json",
+      },
+    }
   );
 
-  // Example of setting chats
+  setgetAlluser(data);
+};
 
 
-
-
- 
-
-
-  const accessChat = async (chatId: String) => {
+  const followUser = async (userId: string, LoguserId: string) => {
     try {
-
       const { data } = await ClientNew.post(
-        `http://localhost:3000/api/chat`,
-        { chatId },
+        `http://localhost:3000/api/chat/followuser`,
+        { userId, LoguserId },
         {
           headers: {
             "Content-type": "application/json",
@@ -66,27 +77,22 @@ const MessagePage = () => {
         }
       );
 
-      if (data.message === "Chat created succesfully") {
-        if (!getchat.find((c) => c._id === data.fullChat._id))dispatch(setChats([data.fullChat, ...getchat]));
-        dispatch(setSelectedChat(data.fullChat));
-       navigate(`/chatpage/${chatId}/${data.fullChat._id}`);
-
+      if (data.message === "followed users") {
+        console.log(data.addFollower, "1111111111111111");
+        setuserFound(data.addFollower);
+        updateUsers();
       }
     } catch (error) {
       console.log(error);
     }
   };
 
+ 
 
-   
-
-
-   useEffect(()=>{
-
-    
-    const getAllPost =async()=>{
+  useEffect(() => {
+  const updateUsers = async () => {
       const { data } = await ClientNew.get(
-        `http://localhost:3000/api/chat/allmessages`, 
+        `http://localhost:3000/api/chat/findFollowers`,
         {
           headers: {
             "Content-type": "application/json",
@@ -94,13 +100,11 @@ const MessagePage = () => {
         }
       );
 
-        setgetAlluser(data);
-    
-    }
+      setgetAlluser(data);
+    };
 
-     getAllPost()
-
-   },[])
+    updateUsers()
+  }, []);
 
   const handleSearch = async (event: FormEvent) => {
     event.preventDefault();
@@ -200,14 +204,15 @@ const MessagePage = () => {
         <main className="w-4/5 ml-auto p-4">
           {/* Messages Section */}
 
-          <div  className="space-y-4 p-5  w-full h-[100vh]">
+          <div className="space-y-4 p-5  w-full h-[100vh]">
             <h1
               style={{ fontSize: "25px" }}
               className=" flex text-xl font-bold ml-0"
             >
-              Messages
-            </h1>
-           
+
+       Followers          
+         </h1>
+
             <div className="space-y-4">
               {/* Loading or Results */}
               {Loading ? (
@@ -222,7 +227,6 @@ const MessagePage = () => {
                 getAlluser.map((user, index) => (
                   <div
                     key={user._id}
-                    onClick={() => accessChat(user._id)}
                     className="flex items-center justify-between bg-gray-900 p-4 rounded-lg"
                   >
                     <div className="flex items-center space-x-4">
@@ -233,10 +237,24 @@ const MessagePage = () => {
                       />
                       <div>
                         <p className="text-lg font-medium">{user.name}</p>
+
                         <p className="text-gray-400"></p>
                       </div>
                     </div>
                     <div className="text-blue-500 text-xl font-bold"></div>
+                    <div>
+                      <button
+                        onClick={() => followUser(user._id, userID)}
+                        color={!userFound ? "blue" : "white"}
+                        className={
+                          !userFound
+                            ? "mr-10 px-4 py-2 text-white font-semibold rounded-full border border-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors duration-300"
+                            : "mr-10 px-4 py-2 text-white font-semibold bg-blue-600 rounded-full border border-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors duration-300"
+                        }
+                      >
+                        {!userFound ? "Following" : "Follow"}
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -248,4 +266,4 @@ const MessagePage = () => {
   );
 };
 
-export default MessagePage;
+export default FollowersPage;

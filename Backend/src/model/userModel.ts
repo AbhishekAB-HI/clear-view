@@ -16,9 +16,9 @@ const UserSchema: Schema = new Schema(
       type: String,
       required: true,
     },
-     image:{
-      type:String,
-     },
+    image: {
+      type: String,
+    },
     isActive: {
       type: Boolean,
       required: false,
@@ -27,12 +27,40 @@ const UserSchema: Schema = new Schema(
       type: Boolean,
       required: false,
     },
-    
+    ReportUser: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "userdetail",
+        },
+        reportReason: {
+          type: String,
+        },
+      },
+    ],
+    blockedUser: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "userdetail",
+      },
+    ],
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "userdetail",
+      },
+    ],
+    following: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "userdetail",
+      },
+    ],
   },
   {
     timestamps: true,
   }
-);
+); 
 
 
 const UserSchemadata = mongoose.model<IUser>("userdetail", UserSchema);

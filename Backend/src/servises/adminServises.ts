@@ -62,6 +62,22 @@ import { generateAdminAccessToken } from "../utils/jwt";
      }
    }
 
+
+   async getAllReportUsers():Promise<IUser[] | undefined>{
+      try { 
+      const foundedusers = await this.adminRepository.findAllReportUsers()
+
+      if(!foundedusers){
+       throw new Error("no user get")
+      }
+
+       return foundedusers;
+      } catch (error) {
+        console.log(error);
+        
+      }
+   }
+
    async getAllReportedpost(
      page: number,
      limit: number

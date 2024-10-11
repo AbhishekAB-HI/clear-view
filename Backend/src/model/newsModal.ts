@@ -1,7 +1,5 @@
-
-import mongoose,{Schema} from 'mongoose'
-import { Posts } from '../entities/userEntities';
-
+import mongoose, { Schema } from "mongoose";
+import { Posts } from "../entities/userEntities";
 
 const postSchema: Schema = new Schema(
   {
@@ -22,17 +20,56 @@ const postSchema: Schema = new Schema(
       type: [String],
       default: [],
     },
-    Reportpost:{
-      type:Boolean
-    }
+    text: {
+      type: String,
+    },
+    likeCount: {
+      type: Number,
+      default: 0,
+    },
+    LikeStatement: {
+      type: Boolean,
+      default: false,
+    },
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "userdetail",
+      },
+    ],
+    comments: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "userdetail",
+        },
+        parentComment: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "post",
+        },
+        content: {
+          type: String,
+          required: true,
+        },
+        userName: {
+          type: String,
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+    reportPost: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+const newspostSchemadata = mongoose.model<Posts>("post", postSchema);
 
- const newspostSchemadata = mongoose.model<Posts>("post", postSchema);
-
-
- export default newspostSchemadata;
+export default newspostSchemadata;

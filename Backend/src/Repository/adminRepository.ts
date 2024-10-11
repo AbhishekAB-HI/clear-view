@@ -13,6 +13,37 @@ class adminRepository {
     return finduser;
   }
 
+  async findAllReportUsers(): Promise<  [] | any> {
+    try {
+      const usersWithReports = await UserSchemadata.find({
+        ReportUser: { $exists: true, $not: { $size: 0 } },
+      })
+        .populate({
+          path: "ReportUser.userId",
+       
+        })
+        .exec();
+
+        console.log(usersWithReports,'2222222222222222222222222');
+        
+
+      const reports = usersWithReports.flatMap((user) =>
+        user.ReportUser.map((report) => ({
+          reporter: { _id: user._id, name: user.name, email: user.email },
+          reportedUser: report.userId,
+          reportReason: report.reportReason,
+        }))
+      );
+
+      
+        console.log(reports, "3333333333333333333333333333333333333");
+
+      return reports;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async findReportpostPost(
     page: number,
     limit: number
@@ -65,22 +96,28 @@ class adminRepository {
     };
   }
   async deleteReportedPost(id: string) {
-
-    
     const deletPost = await newspostSchemadata.findById(id);
     if (!deletPost) {
       throw new Error("Post is not found");
     }
 
+    console.log(deletPost, "post delergry");
 
-    console.log(deletPost,'post delergry');
-    
-
-    const cloudImage = deletPost.image;
-
-    if (cloudImage) {
-      await cloudinary.uploader.destroy(cloudImage);
+    const { image, videos } = deletPost;
+    if (image && image.length > 0) {
+      for (const img of image) {
+        await cloudinary.uploader.destroy(image);
+        console.log("Image deleted from Cloudinary");
+      }
     }
+
+    if (videos && videos.length > 0) {
+      for (const video of videos) {
+        await cloudinary.uploader.destroy(video);
+        console.log("video deleted from Cloudinary");
+      }
+    }
+
     const deletePostdata = await newspostSchemadata.findByIdAndDelete(id);
     if (deletePostdata) {
       return deletPost;
@@ -93,10 +130,21 @@ class adminRepository {
       throw new Error("Post is not found");
     }
 
-    const cloudImage = deletPost.image;
+    console.log(deletPost, "post delergry");
 
-    if (cloudImage) {
-      await cloudinary.uploader.destroy(cloudImage);
+    const { image, videos } = deletPost;
+    if (image && image.length > 0) {
+      for (const img of image) {
+        await cloudinary.uploader.destroy(image);
+        console.log("Image deleted from Cloudinary");
+      }
+    }
+
+    if (videos && videos.length > 0) {
+      for (const video of videos) {
+        await cloudinary.uploader.destroy(video);
+        console.log("video deleted from Cloudinary");
+      }
     }
     const deletePostdata = await newspostSchemadata.findByIdAndDelete(id);
     if (deletePostdata) {

@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { clearAdminAccessTocken } from "../../Redux-store/redux-slice";
 import { store } from "../../Redux-store/reduxstore";
+import Swal from "sweetalert2";
 
 export interface Posts {
   _id: string;
@@ -25,6 +26,7 @@ export interface Posts {
   videos: string;
   likes: number;
   comments: number;
+  text:string
 }
 
 const truncateText = (text: string, maxLength: number) => {
@@ -65,16 +67,29 @@ const Reportmanagement = () => {
 
   const handleDeletePost = async (id: string) => {
     try {
-        console.log(id,'ssssssssssssssssssss');
-        
-      const { data } = await axios.delete(
-        `http://localhost:3000/api/admin/deleteReportpost/${id}`
-      );
-      if (data.message === "delete post") {
-        toast.success("Post deleted successfully");
-        setGetpost(getPost.filter((post) => post._id !== id));
-        setTotalPosts((prev) => prev - 1);
-      }
+        Swal.fire({
+          title: "Are you sure?",
+          text: "You Want to delete this post",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Yes, delete it!",
+        }).then(async(result)=>{
+          if(result.isConfirmed){
+            const { data } = await axios.delete(
+              `http://localhost:3000/api/admin/deleteReportpost/${id}`
+            );
+            if (data.message === "delete post") {
+              toast.success("Post deleted successfully");
+              setGetpost(getPost.filter((post) => post._id !== id));
+              setTotalPosts((prev) => prev - 1);
+            }
+
+          }else{
+            navigate("/reportpage");
+          }
+        })
     } catch (error) {
       console.error(error);
     }
@@ -142,7 +157,9 @@ const Reportmanagement = () => {
                 <tr className="bg-gray-800">
                   <th className="py-3 px-5">No</th>
                   <th className="py-3 px-5">Image</th>
+                  <th className="py-3 px-3">Report Reason</th>
                   <th className="py-3 px-3">Description</th>
+
                   <th className="py-3 px-3">Delete</th>
                 </tr>
               </thead>
@@ -153,19 +170,22 @@ const Reportmanagement = () => {
                       {index + 1 + (currentPage - 1) * postsPerPage}
                     </td>
                     <td className="py-2">
-                      {post.image ? (
+                      {post.image && post.image.length > 0 ? (
                         <img
                           src={post.image}
                           alt="post"
                           className="w-20 h-20 object-cover rounded-lg"
                         />
-                      ) : post.videos ? (
+                      ) : post.videos && post.videos.length > 0 ? (
                         <video controls className="w-20 h-20 rounded-lg">
                           <source src={post.videos} type="video/mp4" />
                         </video>
                       ) : (
                         <span>No media</span>
                       )}
+                    </td>
+                    <td className="py-2 text-red-600">
+                      {truncateText(post.text, 100)}
                     </td>
                     <td className="py-2">
                       {truncateText(post.description, 100)}

@@ -61,8 +61,6 @@ class MessageControllers {
          uploadedVideos.length > 0
            ? uploadedVideos.map((upload) => upload.secure_url)
            : [];
-       console.log(imageUrls, "Images URLs1111111111111");
-       console.log(videoUrls, "Videos URLs");
 
     const message =await this.messageservise.sendAllmessages(
            userId,
@@ -78,8 +76,45 @@ class MessageControllers {
     }
   }
 
+
+  async blockUserStatus(req:Request,res:Response){
+     try {
+      console.log("1111111111111111111111111")
+        const userId = (req as any).userdata.id;
+
+        console.log(userId,'user id get######################');
+        
+     } catch (error) {
+      console.log(error);
+      
+     } 
+  }
+
+
+   async blockUserNow(req:Request,res:Response){
+      try {
+
+        const { userId, LogedUserId } = req.body;
+        console.log(userId, "userId");
+         console.log(LogedUserId, "LogedUserId");
+
+         if(! userId || !LogedUserId ){
+          throw new Error("no users found")
+         }
+
+      const userStatus =   await  this.messageservise.blockUserhere(userId, LogedUserId);
+
+       res.status(200).json({ message: "User blocked", userStatus });
+
+      } catch (error) {
+       console.log(error);
+      }
+   }
+
+
+
   async getUserInfo(req: Request, res: Response) {
-    try {
+    try { 
       const userInfo = req.params.chatId;
       const userinfo = await this.messageservise.getUserInfomation(userInfo);
       // const userinfo = await UserSchemadata.findById(userInfo);
@@ -93,10 +128,16 @@ class MessageControllers {
   async getId(req: Request, res: Response) {
     try {
       const getTocken = req.params.userTocken;
+
+      console.log(getTocken,'tocken found......................');
+      
       const decoded = jwt.verify(getTocken, "key_for_accesst") as {
         id: string;
       };
       const userId = decoded.id;
+
+      console.log(userId,'2222222222222222222222222222222222222222222');
+      
       res.json(userId);
     } catch (error) {
       console.log(error);

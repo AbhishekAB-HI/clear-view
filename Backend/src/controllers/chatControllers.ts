@@ -8,13 +8,82 @@ import { userPayload } from "../interface/userInterface/userPayload";
 class ChatController {
   constructor(private ChatServices: ChatServices) {}
 
+  async getAllmessages(req: Request, res: Response) {
+    try {
+      const userId = (req as any).userdata.id;
+      const data = await this.ChatServices.getOthermessage(userId);
+      if (data) {
+        res.json(data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async getAllUser(req: Request, res: Response) {
     try {
       const userId = (req as any).userdata.id;
-     const data = await this.ChatServices.getOtherusers(userId);
-     if(data){
-     res.json(data);
-     }
+      const data = await this.ChatServices.getOtherusers(userId);
+      if (data) {
+        res.json(data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async FindAllUser(req: Request, res: Response) {
+    try {
+      const userId = (req as any).userdata.id;
+      const data = await this.ChatServices.findAllGetUsers(userId);
+      if (data) {
+        res.json(data);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async findAllFollowers(req: Request, res: Response) {
+    const userId = (req as any).userdata.id;
+    const data = await this.ChatServices.getAllFollowers(userId);
+    if (data) {
+      res.json(data);
+    }
+  }
+
+  async getUserDetails(req: Request, res: Response) {
+    try {
+      const userId = (req as any).userdata.id;
+      res.status(200).json({ message: "userId get", userId });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async blockUserStatus(req: Request, res: Response) {
+    try {
+      const userId = (req as any).userdata.id;
+      const getStatus =   await this.ChatServices.getUserBlockStatus(userId);
+      res.status(200).json({ message: "Updated status", getStatus });
+ 
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async followuser(req: Request, res: Response) {
+    try {
+      const { userId, LoguserId } = req.body;
+
+      const addFollower = await this.ChatServices.AddToFollowers(
+        userId,
+        LoguserId
+      );
+
+      console.log(addFollower, "status00000000000000000000");
+
+      res.status(200).json({ message: "followed users", addFollower });
     } catch (error) {
       console.log(error);
     }

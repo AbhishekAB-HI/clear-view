@@ -8,6 +8,8 @@ import {
   clearuserAccessTocken,
   setUserAccessTocken,
 } from "../../Redux-store/redux-slice";
+import { SlLike } from "react-icons/sl";
+import { FaComment, FaPaperPlane, FaShare } from "react-icons/fa";
 import {
   FaBell,
   FaEnvelope,
@@ -20,15 +22,10 @@ import profileimg from "../images/Userlogo.png";
 import { useDispatch, useSelector } from "react-redux";
 import axios from "axios";
 import toast from "react-hot-toast";
-
-export interface Posts {
-  _id: any;
-  user: any;
-  description: string;
-  image: string;
-  videos: string;
-}
-
+import Swal from "sweetalert2";
+import { boolean } from "yup";
+import EmojiPicker from "emoji-picker-react";
+import ClientNew from "../../Redux-store/Axiosinterceptor";
 interface IUser extends Document {
   _id: any;
   name: string | undefined;
@@ -39,7 +36,7 @@ interface IUser extends Document {
   isVerified?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
-  image: string;
+  image?: string;
 }
 
 interface IPost {
@@ -48,14 +45,31 @@ interface IPost {
   description: string;
   image: string;
   videos: string;
+  likeCount: number;
+  LikeStatement: boolean;
+  likes: string[];
+  comments: IComment[];
+  userName:string
+}
+
+interface IComment {
+  user: any; // or a more specific type
+  content: string;
+  userName: string;
+  timestamp: Date;
+  parentComment: string;
+  _id: string;
+}
+
+interface ReplyingToState {
+  postId: string;
+  commentId: string;
 }
 
 const HomeLoginPage = () => {
   type RootState = ReturnType<typeof store.getState>;
-  const [searchTerm, setSearchTerm] = useState("");
   const [isOpen, setIsOpen] = useState(false);
-  const [Userpost, setPostList] = useState<Posts[]>([]);
-  const [UserList, setUserList] = useState<IUser>();
+  const [Userpost, setPostList] = useState<IPost[]>([]);
   const dispatch = useDispatch();
   const userDetails = useSelector(
     (state: RootState) => state.accessTocken.userTocken
@@ -63,7 +77,32 @@ const HomeLoginPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPost, setFilteredPost] = useState<IPost[]>([]);
   const [menuOpenPost, setMenuOpenPost] = useState<string | null>(null);
+  const [saveid, setsaveid] = useState<string | any>(null);
+  const [showCommentBox, setShowCommentBox] = useState(null);
+  const [comment, setComment] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<ReplyingToState | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+   const [replyPost, setReplyPost] = useState<IPost[]>([]);
 
+  useEffect(() => {
+    console.log(userDetails, "tocken get...................");
+
+    const getUserId = async () => {
+      try {
+        const { data } = await axios.get(
+          `http://localhost:3000/api/user/userdget/${userDetails}`
+        );
+        if (data.message === "user id get") {
+          setsaveid(data.userId);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    getUserId();
+  }, [userDetails]);
   useEffect(() => {
     const getAllpost = async () => {
       try {
@@ -82,6 +121,47 @@ const HomeLoginPage = () => {
     getAllpost();
   }, []);
 
+  const handleCommentClick = (postId: any) => {
+    if (showCommentBox === postId) {
+      setShowCommentBox(null);
+    } else {
+      setShowCommentBox(postId);
+    }
+  };
+  const handleReply = (postId: string, commentId: string) => {
+    if (replyingTo?.commentId === commentId) {
+      setReplyingTo(null);
+    } else {
+      setReplyingTo({ postId, commentId });
+    }
+  };
+
+  useEffect(() => {
+    const getAllreply = async () => {
+      try {
+        const {data} = await ClientNew.get(
+          "http://localhost:3000/api/user/getreplys"
+        );
+
+        if (data.message == "get all reply comments"){
+            setReplyPost(data.posts);
+            console.log(data.posts,'111111111111111111111111111111');
+            
+        }
+  
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    getAllreply()
+  }, []);
+
+  
+
+  const handleEmojiClick = (emojiData: { emoji: string }) => {
+    setComment((prevComment) => prevComment + emojiData.emoji);
+  };
+
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -99,12 +179,19 @@ const HomeLoginPage = () => {
   };
 
   const handleReport = async (postId: string) => {
-    console.log("Report post with ID:", postId);
-
-    try {
+    const { value: text } = await Swal.fire({
+      input: "textarea",
+      inputLabel: "Report reason",
+      inputPlaceholder: "Type here...",
+      inputAttributes: {
+        "aria-label": "Type your message here",
+      },
+      showCancelButton: true,
+    });
+    if (text) {
       const { data } = await axios.patch(
         "http://localhost:3000/api/user/Reportpost",
-        { postId },
+        { postId, text },
         {
           headers: {
             "Content-Type": "application/json",
@@ -113,16 +200,114 @@ const HomeLoginPage = () => {
       );
 
       if (data.message === "Post Reported succesfully") {
-       toast.success("Post Reported succesfully");
-      } else {
-        alert("Failed to report post");
+        toast.success("Post Reported succesfully");
       }
+    } else {
+      if (text.length === 0) {
+        Swal.fire("Please text here");
+      }
+      navigate("/homepage");
+    }
+
+    console.log("Report post with ID:", postId);
+
+    try {
     } catch (error) {
       console.error("Error reporting post:", error);
-      alert("An error occurred while reporting the post");
     }
   };
 
+  const UpdateLikepost = async () => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:3000/api/user/getAllpost`
+      );
+      if (data.message === "getAllpostdetails") {
+        setPostList(data.getAlldetails);
+        setFilteredPost(data.getAlldetails);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleSendComment = async (postId: string, userId: string) => {
+    if (comment.length === 0) {
+      toast.error("please write something...");
+    }
+
+    const { data } = await ClientNew.patch(
+      "http://localhost:3000/api/user/CommentPost",
+      {
+        postId,
+        userId,
+        comment,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (data.message === "Post Commented succesfully") {
+      UpdateLikepost();
+      setComment("");
+    }
+  };
+
+
+  const handleReplySubmit = async (
+    postId: string,
+    commentId: string,
+    userId: string,
+    username:string
+  ) => {
+    
+    setReplyingTo(null);
+    const {data} = await ClientNew.post(
+      "http://localhost:3000/api/user/replycomment",
+      {
+        postId,
+        commentId,
+        replyContent,
+        userId,
+        username
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if(data.message === "updated succefully"){
+    UpdateLikepost();
+    setReplyContent("");
+    }
+
+  };
+  const handleLike = async (postId: string, userId: string) => {
+    try {
+      console.log(userId, "user id get11111111111111111111");
+
+      const { data } = await axios.patch(
+        "http://localhost:3000/api/user/LikePost",
+        { postId, userId },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (data.message === "Post liked succesfully") {
+        UpdateLikepost();
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
@@ -219,36 +404,56 @@ const HomeLoginPage = () => {
       <div className="flex mt-20">
         {/* Sidebar */}
         <aside className="w-1/5 p-4 space-y-4 fixed left-20 h-screen overflow-y-auto">
-          <div className="flex items-center space-x-2">
+          {/* <div className="flex items-center space-x-2">
             <FaHome style={{ fontSize: "30px" }} />
             <span style={{ fontSize: "20px", color: "white" }}>
               <Link to="/homepage">Home</Link>
             </span>
+          </div> */}
+          <div className="flex items-center space-x-2 hover:text-blue-600 cursor-pointer text-[35px] hover:scale-110 transition-transform duration-200">
+            <FaHome className="text-[30px] hover:text-[35px]" />
+            <span className="text-[20px] hover:text-[22px]">
+              <Link to="/homepage">Home</Link>
+            </span>
           </div>
-          <div className="flex items-center space-x-2">
-            <FaEnvelope style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>
+          <div className="flex items-center space-x-2 hover:text-blue-600 cursor-pointer text-[35px] hover:scale-110 transition-transform duration-200">
+            <FaEnvelope className="text-[30px] hover:text-[35px]" />
+            <span className="text-[20px] hover:text-[22px]">
               <Link to="/message">Message</Link>
             </span>
           </div>
-          <div className="flex items-center space-x-2">
-            <FaUserFriends style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Followers</span>
+          <div className="flex items-center space-x-2 hover:text-blue-600 cursor-pointer text-[35px] hover:scale-110 transition-transform duration-200">
+            <FaUserFriends className="text-[30px] hover:text-[35px]" />
+            <span className="text-[20px] hover:text-[22px]">
+              <Link to="/followers">Followers</Link>
+            </span>
           </div>
-          <div className="flex items-center space-x-2">
-            <FaUsers style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Community</span>
+
+          <div className="flex items-center space-x-2 hover:text-blue-600 cursor-pointer text-[35px] hover:scale-110 transition-transform duration-200">
+            <FaUserFriends className="text-[30px] hover:text-[35px]" />
+            <span className="text-[20px] hover:text-[22px]">
+              {" "}
+              <Link to="/following">Following</Link>
+            </span>
           </div>
-          <div className="flex items-center space-x-2">
-            <FaBell style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Notification</span>
+          <div className="flex items-center space-x-2 hover:text-blue-600 cursor-pointer text-[35px] hover:scale-110 transition-transform duration-200">
+            <FaBell className="text-[30px] hover:text-[35px]" />
+            <span className="text-[20px] hover:text-[22px]">Notification</span>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 hover:text-blue-600 cursor-pointer text-[35px] hover:scale-110 transition-transform duration-200">
+            <FaUserFriends className="text-[30px] hover:text-[35px]" />
+            <span className="text-[20px] hover:text-[22px]">
+              {" "}
+              <Link to="/people">People</Link>
+            </span>
+          </div>
+
+          {/* <div className="flex items-center space-x-2">
             <MdOutlinePostAdd style={{ fontSize: "30px" }} />
             <span style={{ fontSize: "20px" }}>
               <Link to="/createpost">Create Post</Link>
             </span>
-          </div>
+          </div> */}
         </aside>
 
         {/* Main Content */}
@@ -262,7 +467,7 @@ const HomeLoginPage = () => {
               Latest News
             </button>
             <button className="pb-2">Breaking News</button>
-            <button className="pb-2">Top News</button>
+            <button className="pb-2">Sports News</button>
           </div>
 
           {/* Posts */}
@@ -312,18 +517,229 @@ const HomeLoginPage = () => {
                 )}
 
                 <div className="mt-4">
-                  {post.image && post.image.length>0 ? (
+                  {post.image && post.image.length > 0 && (
                     <img
                       src={post.image}
                       alt="post"
                       className="w-full rounded-md"
                     />
-                  ) : post.videos && post.videos.length>0 ? (
+                  )}{" "}
+                  {post.videos && post.videos.length > 0 && (
                     <video controls className="w-full mt-2 rounded-md">
                       <source src={post.videos} type="video/mp4" />
                     </video>
-                  ) : (
-                    <span>No media</span>
+                  )}
+                  <div className="mainLikebar flex justify-around mt-4">
+                    <div
+                      onClick={() => handleLike(post._id, saveid)}
+                      className="Likebutton flex  hover: hover:text-blue-600 cursor-pointer  hover:scale-110 transition-transform duration-200"
+                    >
+                      {" "}
+                      <span className="mr-2">{post.likeCount}</span>
+                      <SlLike size="25px" color="blue" />
+                      {post.likes.includes(saveid) ? (
+                        <span
+                          style={{ fontWeight: 500 }}
+                          className="ml-2 text-blue-600 "
+                        >
+                          Like
+                        </span>
+                      ) : (
+                        <span className="ml-2">Like</span> // Text for unliked state
+                      )}
+                    </div>
+
+                    <div
+                      onClick={() => handleCommentClick(post._id)}
+                      className="Likebutton flex   hover: hover:text-blue-600 cursor-pointer  hover:scale-110 transition-transform duration-200"
+                    >
+                      <FaComment size="25px" color="blue" />
+                      <h1 className="pl-2">Comment</h1>
+                    </div>
+
+                    <div className="Likebutton flex  hover: hover:text-blue-600 cursor-pointer  hover:scale-110 transition-transform duration-200">
+                      <FaShare size="25px" color="blue" />
+                      <h1 className="pl-2">Share</h1>
+                    </div>
+                  </div>
+                  {showCommentBox === post._id && (
+                    <div className="mt-10  ">
+                      <div className="flex items-center  space-x-2 justify-start">
+                        <button
+                          className="p-2 bg-blue-600 text-white rounded-md"
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                        >
+                          😊
+                        </button>
+                        <input
+                          type="text"
+                          className="border p-2 w-full text-black  rounded-md"
+                          placeholder="Write a comment..."
+                          value={comment}
+                          onChange={(e) => setComment(e.target.value)}
+                        />
+
+                        <button
+                          className="p-2 bg-blue-600 text-white rounded-md"
+                          onClick={() => handleSendComment(post._id, saveid)}
+                        >
+                          <FaPaperPlane />
+                        </button>
+                      </div>
+
+                      {/* Emoji Picker (optional) */}
+                      {showEmojiPicker && (
+                        <div className="mt-2">
+                          <EmojiPicker onEmojiClick={handleEmojiClick} />
+                        </div>
+                      )}
+
+                      {/* List of Comments */}
+                      <div className="mt-4">
+                        {post.comments.length > 0 ? (
+                          post.comments.map((comment, index) => (
+                            <div
+                              key={index}
+                              className="border-b text-left border-gray-300 py-2 flex items-start"
+                            >
+                              {/* Display the main comment user's avatar */}
+
+                              {comment && !comment.parentComment && (
+                                <img
+                                  src={comment.user.image} // Use a default image if not available
+                                  alt="User avatar"
+                                  className="w-10 h-10 rounded-full mr-4"
+                                />
+                              )}
+
+                              <div>
+                                <p
+                                  style={{ fontSize: "15px" }}
+                                  className="font-semibold"
+                                >
+                                  {comment &&
+                                    !comment.parentComment &&
+                                    comment.user.name}
+                                </p>
+                                {comment &&
+                                  !comment.parentComment &&
+                                  comment.content}
+                                {comment && !comment.parentComment && (
+                                  <small className="text-gray-500">
+                                    Posted on:{" "}
+                                    <span>
+                                      {new Date(
+                                        comment.timestamp
+                                      ).toLocaleDateString()}
+                                    </span>
+                                  </small>
+                                )}
+
+                                {comment && !comment.parentComment && (
+                                  <small
+                                    className="ml-2"
+                                    style={{ color: "blue" }}
+                                  >
+                                    <button
+                                      onClick={() =>
+                                        handleReply(post._id, comment._id)
+                                      }
+                                    >
+                                      Reply
+                                    </button>
+                                  </small>
+                                )}
+
+                                {comment && comment.parentComment && (
+                                  <div className="ml-10 mt-2">
+                                    <div className="flex items-start mb-2">
+                                      <img
+                                        src={comment.user.image} // Use a default image if not available
+                                        alt="User avatar"
+                                        className="w-8 h-8 rounded-full mr-3"
+                                      />
+                                      <div>
+                                        <p className="font-semibold">
+                                          <span className="text-blue-600">
+                                            {comment.userName}
+                                            {"   :  "}
+                                          </span>
+                                          <span className="text-white">
+                                            <span
+                                              key={index}
+                                              className="text-white"
+                                            >
+                                              {comment.content}
+                                            </span>
+                                          </span>
+                                        </p>
+
+                                        {comment && comment.parentComment && (
+                                          <small className="text-gray-500">
+                                            Posted on:{" "}
+                                            <span>
+                                              {new Date(
+                                                comment.timestamp
+                                              ).toLocaleDateString()}
+                                            </span>
+                                          </small>
+                                        )}
+                                        {comment && comment.parentComment && (
+                                          <small
+                                            className="ml-2"
+                                            style={{ color: "blue" }}
+                                          >
+                                            <button
+                                              onClick={() =>
+                                                handleReply(
+                                                  post._id,
+                                                  comment._id
+                                                )
+                                              }
+                                            >
+                                              Reply
+                                            </button>
+                                          </small>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Reply input area */}
+                                {replyingTo?.commentId === comment._id && (
+                                  <div className="mt-2 ml-10">
+                                    <textarea
+                                      className="bg-gray-700 text-white w-full p-2 rounded-md"
+                                      value={replyContent}
+                                      onChange={(e) =>
+                                        setReplyContent(e.target.value)
+                                      }
+                                      placeholder={`Replying to ${comment.user.name}...`}
+                                    />
+                                    <button
+                                      className="bg-blue-600 text-white px-4 py-1 mt-2 rounded-md"
+                                      onClick={() =>
+                                        handleReplySubmit(
+                                          post._id,
+                                          comment._id,
+                                          saveid,
+                                          comment.user.name
+                                        )
+                                      }
+                                    >
+                                      Submit Reply
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p>No comments yet.</p>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>

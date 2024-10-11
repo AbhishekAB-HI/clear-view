@@ -25,6 +25,10 @@ import Reportmanagement from './Components/AdminSide/ReportPost';
 import ChatPage from './Components/UserSide/ChatpageUI';
 import { Videopage } from './Components/UserSide/Videopage';
 import RoomPage from './Components/Zego-cloud/RoomPage';
+import FollowersPage from './Components/UserSide/FollowersPage';
+import FollowingPage from './Components/UserSide/Following';
+import PeoplePage from './Components/UserSide/PeoplePage';
+import UserReportmanagement from './Components/AdminSide/UserReportPage';
 
 
 
@@ -70,13 +74,15 @@ function App() {
           <Route path="/profile" element={<HomeProfilepage />} />
           {/* <Route path="/videopage/:roomId" element={<Videopage />} /> */}
           <Route path="/room/:roomId" element={<RoomPage />} />
-
           <Route path="/editprofile" />
           <Route
             path="/createpost"
             element={<Postpage togglepostModal={togglepostModal} />}
           />
           <Route path="/message" element={<MessagePage />} />
+          <Route path="/following" element={<FollowingPage />} />
+          <Route path="/followers" element={<FollowersPage />} />
+          <Route path="/people" element={<PeoplePage />} />
           <Route
             path="/editpost"
             element={
@@ -85,6 +91,7 @@ function App() {
           />
           <Route path="/news" element={<Newsmanagement />} />
           <Route path="/reportpage" element={<Reportmanagement />} />
+          <Route path="/userReportpage" element={<UserReportmanagement />} />
 
           <Route
             path="/forgetpass"

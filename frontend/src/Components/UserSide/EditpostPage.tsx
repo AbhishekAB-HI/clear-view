@@ -1,20 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { FaImage, FaVideo, FaSmile } from "react-icons/fa";
+import { FaImage, FaVideo, FaSmile, FaSpinner } from "react-icons/fa";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import toast from "react-hot-toast";
 import Clintnew from "../../Redux-store/Axiosinterceptor";
+
 interface EditPostModalProps {
   toggleeditpostModal: () => void;
+  updateState:()=>void;
   postid: string | null;
 }
 
-const EditPostModal = ({ toggleeditpostModal, postid } : EditPostModalProps) => {
+const EditPostModal = ({ toggleeditpostModal,updateState, postid } : EditPostModalProps) => {
 
   const [postContent, setPostContent] = useState("");
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+   const [loading, setloading] = useState(false)
 
    useEffect(() => {
      console.log("img", postImages);
@@ -24,6 +27,7 @@ const EditPostModal = ({ toggleeditpostModal, postid } : EditPostModalProps) => 
    }, [postImages, postContent, postVideos]);
 
   const handlePostSubmit = async () => {
+    setloading(true)
     console.log("Submitting Post...");
     console.log("Post Content:", postContent);
     console.log("Post Images:", postImages);
@@ -55,11 +59,15 @@ const EditPostModal = ({ toggleeditpostModal, postid } : EditPostModalProps) => 
 
       if (response.data.message === "Post updated successfully") {
         toast.success("Post updated successfully");
+         updateState();
         toggleeditpostModal();
+       
       }
       console.log("Update Successful:", response.data);
     } catch (error) {
       console.log("Error updating post:", error);
+    }finally{
+        setloading(false);
     }
   };
 
@@ -114,7 +122,7 @@ const EditPostModal = ({ toggleeditpostModal, postid } : EditPostModalProps) => 
                 <div key={index} className="relative inline-block mr-2 mb-2">
                   <img
                     src={URL.createObjectURL(image)}
-                    alt='preview'
+                    alt="preview"
                     className="w-20 h-20 object-cover rounded-lg"
                   />
                   <button
@@ -185,7 +193,8 @@ const EditPostModal = ({ toggleeditpostModal, postid } : EditPostModalProps) => 
           <div className="flex justify-end space-x-4">
             <button
               className="bg-gray-600 text-white px-4 py-2 rounded"
-              onClick={toggleeditpostModal} >
+              onClick={toggleeditpostModal}
+            >
               Cancel
             </button>
 
@@ -193,7 +202,11 @@ const EditPostModal = ({ toggleeditpostModal, postid } : EditPostModalProps) => 
               className="bg-blue-600 text-white px-4 py-2 rounded"
               onClick={handlePostSubmit}
             >
-              Update Post
+              {loading ? (
+                <FaSpinner className="animate-spin mr-2" /> // Optional loading spinner
+              ) : (
+                "Update post"
+              )}
             </button>
           </div>
         </div>

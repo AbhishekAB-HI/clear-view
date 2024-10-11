@@ -97,8 +97,6 @@ const io = require("socket.io")(server, {
 
     socket.on("new message",(newMessageReceived:any)=>{
          var chat = newMessageReceived.chat
-         console.log(chat,'user datassssssssssssssssssssssssssssss3444444444444444444');
-         
          if(!chat.users){
           return console.log('chat.user not defined');
          }

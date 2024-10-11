@@ -26,6 +26,19 @@ class MessageServices {
     return getAllmessges;
   }
 
+
+  async blockUserhere(userId:string,logedUserId:string):Promise<boolean|undefined>{
+       try {
+
+      const findUserStatus = await this.messageRepo.findUserBlock(userId,logedUserId)
+        
+        return findUserStatus;
+       } catch (error) {
+        console.log(error);
+        
+       }
+  }
+
   async findAllmessages(chatid: string): Promise<Message[] | undefined> {
     const gettheMessages = await this.messageRepo.getAllmessages(chatid);
 

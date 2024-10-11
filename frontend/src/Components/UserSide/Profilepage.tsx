@@ -13,10 +13,11 @@ import {
   FaUserFriends,
   FaUsers,
 } from "react-icons/fa";
+
 import { MdOutlinePostAdd } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
+import Swal from "sweetalert2";
 import axios from "axios";
-import Clint from "../../Redux-store/axiosinterseptore";
 import toast from "react-hot-toast";
 import profileimg from "../images/Userlogo.png";
 import EditProfileModal from "./EditProfile";
@@ -54,7 +55,8 @@ const HomeProfilepage = () => {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [UserId, setUserId] = useState<string | null>(null);
   const [userPost, setuserPost] = useState<IPost[]>([]);
-  const [menuOpen, setMenuOpen] = useState(false);
+  // const [menuOpen, setMenuOpen] = useState(false);
+   const [menuOpen, setMenuOpen] = useState(null);
   const [editpostUserId, seteditpostUserId] = useState<string | null>(null);
   const [postid, setPostid] = useState<string | null>(null);
   const [ShoweditpostModal,setShoweditpostModal] = useState(false)
@@ -65,11 +67,17 @@ const HomeProfilepage = () => {
 
  const navigate = useNavigate();
 
-  const toggleMenu = () => {
-    setMenuOpen(!menuOpen);
-  };
+  // const toggleMenu = () => {
+  //   setMenuOpen(!menuOpen);
+  // };
 
-
+const toggleMenu = (postId:any) => {
+  if (menuOpen === postId) {
+    setMenuOpen(null); 
+  } else {
+    setMenuOpen(postId); 
+  }
+};
  
 
   const toggleModal = () => {
@@ -134,6 +142,30 @@ const HomeProfilepage = () => {
     fetchdata();
   }, []);
 
+  const fetchProfiledata = async () => {
+    try {
+      const { data } = await Clintnew.get(
+        "http://localhost:3000/api/user/userprofile"
+      );
+      if (data.message === "User Profile found") {
+        setprofileInfo(data.getdetails);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const updateProfileState = () => {
+    fetchProfiledata();
+  };
+
+  const updateState = () =>{
+    fetchdatas()
+  }
+
+
+  
+
 
   const fetchdatas = async () => {
     try {
@@ -166,25 +198,42 @@ const HomeProfilepage = () => {
 
     const handleDeletepost = async (id: string) => {
       try {
-        
-        const responce = await axios.delete(
-          `http://localhost:3000/api/user/deletepost/${id}`
-        );
+        Swal.fire({
+          title: "Are you sure?",
+          text: "You won't be able to revert this!",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#3085d6",
+          cancelButtonColor: "#d33",
+          confirmButtonText: "Yes, delete it!",
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+            const response = await axios.delete(
+              `http://localhost:3000/api/user/deletepost/${id}`
+            );
 
-        if (responce.data.message === "Post deleted successfully") {
-          toast.success("Post deleted successfully");
-
-        }
-          fetchdatas();
-
-          if(filteredPost.length===1){
-            window.location.reload()
+            if (response.data.message === "Post deleted successfully") {
+              toast.success("Post deleted successfully");
+              Swal.fire({
+                title: "Deleted!",
+                text: "Your post and associated image have been deleted.",
+                icon: "success",
+              });
+              fetchdatas();
+              if (filteredPost.length === 1) {
+                window.location.reload();
+              }
+            }
+          } else {
+            fetchdatas();
           }
-         
+        });
       } catch (error) {
         console.error("Error deleting post:", error);
+        toast.error("Failed to delete post");
       }
     };
+
 
  
 
@@ -366,6 +415,7 @@ const HomeProfilepage = () => {
               </div>
               {showModal && (
                 <EditProfileModal
+                  updateProfileState={updateProfileState}
                   toggleModal={toggleModal}
                   userid={selectedUserId}
                 />
@@ -388,7 +438,11 @@ const HomeProfilepage = () => {
                   </button>
                 )}
                 {showpostModal && (
-                  <Postpage togglepostModal={togglepostModal} userid={UserId} />
+                  <Postpage
+                    togglepostModal={togglepostModal}
+                    updateState={updateState}
+                    userid={UserId}
+                  />
                 )}
               </div>
             </div>
@@ -414,7 +468,7 @@ const HomeProfilepage = () => {
                   {/* Three-Dot Menu */}
                   <div className="relative">
                     <button
-                      onClick={toggleMenu}
+                      onClick={() => toggleMenu(post._id)}
                       className="text-gray-100 hover:text-gray-500"
                       style={{ marginLeft: "100px" }}
                     >
@@ -422,7 +476,7 @@ const HomeProfilepage = () => {
                     </button>
 
                     {/* Dropdown Menu */}
-                    {menuOpen && (
+                    {menuOpen === post._id && ( // Only open the menu for the clicked post
                       <div className="absolute right-0 mt-2 w-24 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
                         <button
                           onClick={() => {
@@ -432,17 +486,18 @@ const HomeProfilepage = () => {
                         >
                           Edit
                         </button>
-                           {ShoweditpostModal && (
-                      <EditPostModal
-                        toggleeditpostModal={toggleeditpostModal}
-                        postid={postid}
-                      />
-                    )}
+                        {ShoweditpostModal && (
+                          <EditPostModal
+                            toggleeditpostModal={toggleeditpostModal}
+                            postid={postid}
+                            updateState={updateState}
+                          />
+                        )}
 
                         <button
                           onClick={() => {
                             handleDeletepost(post._id);
-                            setMenuOpen(false);
+                            setMenuOpen(null); // Close the menu after deletion
                           }}
                           className="block w-full text-left font-medium px-4 py-2 text-black hover:text-red-600"
                         >
@@ -450,8 +505,6 @@ const HomeProfilepage = () => {
                         </button>
                       </div>
                     )}
-
-                 
                   </div>
                 </div>
 

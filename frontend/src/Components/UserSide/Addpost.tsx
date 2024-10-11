@@ -1,32 +1,29 @@
 import React, { useState } from "react";
 import { FaImage, FaVideo, FaSmile } from "react-icons/fa";
-import Picker from "@emoji-mart/react"; // Updated import for emoji picker
-import data from "@emoji-mart/data"; // Import the emoji data
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data"; 
 import toast from "react-hot-toast";
 import Clintnew from "../../Redux-store/Axiosinterceptor";
-import { FaSpinner } from "react-icons/fa"; // Optional spinner icon
+import { FaSpinner } from "react-icons/fa"; 
 
 interface CreatePostModalProps {
   togglepostModal: () => void;
+  updateState: () => void;
   userid: string | null;
 }
 
-const CreatePostModal = ({ togglepostModal, userid }: CreatePostModalProps) => {
+const CreatePostModal = ({ togglepostModal,updateState, userid }: CreatePostModalProps) => {
   const [postContent, setPostContent] = useState("");
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [loading, setLoading] = useState(false); 
 
-
-  
-
   const handlePostSubmit = async () => {
     console.log("Post Content:", postContent);
     console.log("Post Images:", postImages);
     console.log("Post Videos:", postVideos);
 
-    // Set loading to true when post submission starts
     setLoading(true);
 
     const formData = new FormData();
@@ -52,12 +49,12 @@ const CreatePostModal = ({ togglepostModal, userid }: CreatePostModalProps) => {
 
       if (data.message === "Post uploaded successfully") {
         toast.success("Post uploaded successfully");
-        window.location.reload();
+        togglepostModal()
+        updateState()
       }
     } catch (error) {
       console.error(error);
     } finally {
-      // Set loading to false after the submission completes
       setLoading(false);
     }
   };

@@ -1,3 +1,4 @@
+import mongoose, { ObjectId } from "mongoose";
 import { IUser, IUserReturn, Posts, Postsget } from "../entities/userEntities";
 import newspostSchemadata from "../model/newsModal";
 import UserSchemadata from "../model/userModel";
@@ -9,6 +10,7 @@ import {
   sendVerifyMail,
   sendVerifyMailforemail,
 } from "../utils/mail";
+import fs from "fs";
 
 class userRepository {
   async userRegister(
@@ -145,11 +147,153 @@ class userRepository {
     return getuser;
   }
 
-  async RepostPost(postid: string) {
+  async commentthePost(
+    postId: string,
+    userId: mongoose.Types.ObjectId,
+    comment: string
+  ) {
+    const post = await newspostSchemadata.findById(postId);
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    const newComment = {
+      user: userId,
+
+      content: comment,
+      timestamp: new Date(),
+    };
+    const updatedPost = await newspostSchemadata.findByIdAndUpdate(
+      postId,
+      { $push: { comments: newComment } },
+      { new: true }
+    );
+
+    if (!updatedPost) {
+      throw new Error("Post not found");
+    }
+
+    return updatedPost;
+  }
+
+  async replythecomment(
+    commentId: string,
+    replymessage: string,
+    postId: string,
+    userId: string,
+    username: string
+  ) {
+    const post = await newspostSchemadata.findById(postId);
+    if (!post) {
+      throw new Error("Post not found");
+    }
+    const newComment = {
+      user: userId,
+      content: replymessage,
+      parentComment: commentId,
+      timestamp: new Date(),
+      userName: username,
+    };
+
+    const getPostdetails = await newspostSchemadata.findByIdAndUpdate(
+      postId,
+      { $push: { comments: newComment } },
+      { new: true }
+    );
+
+    const parnetid = getPostdetails?.comments.map((item) => item.parentComment);
+    const getReplyComments = await newspostSchemadata.find({
+      _id: postId,
+      comments: {
+        $elemMatch: { _id: parnetid },
+      },
+    });
+
+    return getPostdetails;
+  }
+
+  async sendTheData(userID: string, text: string, logeduserId: string) {
+    try {
+      const findUser = await UserSchemadata.findById(logeduserId);
+      if (findUser) {
+        findUser.ReportUser.push({
+          userId: new mongoose.Types.ObjectId(userID), 
+          reportReason: text,
+        });
+
+        await findUser.save();
+
+      } else {
+        console.log("User not found");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async findAllReply(): Promise<Posts[]> {
+    const matchingComments = await newspostSchemadata.aggregate([
+      { $unwind: "$comments" },
+      {
+        $group: {
+          _id: "$_id",
+          allCommentsIds: { $push: "$comments._id" },
+          comments: { $push: "$comments" },
+        },
+      },
+      { $unwind: "$comments" },
+      {
+        $match: {
+          $expr: {
+            $in: ["$comments.parentComment", "$allCommentsIds"],
+          },
+        },
+      },
+      {
+        $group: {
+          _id: "$_id",
+          matchingComments: { $push: "$comments" },
+        },
+      },
+    ]);
+
+    if (!matchingComments.length) {
+      return [];
+    }
+
+    return matchingComments;
+  }
+
+  async LikethePost(postId: string, userId: mongoose.Types.ObjectId) {
+    const post = await newspostSchemadata.findById(postId);
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    console.log(userId, "user id");
+
+    const alreadyLiked = post.likes.includes(userId);
+    if (alreadyLiked) {
+      post.likes = post.likes.filter((like) => !like.equals(userId));
+      post.likeCount -= 1;
+      post.LikeStatement = false;
+    } else {
+      console.log("recahed het");
+
+      post.likes.push(userId);
+
+      post.likeCount += 1;
+      post.LikeStatement = true;
+    }
+    const updatedPost = await post.save();
+    return updatedPost;
+  }
+
+  async RepostPost(postid: string, text: string) {
     try {
       const reported = await newspostSchemadata.findByIdAndUpdate(
         postid,
-        { $set: { Reportpost: true } },
+        { $set: { Reportpost: true, text: text } },
         { new: true, upsert: false }
       );
 
@@ -236,19 +380,21 @@ class userRepository {
     const getAllpost = await newspostSchemadata
       .find()
       .populate("user")
+      .populate("comments.user")
       .sort({ _id: -1 });
 
     console.log(getAllpost, "get all post with user details");
     return getAllpost;
   }
 
-  async getAlltheUsers(searchId: unknown, userId: unknown): Promise<IUser[] | undefined> {
+  async getAlltheUsers(
+    searchId: unknown,
+    userId: unknown
+  ): Promise<IUser[] | undefined> {
     try {
       const getSearch = searchId
         ? {
-            $or: [
-              { name: { $regex: searchId, $options: "i" } },
-            ],
+            $or: [{ name: { $regex: searchId, $options: "i" } }],
           }
         : {};
 
@@ -277,26 +423,19 @@ class userRepository {
       }
 
       const { image, videos } = deletePost;
-
-      // const extractPublicId = (url: string): string | null => {
-      //   const regex = /\/v\d+\/([^\.]+)/;
-      //   const match = url.match(regex);
-      //   return match ? match[1] : null;
-      // };
-
-      // const imagePublicId = image ? extractPublicId(image) : null;
-      // const videoPublicId = videos ? extractPublicId(videos) : null;
-
-      if (image) {
-        await cloudinary.uploader.destroy(image);
-        console.log("Image deleted from Cloudinary");
+      if (image && image.length > 0) {
+        for (const img of image) {
+          await cloudinary.uploader.destroy(image);
+          console.log("Image deleted from Cloudinary");
+        }
       }
 
-      // if (videoPublicId) {
-      //   await cloudinary.uploader.destroy(videoPublicId);
-      //   console.log('Video deleted from Cloudinary');
-      // }
-
+      if (videos && videos.length > 0) {
+        for (const video of videos) {
+          await cloudinary.uploader.destroy(video);
+          console.log("video deleted from Cloudinary");
+        }
+      }
       const deletePostdata = await newspostSchemadata.findByIdAndDelete(postId);
       console.log(deletePostdata, "Post deleted from database");
 

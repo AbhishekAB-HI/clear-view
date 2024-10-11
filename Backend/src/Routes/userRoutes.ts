@@ -66,6 +66,21 @@ router.post("/forgetmail", async (req, res) => userController.verifymailforget(r
 router.post("/verifyforgetotp", async (req, res) =>userController.forgetotp(req, res));
 router.patch("/setforgetpass", async (req, res) =>userController.setforgetpass(req, res));
 router.patch("/Reportpost", async (req, res) =>userController.ReportPost(req, res));
+router.patch("/LikePost", async (req, res) =>userController.LikePost(req, res));
+router.patch("/CommentPost",AuthenticationMiddleware, async (req, res) =>userController.commentPost(req, res));
+router.post("/replycomment", AuthenticationMiddleware, async (req, res) =>userController.replycommentPost(req, res));
+router.get("/getreplys", AuthenticationMiddleware, async (req, res) =>userController.getReplyComments(req, res));
+router.patch("/ReportUser",AuthenticationMiddleware, async (req, res) =>userController.ReportTheUser(req, res));
+
+router.get("/userdget/:id", async (req, res) =>
+  userController.getIduser(req, res)
+);
+
+
+
+
+
+
 
 
 

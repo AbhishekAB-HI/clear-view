@@ -49,16 +49,14 @@ class AdminController {
 
   async deleteReportPost(req: Request, res: Response) {
     try {
-      console.log('recheddddddddddddddddddddddddddddddddddddddddddddddddddd');
-      
+      console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeer");
       const deleteId = req.params.postid;
- 
-      console.log(deleteId,'hahahahaa');
-      
+      console.log(deleteId, "issssssssssssssssssssssssss");
+
       const userdata = await this.adminservises.deleteReportPost(deleteId);
       if (userdata) {
         res.status(200).json({ message: "delete post" });
-      } 
+      }
     } catch (error) {
       console.log(error);
     }
@@ -71,6 +69,18 @@ class AdminController {
       if (userdata) {
         res.status(200).json({ message: "delete post" });
       }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getAllReportUsers(req: Request, res: Response) {
+    try {
+      console.log("1111111111111111111111111111");
+
+      const foundusers = await this.adminservises.getAllReportUsers();
+
+      res.status(200).json({ message: "All user found", foundusers });
     } catch (error) {
       console.log(error);
     }

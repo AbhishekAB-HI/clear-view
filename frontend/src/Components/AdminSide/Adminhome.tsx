@@ -14,10 +14,9 @@ import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
 import { clearAdminAccessTocken } from "../../Redux-store/redux-slice";
 import { store } from "../../Redux-store/reduxstore";
-
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
-
+import Swal from "sweetalert2";
 const AdminHomePage = () => {
   interface IUser extends Document {
     _id: any;
@@ -34,12 +33,13 @@ const AdminHomePage = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [usersList, setUsersList] = useState<IUser[]>([]);
-  type RootState = ReturnType<typeof store.getState>;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(5); // Change this to adjust how many users per page
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const adminTocken = useSelector(
-    (state: RootState) => state.accessTocken.AdminTocken
+    (state: ReturnType<typeof store.getState>) => state.accessTocken.AdminTocken
   );
 
   useEffect(() => {
@@ -67,41 +67,64 @@ const AdminHomePage = () => {
       console.log(error);
     }
   };
+const updateBlock = async (userId: string, isActive: boolean) => {
+  try {
+    const actionText = isActive ? "Unblock user" :"Block user" 
+    const confirmationText = isActive
+      ? "Are you sure you want to unblock this user?"
+      : "Are you sure you want to block this user? ";
+    
+    Swal.fire({
+      title: confirmationText,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: actionText,
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const { data } = await axios.patch(
+          `http://localhost:3000/api/admin/blockuser`,
+          { userId, isActive },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-  const updateBlock = async (userId: string, isActive: boolean) => {
-    try {
-      const { data } = await axios.patch(
-        `http://localhost:3000/api/admin/blockuser`,
-        { userId, isActive },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
+        setUsersList((prevUsersList) =>
+          prevUsersList.map((user) =>
+            user._id === userId ? { ...user, isActive: !user.isActive } : user
+          )
+        );
+
+        if (data.message === "User is unblocked") {
+          toast.success("User has been successfully unblocked.");
+        } else if (data.message === "User is blocked") {
+          toast.success("User has been successfully blocked.");
         }
-      );
-
-      setUsersList((prevUsersList) =>
-        prevUsersList.map((user) =>
-          user._id === userId ? { ...user, isActive: !user.isActive } : user
-        )
-      );
-
-      if (data.message === "User is unblocked") {
-        toast.success("User is unblocked");
-      } else if (data.message === "User is blocked") {
-        toast.success("User is blocked");
+      } else {
+        navigate("/Adminhome");
       }
-    } catch (error) {
-      console.log(error);
-    }
-  };
+    });
+  } catch (error) {
+    console.error("Error blocking/unblocking user:", error);
+    toast.error("There was an error performing the action. Please try again.");
+  }
+};
+
 
   // Filter users based on search term
-  const filteredUsers = usersList.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase())
-
+  const filteredUsers = usersList.filter((user) =>
+    user.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const indexOfLastUser = currentPage * itemsPerPage;
+  const indexOfFirstUser = indexOfLastUser - itemsPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
   return (
     <div>
@@ -116,23 +139,21 @@ const AdminHomePage = () => {
             </div>
             <div className="flex items-center space-x-2">
               <FaUsers style={{ fontSize: "20px" }} />
-
-              <Link to="/Adminhome">UserManagement</Link>
+              <Link to="/Adminhome">User Management</Link>
             </div>
             <div className="flex items-center space-x-2">
               <FaUserFriends style={{ fontSize: "20px" }} />
               <span>
-                <Link to="/news">News management</Link>
+                <Link to="/news">News Management</Link>
               </span>
             </div>
-
             <div className="flex items-center space-x-2">
               <FaRegFileAlt style={{ fontSize: "20px" }} />
               <Link to="/reportpage">Report Management</Link>
             </div>
             <div className="flex items-center space-x-2">
               <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <span>UserReportManagement</span>
+              <span>User Report Management</span>
             </div>
             <div className="flex items-center space-x-2">
               <FaSignOutAlt style={{ fontSize: "20px" }} />
@@ -150,7 +171,7 @@ const AdminHomePage = () => {
               className="text-3xl mb-6 text-center"
               style={{ fontFamily: "Viaoda Libre" }}
             >
-              User management System
+              User Management System
             </h1>
 
             {/* Search Bar */}
@@ -158,10 +179,9 @@ const AdminHomePage = () => {
               className="flex justify-left mt-10"
               style={{ color: "white", fontSize: "25px" }}
             >
-              {" "}
-              User management System
+              User Management System
             </h1>
-            <div className="flex justify-end  mb-10">
+            <div className="flex justify-end mb-10">
               <input
                 type="search"
                 value={searchTerm}
@@ -173,8 +193,8 @@ const AdminHomePage = () => {
 
             {/* User Cards */}
             <div className="space-y-4">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
+              {currentUsers.length > 0 ? (
+                currentUsers.map((user) => (
                   <div
                     key={user._id}
                     className="bg-white text-black p-4 rounded-lg flex justify-between items-center max-w-4xl mx-auto"
@@ -204,20 +224,19 @@ const AdminHomePage = () => {
 
             {/* Pagination */}
             <div className="flex justify-center mt-8">
-              {/* <nav className="flex space-x-2">
-                <Button variant="text" color="primary" className="text-lg">
-                  1
-                </Button>
-                <Button variant="text" color="primary" className="text-lg">
-                  2
-                </Button>
-                <Button variant="text" color="primary" className="text-lg">
-                  3
-                </Button>
-                <Button variant="text" color="primary" className="text-lg">
-                  4
-                </Button>
-              </nav> */}
+              <nav className="flex space-x-2">
+                {Array.from({ length: totalPages }, (_, index) => (
+                  <Button
+                    key={index}
+                    variant="text"
+                    color="primary"
+                    className="text-lg"
+                    onClick={() => setCurrentPage(index + 1)}
+                  >
+                    {index + 1}
+                  </Button>
+                ))}
+              </nav>
             </div>
           </div>
         </main>

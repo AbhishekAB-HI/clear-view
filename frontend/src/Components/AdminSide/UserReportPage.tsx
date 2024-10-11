@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "./Navbar";
-import Swal from "sweetalert2";
 import {
   FaHome,
   FaUsers,
@@ -14,27 +13,39 @@ import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { clearAdminAccessTocken } from "../../Redux-store/redux-slice";
 import { store } from "../../Redux-store/reduxstore";
+import Swal from "sweetalert2";
 
-export interface Posts {
-  _id: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  description: string;
-  image: string;
-  videos: string;
-  likes: number;
-  comments: number;
+
+export interface IReportUser {
+  userId: IUser;
+  reportReason: string;
+  image:string
 }
 
+
+export interface IUser extends Document {
+  id: any;
+  name: string;
+  email: string;
+  password: string;
+  isActive: boolean;
+  isAdmin: boolean;
+  isVerified?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  image?: string;
+  followers: IUser[];
+  following: IUser[];
+  blockedUser: IUser[];
+  reportedUser: IReportUser[];
+}
 const truncateText = (text: string, maxLength: number) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
 
-const Newsmanagement = () => {
+const UserReportmanagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [getPost, setGetpost] = useState<Posts[]>([]);
+  const [getPost, setGetpost] = useState<IUser[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [postsPerPage] = useState(5);
   const [totalPosts, setTotalPosts] = useState(0);
@@ -50,11 +61,12 @@ const Newsmanagement = () => {
     const getAllPost = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:3000/api/admin/getpost?page=${currentPage}&limit=${postsPerPage}`
+          `http://localhost:3000/api/admin/getReportuser`
         );
-        if (data.message === "All posts found") {
-          setGetpost(data.data.posts);
-          setTotalPosts(data.data.total);
+        if (data.message === "All user found") {
+            console.log(data.foundusers,'success.....................');
+            
+          setGetpost(data.foundusers);
         }
       } catch (error) {
         console.error(error);
@@ -74,23 +86,20 @@ const Newsmanagement = () => {
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
         confirmButtonText: "Yes, delete it!",
-      }).then(async(result)=>{
-          if(result.isConfirmed){
-             const { data } = await axios.delete(
-               `http://localhost:3000/api/admin/deletepost/${id}`
-             );
-             if (data.message === "delete post") {
-               toast.success("Post deleted successfully");
-               setGetpost(getPost.filter((post) => post._id !== id));
-               setTotalPosts((prev) => prev - 1);
-             }
-
-          }else{
-             navigate('/news')
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const { data } = await axios.delete(
+            `http://localhost:3000/api/admin/deleteReportpost/${id}`
+          );
+          if (data.message === "delete post") {
+            toast.success("Post deleted successfully");
+            setGetpost(getPost.filter((post) => post._id !== id));
+            setTotalPosts((prev) => prev - 1);
           }
-      })
-
-     
+        } else {
+          navigate("/reportpage");
+        }
+      });
     } catch (error) {
       console.error(error);
     }
@@ -122,16 +131,14 @@ const Newsmanagement = () => {
               <FaUserFriends style={{ fontSize: "20px" }} />
               <Link to="/news">News Management</Link>
             </div>
+
             <div className="flex items-center space-x-2">
               <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <Link to="/reportpage">Post Report Management</Link>
+              <Link to="/reportpage">Report Management</Link>
             </div>
             <div className="flex items-center space-x-2">
               <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <span>
-                {" "}
-                <Link to="/userReportpage">User Report Management</Link>
-              </span>
+              <span>User Report Management</span>
             </div>
             <div className="flex items-center space-x-2">
               <FaSignOutAlt style={{ fontSize: "20px" }} />
@@ -143,7 +150,7 @@ const Newsmanagement = () => {
         <main className="ml-64 flex-1 p-4">
           <div className="container mx-auto">
             <h1 className="flex justify-left mt-10 text-white text-2xl">
-              News Management System
+              Report Management System
             </h1>
             <div className="flex justify-end mb-10">
               <input
@@ -160,34 +167,33 @@ const Newsmanagement = () => {
                 <tr className="bg-gray-800">
                   <th className="py-3 px-5">No</th>
                   <th className="py-3 px-5">Image</th>
-                  <th className="py-3 px-3">Description</th>
+                  <th className="py-3 px-3">Name</th>
+                  <th className="py-3 px-3">Report Reason</th>
+
                   <th className="py-3 px-3">Delete</th>
                 </tr>
               </thead>
               <tbody>
                 {getPost.map((post, index) => (
                   <tr key={post._id}>
+                    <td className="py-2">{index + 1}</td>
                     <td className="py-2">
-                      {index + 1 + (currentPage - 1) * postsPerPage}
-                    </td>
-                    <td className="py-2">
-                      {post.image && post.image.length ? (
+                      {post.reportedUser.image &&
+                      post.reportedUser.image.length > 0 ? (
                         <img
-                          src={post.image}
+                          src={post.reportedUser.image}
                           alt="post"
                           className="w-20 h-20 object-cover rounded-lg"
                         />
-                      ) : post.videos && post.videos.length ? (
-                        <video controls className="w-20 h-20 rounded-lg">
-                          <source src={post.videos} type="video/mp4" />
-                        </video>
                       ) : (
                         <span>No media</span>
                       )}
                     </td>
-                    <td className="py-2">
-                      {truncateText(post.description, 100)}
+                    <td className="py-2 ">{post.reportedUser.name}</td>
+                    <td className="py-2 text-red-600">
+                      {truncateText(post.reportReason, 100)}
                     </td>
+
                     <td className="py-2">
                       <button
                         onClick={() => handleDeletePost(post._id)}
@@ -251,4 +257,4 @@ const Newsmanagement = () => {
   );
 };
 
-export default Newsmanagement;
+export default UserReportmanagement;

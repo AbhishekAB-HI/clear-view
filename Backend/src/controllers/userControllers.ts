@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import { ACCESS_TOKEN } from "../config/JWT";
 import cloudinary from "../utils/Cloudinary";
 import { Posts } from "../entities/userEntities";
+import fs from "fs";
 
 dotenv.config();
 class UserController {
@@ -107,14 +108,107 @@ class UserController {
     }
   }
 
+  async LikePost(req: Request, res: Response) {
+    try {
+      const { postId, userId } = req.body;
+      if (!postId) {
+        res.status(400).json({ message: "PostId is required" });
+      }
+      const getupdate = await this.userService.passLikePostID(postId, userId);
+      res.status(200).json({ message: "Post liked succesfully" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async ReportTheUser(req: Request, res: Response) {
+    try {
+      const logeduserId = (req as any).userdata.id;
+      const { userID, text } = req.body;
+      const getUsers = await this.userService.sendReportReason(
+        userID,
+        text,
+        logeduserId
+      );
+      res.status(200).json({ message: "user Reported succesfully" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getReplyComments(req: Request, res: Response) {
+    try {
+      const getReplys = await this.userService.getAllReplyhere();
+      res
+        .status(200)
+        .json({ message: "get all reply comments", posts: getReplys });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async replycommentPost(req: Request, res: Response) {
+    try {
+      const { commentId, replyContent, postId, userId, username } = req.body;
+
+      if (!commentId || !replyContent || !postId || !username) {
+        throw new Error("No id or Comment");
+      }
+      await this.userService.replyComments(
+        commentId,
+        replyContent,
+        postId,
+        userId,
+        username
+      );
+
+      res.status(200).json({ message: "updated succefully" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async commentPost(req: Request, res: Response) {
+    try {
+      const { postId, userId, comment } = req.body;
+      if (!postId || !userId || !comment) {
+        res.status(400).json({ message: "Id or message not get" });
+      }
+      const getupdate = await this.userService.passCommentPostID(
+        postId,
+        userId,
+        comment
+      );
+      res.status(200).json({ message: "Post Commented succesfully" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getIduser(req: Request, res: Response) {
+    try {
+      console.log("recheddddddddddddddddddddddddddddddd......................");
+
+      const id = req.params.id;
+
+      const decoded = jwt.verify(id, ACCESS_TOKEN) as userPayload;
+      console.log(
+        decoded.id,
+        "userd id get here......................................"
+      );
+
+      res.status(200).json({ message: "user id get", userId: decoded.id });
+    } catch (error) {}
+  }
+
   async ReportPost(req: Request, res: Response) {
     try {
-      const { postId } = req.body;
+      const { postId, text } = req.body;
       console.log(postId, "get post id");
       if (!postId) {
         res.status(400).json({ message: "PostId is required" });
       }
-      const getupdate = this.userService.passPostID(postId);
+      const getupdate = this.userService.passPostID(postId, text);
       res.status(200).json({ message: "Post Reported succesfully" });
     } catch (error) {
       console.log(error);
@@ -195,6 +289,7 @@ class UserController {
   async deletePost(req: Request, res: Response): Promise<void> {
     try {
       const postId = req.params.id;
+
       if (!postId) {
         res.status(400).json({ message: "Invalid post ID" });
         return;
@@ -226,7 +321,7 @@ class UserController {
       const userId = (req as any).userdata.id;
       console.log(userId, "user id get her");
       const searchUser = req.query.search;
-      if (!searchUser) {   
+      if (!searchUser) {
         throw new Error("No search ID");
       }
       let SearchedUsers = await this.userService.findSearchedusers(
@@ -234,8 +329,10 @@ class UserController {
         userId
       );
 
-      console.log(SearchedUsers,'get searched userssssss..............................');
-      
+      console.log(
+        SearchedUsers,
+        "get searched userssssss.............................."
+      );
 
       if (SearchedUsers) {
         res.status(200).json({ message: "get all users", SearchedUsers });
@@ -259,7 +356,6 @@ class UserController {
 
   async updateProfile(req: Request, res: Response): Promise<void> {
     try {
-
       const { name, password, newpassword, userId } = req.body;
       if (!req.file) {
         res.status(400).json({ error: "File is missing" });
@@ -296,38 +392,34 @@ class UserController {
 
   async editPost(req: Request, res: Response): Promise<void> {
     try {
-   
       const { content, postId } = req.body;
       console.log(postId, "post id");
       if (!content || !postId) {
         res.status(400).json({ message: "Content or user ID is missing" });
       }
+
       // Files uploaded (images and videos)
       const files = req.files as {
         images?: Express.Multer.File[];
         videos?: Express.Multer.File[];
       };
-      // Handle image upload to Cloudinary
+
       const imageUploadPromises = files?.images
         ? files.images.map((file) =>
             cloudinary.uploader.upload(file.path, { resource_type: "image" })
           )
         : [];
 
-
-      // Handle video upload to Cloudinary
       const videoUploadPromises = files?.videos
         ? files.videos.map((file) =>
             cloudinary.uploader.upload(file.path, { resource_type: "video" })
           )
         : [];
 
-    
       // Wait for all uploads to complete
       const uploadedImages = await Promise.all(imageUploadPromises);
       const uploadedVideos = await Promise.all(videoUploadPromises);
 
-      // Extract Cloudinary URLs for images and videos, default to empty arrays if no uploads
       const imageUrls: string[] =
         uploadedImages.length > 0
           ? uploadedImages.map((upload) => upload.secure_url)
@@ -357,17 +449,31 @@ class UserController {
         .json({ message: "Server error during post creation", error });
     }
   }
+  unlinkFiles = (files: Express.Multer.File[]) => {
+    files.forEach((file) => {
+      fs.unlink(file.path, (err) => {
+        if (err) {
+          console.error(`Failed to delete file ${file.path}:`, err);
+        } else {
+          console.log(`Successfully deleted file ${file.path}`);
+        }
+      });
+    });
+  };
 
   async createPost(req: Request, res: Response): Promise<void> {
     try {
       const { content, userId } = req.body;
       if (!content || !userId) {
         res.status(400).json({ message: "Content or user ID is missing" });
+        return;
       }
+
       const files = req.files as {
         images?: Express.Multer.File[];
         videos?: Express.Multer.File[];
       };
+
       // Handle image upload to Cloudinary
       const imageUploadPromises = files?.images
         ? files.images.map((file) =>
@@ -379,6 +485,7 @@ class UserController {
             cloudinary.uploader.upload(file.path, { resource_type: "video" })
           )
         : [];
+
       // Wait for all uploads to complete
       const uploadedImages = await Promise.all(imageUploadPromises);
       const uploadedVideos = await Promise.all(videoUploadPromises);
@@ -392,6 +499,7 @@ class UserController {
         uploadedVideos.length > 0
           ? uploadedVideos.map((upload) => upload.secure_url)
           : [];
+
       // Save post data to the database with images and videos if they exist
       const userData = await this.userService.postDetailsdata(
         userId,
@@ -399,10 +507,20 @@ class UserController {
         imageUrls,
         videoUrls
       );
+
       if (userData) {
-        res.status(200).json({ message: "Post uploaded successfully", data: userData });
+        res
+          .status(200)
+          .json({ message: "Post uploaded successfully", data: userData });
       } else {
         res.status(500).json({ message: "Failed to save post" });
+      }
+
+      if (files?.images) {
+        this.unlinkFiles(files.images);
+      }
+      if (files?.videos) {
+        this.unlinkFiles(files.videos);
       }
     } catch (error) {
       console.error("Error during post creation:", error);

@@ -1,6 +1,11 @@
 import passport from "passport";
-import {Strategy as GoogleStrategy, VerifyCallback} from "passport-google-oauth2";
+import {
+  Strategy as GoogleStrategy,
+  VerifyCallback,
+} from "passport-google-oauth2";
 import dotenv from "dotenv";
+import { Profile } from "passport"; // Import Profile from passport
+import { Request } from "express"; // Import Request from express for typing the request
 
 dotenv.config();
 
@@ -10,12 +15,20 @@ interface User {
   displayName?: string;
 }
 
-passport.serializeUser((user: User, done: any) => {
+// Define a custom profile type if needed, extending the basic Google OAuth profile
+interface GoogleProfile extends Profile {
+  email?: string; // Add other fields if required
+}
+
+passport.serializeUser((user: User, done: (err: any, id?: any) => void) => {
   done(null, user);
 });
-passport.deserializeUser(function (user: string, done: any) {
-  done(null, user);
-});
+
+passport.deserializeUser(
+  (user: User, done: (err: any, user?: User) => void) => {
+    done(null, user);
+  }
+);
 
 passport.use(
   new GoogleStrategy(
@@ -26,15 +39,16 @@ passport.use(
       passReqToCallback: true,
     },
     function (
-      request: any,
-      accessToken: any,
-      refreshToken: any,
-      profile: any,
+      request: Request, // More specific type
+      accessToken: string | undefined, // String or undefined
+      refreshToken: string | undefined, // String or undefined
+      profile: GoogleProfile, // More specific profile type
       done: VerifyCallback
     ) {
+      // You can refine the profile handling here if needed
       return done(null, profile);
     }
   )
 );
 
-export default passport
+export default passport;

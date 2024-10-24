@@ -1,15 +1,14 @@
 import "tailwindcss/tailwind.css";
-import { FcGoogle } from "react-icons/fc";
 import newlogo from "../images/newslogo.jpg";
 import CryptoJS from "crypto-js";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
-import Navbar from "./Navbar";
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
-
+import Lottie from "lottie-react";
+import logoWeb from "../animations/Animation - 1724244656671.json";
+import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 const Forgetpassword: React.FC = () => {
   const navigate = useNavigate();
 
@@ -20,15 +19,15 @@ const Forgetpassword: React.FC = () => {
   });
 
   const handleSubmit = async (values: { email: string }) => {
-    const emaildata = { email: values.email };
 
+  const emaildata = { email: values.email };
     try {
       const { data } = await axios.post(
-        "http://localhost:3000/api/user/forgetmail",
+        `${API_USER_URL}/forgetmail`,
         emaildata,
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
           },
         }
       );
@@ -41,8 +40,10 @@ const Forgetpassword: React.FC = () => {
           secretKey
         ).toString();
         navigate("/forgetotp", { state: { email: encryptedEmail } });
+      }else{
+        toast.error("confirm user failed");
       }
-    } catch (error) {
+    } catch (error:unknown) {
       console.log(error);
       if (axios.isAxiosError(error)) {
         const errorMessage =
@@ -57,7 +58,24 @@ const Forgetpassword: React.FC = () => {
 
   return (
     <div>
-      <Navbar />
+      <nav className="fixed w-full top-0 left-0 z-50 bg-black border-b border-gray-700">
+        <div className="px-4 py-3 pb-5 shadow-md">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-0">
+              <Lottie
+                animationData={logoWeb}
+                className="w-24  sm:w-36" // Responsive sizing for logo
+              />
+              <h1
+                className="text-3xl sm:text-4xl  text-white  font-bold"
+                style={{ fontFamily: "Viaoda Libre" }}
+              >
+                Clear View
+              </h1>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       <div className="flex flex-col md:flex-row h-screen">
         <div className="flex-1 bg-purple-700 flex justify-center items-center order-1 md:order-2 p-5 md:p-10">

@@ -1,8 +1,9 @@
-import { IUser, Posts } from "../entities/userEntities";
-import newspostSchemadata from "../model/newsModal";
-import UserSchemadata from "../model/userModel";
-import cloudinary from "../utils/Cloudinary";
-import HashPassword from "../utils/Hashpassword";
+import { IUser } from "../Entities/Userentities";
+import { Posts } from "../Entities/Postentities";
+import newspostSchemadata from "../Model/Newsmodal";
+import UserSchemadata from "../Model/Usermodel";
+import cloudinary from "../Utils/Cloudinary";
+import HashPassword from "../Utils/Hashpassword";
 
 class adminRepository {
   async findAdminbyemail(email: string | undefined) {
@@ -13,19 +14,11 @@ class adminRepository {
     return finduser;
   }
 
-  async findAllReportUsers(): Promise<  [] | any> {
+  async findAllReportUsers(): Promise<[] | any> {
     try {
       const usersWithReports = await UserSchemadata.find({
         ReportUser: { $exists: true, $not: { $size: 0 } },
-      })
-        .populate({
-          path: "ReportUser.userId",
-       
-        })
-        .exec();
-
-        console.log(usersWithReports,'2222222222222222222222222');
-        
+      }).populate({ path: "ReportUser.userId" }).exec();
 
       const reports = usersWithReports.flatMap((user) =>
         user.ReportUser.map((report) => ({
@@ -34,43 +27,56 @@ class adminRepository {
           reportReason: report.reportReason,
         }))
       );
-
-      
-        console.log(reports, "3333333333333333333333333333333333333");
-
-      return reports;
+      return reports; 
     } catch (error) {
       console.log(error);
     }
   }
 
-  async findReportpostPost(
-    page: number,
-    limit: number
-  ): Promise<{ posts: Posts[]; total: number }> {
+ async  findReportPost(page: number, limit: number) {
+  try {
+
     const offset = (page - 1) * limit;
+    const reportedPosts = await UserSchemadata.find({
+      ReportPost: { $exists: true, $not: { $size: 0 } },
+    }).populate({ path: "ReportPost.postId" }).skip(offset).limit(limit).exec();
 
-    const posts = await newspostSchemadata
-      .find({ Reportpost: true })
-      .sort({ _id: -1 })
-      .skip(offset)
-      .limit(limit);
 
-    console.log(posts, "posts..................");
+     const postReports = reportedPosts.flatMap((user) =>
+      user.ReportPost?.map((report) => {
+        if (!report.postId) return null; // Skip if postId is null
+        return {
+          reporter: { _id: user._id, name: user.name },
+          postId: report.postId,
+          reportReason: report.postreportReason,
+        };
+      })
+    ).filter(report => report !== null); 
 
-    const total = await newspostSchemadata
-      .find({ Reportpost: true })
-      .countDocuments();
+    
 
-    if (!posts || posts.length === 0) {
-      throw new Error("No posts found");
-    }
-
+    // const postReports = reportedPosts.flatMap((user) =>
+    //   user.ReportPost?.map((report) => ({
+    //     reporter: { _id: user._id, name: user.name },
+    //     postId: report.postId,
+    //     reportReason: report.postreportReason,
+    //   }))
+    // );
+   
+    const totalReports = await UserSchemadata.countDocuments({
+      ReportPost: { $exists: true, $not: { $size: 0 } },
+    });
+ 
     return {
-      posts,
-      total,
+      posts: postReports, 
+      total: totalReports, 
     };
+  } catch (error) {
+    console.error("Error fetching reported posts:", error);
+    throw error;
   }
+}
+
 
   async findPost(
     page: number,
@@ -101,8 +107,6 @@ class adminRepository {
       throw new Error("Post is not found");
     }
 
-    console.log(deletPost, "post delergry");
-
     const { image, videos } = deletPost;
     if (image && image.length > 0) {
       for (const img of image) {
@@ -130,26 +134,38 @@ class adminRepository {
       throw new Error("Post is not found");
     }
 
-    console.log(deletPost, "post delergry");
+    // console.log(deletPost, "post delergry");
 
-    const { image, videos } = deletPost;
-    if (image && image.length > 0) {
-      for (const img of image) {
-        await cloudinary.uploader.destroy(image);
-        console.log("Image deleted from Cloudinary");
-      }
+    // const { image, videos } = deletPost;
+    // if (image && image.length > 0) {
+    //   for (const img of image) {
+    //     await cloudinary.uploader.destroy(image);
+    //     console.log("Image deleted from Cloudinary");
+    //   }
+    // }
+
+    // if (videos && videos.length > 0) {
+    //   for (const video of videos) {
+    //     await cloudinary.uploader.destroy(video);
+    //     console.log("video deleted from Cloudinary");
+    //   }
+    // }
+    if (!deletPost.BlockPost) {
+      const isBlocked = await newspostSchemadata.findByIdAndUpdate(id, {
+        BlockPost: true,
+      });
+    } else {
+      const isBlocked = await newspostSchemadata.findByIdAndUpdate(id, {
+        BlockPost: false,
+      });
     }
 
-    if (videos && videos.length > 0) {
-      for (const video of videos) {
-        await cloudinary.uploader.destroy(video);
-        console.log("video deleted from Cloudinary");
-      }
-    }
-    const deletePostdata = await newspostSchemadata.findByIdAndDelete(id);
-    if (deletePostdata) {
-      return deletPost;
-    }
+    return deletPost.BlockPost;
+
+    // const deletePostdata = await newspostSchemadata.findByIdAndDelete(id);
+    // if (deletePostdata) {
+    //   return deletPost;
+    // }
   }
 
   async findUsers(): Promise<IUser[]> {

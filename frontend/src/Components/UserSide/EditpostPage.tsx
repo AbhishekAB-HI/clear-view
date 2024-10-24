@@ -1,40 +1,63 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaImage, FaVideo, FaSmile, FaSpinner } from "react-icons/fa";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import toast from "react-hot-toast";
 import Clintnew from "../../Redux-store/Axiosinterceptor";
+import { Formik, Field, Form, ErrorMessage } from "formik";
+import * as Yup from "yup";
+import { EditPostModalProps } from "../Interfaces/Interface";
+import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
+import axios from "axios";
 
-interface EditPostModalProps {
-  toggleeditpostModal: () => void;
-  updateState:()=>void;
-  postid: string | null;
-}
 
-const EditPostModal = ({ toggleeditpostModal,updateState, postid } : EditPostModalProps) => {
-
-  const [postContent, setPostContent] = useState("");
+const EditPostModal = ({toggleeditpostModal,updateState,postid,
+}: EditPostModalProps) => {
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-   const [loading, setloading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
-   useEffect(() => {
-     console.log("img", postImages);
-     console.log("content", postContent);
-     console.log("video", postVideos);
-     console.log("emoji", showEmojiPicker);
-   }, [postImages, postContent, postVideos]);
+  const validationSchema = Yup.object({
+    content: Yup.string()
+      .trim()
+      .required("Content is required")
+      .max(500, "Content must be under 500 characters")
+      .test(
+      "is-not-only-spaces",
+      "Name cannot be only spaces",
+      (value) => !!value && value.trim().length > 0
+    ),
+    images: Yup.mixed().notRequired(),
+    videos: Yup.mixed().notRequired(),
+  });
 
-  const handlePostSubmit = async () => {
-    setloading(true)
-    console.log("Submitting Post...");
-    console.log("Post Content:", postContent);
-    console.log("Post Images:", postImages);
-    console.log("Post Videos:", postVideos);
+  const handleImageChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setFieldValue: any
+  ) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setPostImages((prevImages) => [...prevImages, ...Array.from(files)]);
+      setFieldValue("images", files);
+    }
+  };
 
+  const handleVideoChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    setFieldValue: any
+  ) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      setPostVideos((prevVideos) => [...prevVideos, ...Array.from(files)]);
+      setFieldValue("videos", files);
+    }
+  };
+
+  const handlePostSubmit = async (values: any, { setSubmitting }: any) => {
+    setLoading(true);
     const formData = new FormData();
-    formData.append("content", postContent);
+    formData.append("content", values.content);
 
     postImages.forEach((image) => {
       formData.append("images", image);
@@ -48,47 +71,54 @@ const EditPostModal = ({ toggleeditpostModal,updateState, postid } : EditPostMod
 
     try {
       const response = await Clintnew.post(
-        "http://localhost:3000/api/user/editpost",
+        `${API_USER_URL}/editpost`,
         formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type": CONTENT_TYPE_MULTER,
           },
         }
       );
 
       if (response.data.message === "Post updated successfully") {
         toast.success("Post updated successfully");
-         updateState();
+        updateState();
         toggleeditpostModal();
-       
+      }else{
+        toast.error("Post updated Failed");
       }
-      console.log("Update Successful:", response.data);
-    } catch (error) {
-      console.log("Error updating post:", error);
-    }finally{
-        setloading(false);
+      setSubmitting(false);
+    } catch (error:unknown) {
+       if (axios.isAxiosError(error)) {
+         if (!error.response) {
+           toast.error("Network error. Please check your internet connection.");
+         } else {
+           const status = error.response.status;
+           if (status === 404) {
+             toast.error("Posts not found.");
+           } else if (status === 500) {
+             toast.error("Server error. Please try again later.");
+           } else {
+             toast.error("Something went wrong.");
+           }
+         }
+       } else if (error instanceof Error) {
+         toast.error(error.message);
+       } else {
+         toast.error("An unexpected error occurred.");
+       }
+       console.log("Error fetching posts:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-     const files = e.target.files;
-     if (files && files.length > 0) {
-       setPostImages((prevImages) => [...prevImages, ...Array.from(files)]);
-     }
-   };
-
-  
-
-  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      setPostVideos((prevVideos) => [...prevVideos, ...Array.from(files)]);
-    }
-  };
-
-  const handleEmojiSelect = (emoji: any) => {
-    setPostContent((prevContent) => prevContent + emoji.native);
+  const handleEmojiSelect = (
+    emoji: any,
+    setFieldValue: any,
+    currentContent: string
+  ) => {
+    setFieldValue("content", currentContent + emoji.native);
     setShowEmojiPicker(false);
   };
 
@@ -105,118 +135,150 @@ const EditPostModal = ({ toggleeditpostModal,updateState, postid } : EditPostMod
       <div className="bg-gray-800 rounded-lg p-6 max-w-lg w-full relative text-white">
         <h2 className="text-xl font-semibold mb-4">Edit Post</h2>
 
-        <textarea
-          className="w-full p-3 bg-gray-900 text-white mb-4 border border-gray-600 rounded"
-          rows={6}
-          placeholder="What's happening?"
-          value={postContent}
-          onChange={(e) => setPostContent(e.target.value)}
-        ></textarea>
+        <Formik
+          initialValues={{ content: "", images: "", videos: "" }}
+          validationSchema={validationSchema}
+          onSubmit={handlePostSubmit}
+        >
+          {({ setFieldValue, values }) => (
+            <Form>
+              <div className="mb-4">
+                <Field
+                  as="textarea"
+                  name="content"
+                  className="w-full p-3 bg-gray-900 text-white mb-4 border border-gray-600 rounded"
+                  rows={6}
+                  placeholder="What's happening?"
+                />
+                <ErrorMessage
+                  name="content"
+                  component="div"
+                  className="text-red-500 text-sm mb-2"
+                />
+              </div>
 
-        {/* Image and Video Upload */}
-        <div className="mb-4">
-          {/* Display multiple images */}
-          {postImages.length > 0 && (
-            <div className="mb-2">
-              {postImages.map((image, index) => (
-                <div key={index} className="relative inline-block mr-2 mb-2">
-                  <img
-                    src={URL.createObjectURL(image)}
-                    alt="preview"
-                    className="w-20 h-20 object-cover rounded-lg"
+              {/* Image and Video Upload */}
+              <div className="mb-4">
+                {/* Display multiple images */}
+                {postImages.length > 0 && (
+                  <div className="mb-2">
+                    {postImages.map((image, index) => (
+                      <div
+                        key={index}
+                        className="relative inline-block mr-2 mb-2"
+                      >
+                        <img
+                          src={URL.createObjectURL(image)}
+                          alt="preview"
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleImageRemove(index)}
+                          className="absolute top-0 right-0 bg-red-600 text-white rounded-full px-2 py-1 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Display multiple videos */}
+                {postVideos.length > 0 && (
+                  <div className="mb-2">
+                    {postVideos.map((video, index) => (
+                      <div
+                        key={index}
+                        className="relative inline-block mr-2 mb-2"
+                      >
+                        <video
+                          src={URL.createObjectURL(video)}
+                          controls
+                          className="w-32 h-32 object-cover rounded-lg"
+                        ></video>
+                        <button
+                          type="button"
+                          onClick={() => handleVideoRemove(index)}
+                          className="absolute top-0 right-0 bg-red-600 text-white rounded-full px-2 py-1 text-sm"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center space-x-4">
+                  <label htmlFor="upload-image" className="cursor-pointer">
+                    <FaImage className="text-xl hover:text-blue-500" />
+                    <input
+                      type="file"
+                      id="upload-image"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleImageChange(e, setFieldValue)}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <label htmlFor="upload-videos" className="cursor-pointer">
+                    <FaVideo className="text-xl hover:text-blue-500" />
+                    <input
+                      type="file"
+                      id="upload-videos"
+                      accept="video/*"
+                      multiple
+                      onChange={(e) => handleVideoChange(e, setFieldValue)}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <FaSmile
+                    className="text-xl hover:text-blue-500 cursor-pointer"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                   />
+                </div>
+
+                <div className="flex justify-end space-x-4">
                   <button
-                    onClick={() => handleImageRemove(index)}
-                    className="absolute top-0 right-0 bg-red-600 text-white rounded-full px-2 py-1 text-sm"
+                    type="button"
+                    className="bg-gray-600 text-white px-4 py-2 rounded"
+                    onClick={toggleeditpostModal}
                   >
-                    Remove
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    className="bg-blue-600 text-white px-4 py-2 rounded"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <FaSpinner className="animate-spin mr-2" />
+                    ) : (
+                      "Update post"
+                    )}
                   </button>
                 </div>
-              ))}
-            </div>
-          )}
+              </div>
 
-          {/* Display multiple videos */}
-          {postVideos.length > 0 && (
-            <div className="mb-2">
-              {postVideos.map((video, index) => (
-                <div key={index} className="relative inline-block mr-2 mb-2">
-                  <video
-                    src={URL.createObjectURL(video)}
-                    controls
-                    className="w-32 h-32 object-cover rounded-lg"
-                  ></video>
-                  <button
-                    onClick={() => handleVideoRemove(index)}
-                    className="absolute top-0 right-0 bg-red-600 text-white rounded-full px-2 py-1 text-sm"
-                  >
-                    Remove
-                  </button>
+              {/* Emoji Picker */}
+              {showEmojiPicker && (
+                <div className="absolute bottom-16 left-0">
+                  <Picker
+                    data={data}
+                    onEmojiSelect={(emoji:unknown) =>
+                      handleEmojiSelect(emoji, setFieldValue, values.content)
+                    }
+                  />
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between mt-4">
-          <div className="flex items-center space-x-4">
-            <label htmlFor="upload-image" className="cursor-pointer">
-              <FaImage className="text-xl hover:text-blue-500" />
-              <input
-                type="file"
-                id="upload-image"
-                accept="image/*"
-                multiple
-                onChange={handleImageChange}
-                className="hidden"
-              />
-            </label>
-
-            <label htmlFor="upload-videos" className="cursor-pointer">
-              <FaVideo className="text-xl hover:text-blue-500" />
-              <input
-                type="file"
-                id="upload-videos"
-                accept="video/*"
-                multiple
-                onChange={handleVideoChange}
-                className="hidden"
-              />
-            </label>
-
-            <FaSmile
-              className="text-xl hover:text-blue-500 cursor-pointer"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <button
-              className="bg-gray-600 text-white px-4 py-2 rounded"
-              onClick={toggleeditpostModal}
-            >
-              Cancel
-            </button>
-
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded"
-              onClick={handlePostSubmit}
-            >
-              {loading ? (
-                <FaSpinner className="animate-spin mr-2" /> // Optional loading spinner
-              ) : (
-                "Update post"
               )}
-            </button>
-          </div>
-        </div>
-
-        {/* Emoji Picker */}
-        {showEmojiPicker && (
-          <div className="absolute bottom-16 left-0">
-            <Picker data={data} onEmojiSelect={handleEmojiSelect} />
-          </div>
-        )}
+            </Form>
+          )}
+        </Formik>
       </div>
     </div>
   );

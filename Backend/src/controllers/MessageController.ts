@@ -1,74 +1,67 @@
 import { Request, Response } from "express";
-import MessageServices from "../servises/messageServises";
-import messageSchemaModel from "../model/messageModel";
-import UserSchemadata from "../model/userModel";
+import MessageServices from "../Servises/Messageservises";
 import jwt from "jsonwebtoken";
-import ChatSchemamodel from "../model/ChatModel";
-import { ACCESS_TOKEN } from "../config/JWT";
-import { userPayload } from "../interface/userInterface/userPayload";
-import cloudinary from "../utils/Cloudinary";
-import fs from "fs";
-
-
-
-
-// const uploadToCloudinary = (filePath: string, folder: string): Promise<any> => {
-//   return new Promise((resolve, reject) => {
-//     cloudinary.v2.uploader.upload(
-//       filePath,
-//       { folder }, // Optional: you can organize your media into specific folders
-//       (error: any, result: any) => {
-//         if (error) reject(error);
-//         else resolve(result);
-//       }
-//     );
-//   });
-// };
+import cloudinary from "../Utils/Cloudinary";
+import { ACCESS_TOKEN } from "../Config/Jwt";
+import { userPayload } from "../Entities/UserTypes";
+// import messageSchemaModel from "../Model/Messagemodel";
+// import UserSchemadata from "../Model/Usermodel";
+// import ChatSchemamodel from "../Model/Chatmodel";
+// import { ACCESS_TOKEN } from "../Config/Jwt";
+// import { userPayload } from "../Interface/userInterface/Userpayload";
+// import fs from "fs";
 
 class MessageControllers {
   constructor(private messageservise: MessageServices) {}
-
-  async sendMessage(req: Request, res: Response): Promise<void> {
+  async sendMessage(req: Request, res: Response){
     try {
-      const userId = (req as any).userdata.id;
+     const token = req.header("Authorization")?.split(" ")[1];
+     if (!token) {
+       return res.status(401).json({ message: "Unauthorized: Token is missing" });
+     }
+     const decoded = jwt.verify(
+       token,
+       process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+     ) as userPayload;
+     const userId = decoded.id;
       if (!userId) {
         res.status(401).json({ message: "Unauthorized" });
       }
       const { content, chatId } = req.body;
- 
-       const files = req.files as {
-         images?: Express.Multer.File[];
-         videos?: Express.Multer.File[];
-       };
-       const imageUploadPromises = files?.images
-         ? files.images.map((file) =>
-             cloudinary.uploader.upload(file.path, { resource_type: "image" })
-           )
-         : [];
-       const videoUploadPromises = files?.videos
-         ? files.videos.map((file) =>
-             cloudinary.uploader.upload(file.path, { resource_type: "video" })
-           ) 
-         : [];
-       const uploadedImages = await Promise.all(imageUploadPromises);
-       const uploadedVideos = await Promise.all(videoUploadPromises);
 
-       const imageUrls: string[] =
-         uploadedImages.length > 0
-           ? uploadedImages.map((upload) => upload.secure_url)
-           : [];
-       const videoUrls: string[] =
-         uploadedVideos.length > 0
-           ? uploadedVideos.map((upload) => upload.secure_url)
-           : [];
+      const files = req.files as {
+        images?: Express.Multer.File[];
+        videos?: Express.Multer.File[];
+      };
+      const imageUploadPromises = files?.images
+        ? files.images.map((file) =>
+            cloudinary.uploader.upload(file.path, { resource_type: "image" })
+          )
+        : [];
+      const videoUploadPromises = files?.videos
+        ? files.videos.map((file) =>
+            cloudinary.uploader.upload(file.path, { resource_type: "video" })
+          )
+        : [];
+      const uploadedImages = await Promise.all(imageUploadPromises);
+      const uploadedVideos = await Promise.all(videoUploadPromises);
 
-    const message =await this.messageservise.sendAllmessages(
-           userId,
-           content,
-           chatId,
-           imageUrls,
-           videoUrls
-         );
+      const imageUrls: string[] =
+        uploadedImages.length > 0
+          ? uploadedImages.map((upload) => upload.secure_url)
+          : [];
+      const videoUrls: string[] =
+        uploadedVideos.length > 0
+          ? uploadedVideos.map((upload) => upload.secure_url)
+          : [];
+
+      const message = await this.messageservise.sendAllmessages(
+        userId,
+        content,
+        chatId,
+        imageUrls,
+        videoUrls
+      );
       res.status(200).json(message);
     } catch (error) {
       console.error("Error sending message:", error);
@@ -76,50 +69,56 @@ class MessageControllers {
     }
   }
 
+  // async blockUserStatus(req: Request, res: Response) {
+  //   try {
+  //     console.log("1111111111111111111111111");
+  //     const userId = (req as any).userdata.id;
 
-  async blockUserStatus(req:Request,res:Response){
-     try {
-      console.log("1111111111111111111111111")
-        const userId = (req as any).userdata.id;
+  //     console.log(userId, "user id get######################");
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 
-        console.log(userId,'user id get######################');
-        
-     } catch (error) {
-      console.log(error);
+
+  // async getNotifications(req:Request,res:Response){
+  //     try {
+  //       console.log("get notificationssssssssssssssss1111111111111111111111111111111111");
       
-     } 
+  //     } catch (error) {
+  //       console.log(error);
+        
+  //     }
+  // }
+
+  async blockUserNow(req: Request, res: Response) {
+    try {
+      const { userId, LogedUserId } = req.body;
+      console.log(userId, "userId");
+      console.log(LogedUserId, "LogedUserId");
+
+      if (!userId || !LogedUserId) {
+        throw new Error("no users found");
+      }
+
+      const userStatus = await this.messageservise.blockUserhere(
+        userId,
+        LogedUserId
+      );
+
+      res.status(200).json({ message: "User blocked", userStatus });
+    } catch (error) {
+      console.log(error);
+    }
   }
 
-
-   async blockUserNow(req:Request,res:Response){
-      try {
-
-        const { userId, LogedUserId } = req.body;
-        console.log(userId, "userId");
-         console.log(LogedUserId, "LogedUserId");
-
-         if(! userId || !LogedUserId ){
-          throw new Error("no users found")
-         }
-
-      const userStatus =   await  this.messageservise.blockUserhere(userId, LogedUserId);
-
-       res.status(200).json({ message: "User blocked", userStatus });
-
-      } catch (error) {
-       console.log(error);
-      }
-   }
-
-
-
   async getUserInfo(req: Request, res: Response) {
-    try { 
-      const userInfo = req.params.chatId;
+    try {
+      
+      const userInfo = req.params.chatId; 
+      
       const userinfo = await this.messageservise.getUserInfomation(userInfo);
-      // const userinfo = await UserSchemadata.findById(userInfo);
-      console.log(userinfo, "userdata");
-      res.json(userinfo);
+       res.status(200).json({ message: "Get user id", userinfo });
     } catch (error) {
       console.log(error);
     }
@@ -128,17 +127,11 @@ class MessageControllers {
   async getId(req: Request, res: Response) {
     try {
       const getTocken = req.params.userTocken;
-
-      console.log(getTocken,'tocken found......................');
-      
       const decoded = jwt.verify(getTocken, "key_for_accesst") as {
         id: string;
       };
       const userId = decoded.id;
-
-      console.log(userId,'2222222222222222222222222222222222222222222');
-      
-      res.json(userId);
+      res.status(200).json({ message: "User id found", userId });
     } catch (error) {
       console.log(error);
     }
@@ -147,10 +140,9 @@ class MessageControllers {
   async allChats(req: Request, res: Response) {
     try {
       try {
-      const chatid = req.params.chatId;
-      const messages = await this.messageservise.findAllmessages(chatid);
-        // const message = await messageSchemaModel.find({ chat: req.params.chatId }).populate("sender", "name image email").populate("chat");
-        res.json(messages);
+        const chatid = req.params.chatId;
+        const Allmessage = await this.messageservise.findAllmessages(chatid);
+        res.status(200).json({ message: "Get all messages", Allmessage });
       } catch (error) {
         res.status(400);
         console.log(error);

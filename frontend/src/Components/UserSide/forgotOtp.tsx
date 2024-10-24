@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
 
 import "react-toastify/dist/ReactToastify.css";
+import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 
 const forgetOtppage: React.FC = () => {
   const [otp, setOtp] = useState<string>("");
@@ -79,15 +80,14 @@ const forgetOtppage: React.FC = () => {
 
     try {
       const { data } = await axios.post(
-        "http://localhost:3000/api/user/verifyforgetotp",
+        `${API_USER_URL}/verifyforgetotp`,
         { otp, email },
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":CONTENT_TYPE_JSON,
           },
         }
       );
-      console.log(data); // Handle the response as needed
       if (data.message === "confirm user") {
         const secretKey = "your-secret-key-crypto";
         const emailget = data.email;
@@ -99,6 +99,8 @@ const forgetOtppage: React.FC = () => {
         ).toString();
 
         navigate("/ForgetPassPage", { state: { email: encryptedEmail } });
+      }else{
+        toast.error("confirm user Failed");
       }
     } catch (error) {
       console.error("Error verifying OTP:", error);
@@ -138,21 +140,20 @@ const forgetOtppage: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      console.log(email, otp, "emppppppppppppp");
       let { data } = await axios.patch(
-        "http://localhost:3000/api/user/resend-otp",
+        `${API_USER_URL}/resend-otp`,
         { email },
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":CONTENT_TYPE_JSON,
           },
         }
       );
-
       if (data.message === "resend otp successfully") {
         toast.success("OTP resent successfully");
+      }else{
+        toast.error("OTP resent Failed");
       }
-      // Start a new timer when OTP is resent
       startTimer(30);
       window.location.reload();
     } catch (error) {

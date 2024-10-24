@@ -1,12 +1,11 @@
 import { Router } from "express";
-import passportAuth from '../Googleauth/passport'
+import passportAuth from "../Googleauth/Passport";
 import {
   googleAuth,
   googleAuthCallback,
   authSuccess,
   authFailure,
-} from "../controllers/Googleauthcontrolller";
-
+} from "../Controllers/Googleauthcontrolller";
 
 const router: Router = Router();
 
@@ -15,4 +14,4 @@ router.get("/auth/callback", googleAuthCallback);
 router.get("/auth/callback/success", authSuccess);
 router.get("/auth/callback/failure", authFailure);
 
-export default router; 
+export default router;

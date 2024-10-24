@@ -1,137 +1,132 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
-  FaBell,
-  FaEnvelope,
-  FaHome,
   FaInfoCircle,
-  FaUserFriends,
-  FaUsers,
+
 } from "react-icons/fa";
-import { MdOutlinePostAdd } from "react-icons/md";
-import { Button } from "@mui/material";
 import toast from "react-hot-toast";
 import { FormEvent, useEffect, useState } from "react";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
 import ThreeDot from "react-loading";
-import { useDispatch, useSelector } from "react-redux";
 
-import { store } from "../../Redux-store/reduxstore";
+import { store } from "../../Redux-store/Reduxstore";
 import Swal from "sweetalert2";
-import { boolean } from "yup";
 import axios from "axios";
+import Navbar2 from "./Navbar2";
+import SideBar2 from "./Sidebar2";
+import {
+  API_CHAT_URL,
+  API_MESSAGE_URL,
+  API_USER_URL,
+  CONTENT_TYPE_JSON,
+} from "../Constants/Constants";
+import { IUser } from "../Interfaces/Interface";
 const PeoplePage = () => {
-  interface IUser {
-    _id: any;
-    name: string;
-    email: string;
-    image: string;
-    password: string;
-    isActive: boolean;
-    isAdmin: boolean;
-    isVerified?: boolean;
-    createdAt?: Date;
-    updatedAt?: Date;
-    following: boolean;
-  }
-
+ 
   const [Loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState<IUser[]>([]);
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
   const [userID, setuserID] = useState<string>("");
   const [userFound, setuserFound] = useState(false);
-   const [userStatus, setuserStatus] = useState(false);
+  const [userStatus, setuserStatus] = useState(false);
   type RootState = ReturnType<typeof store.getState>;
   const [menuOpenPost, setMenuOpenPost] = useState<string | null>(null);
-  const navigate =useNavigate()
+  const navigate = useNavigate();
   const updateUsers = async () => {
-    const { data } = await ClientNew.get(
-       `http://localhost:3000/api/chat/findallusers`,
-      {
-        headers: {
-          "Content-type": "application/json",
-        },
-      }
-    );
-
-    setgetAlluser(data);
-  };
-
-    const handleMenuClick = (userId: string) => {
-      setMenuOpenPost(menuOpenPost === userId ? null : userId);
-    };
-
-useEffect(() => {
-  const findUpdates = async () => {
     try {
-      const { data } = await ClientNew.get(
-        "http://localhost:3000/api/chat/getStatus"
-      );
+      const { data } = await ClientNew.get(`${API_CHAT_URL}/findallusers`, {
+        headers: {
+          "Content-type": CONTENT_TYPE_JSON,
+        },
+      });
 
-      if (data.message === "Updated status") {
-        console.log(data.getStatus, "77777777777777777777777777777777777777");
-        // setuserStatus(data.getStatus);
+      if (data.message === "Get all users") {
+        setgetAlluser(data.Allusers);
+      } else {
+        toast.error("users not found");
       }
     } catch (error) {
-      console.log(error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "An error occurred";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unknown error occurred");
+      }
+      console.error("Error verifying OTP:", error);
     }
   };
-  findUpdates();
-}, []);
-   
 
-     const handleBlockUser = async (
-       userId: string,
-       LogedUserId: string,
-       isActive: boolean
-     ) => {
-       console.log(userId, "userId");
-       console.log(LogedUserId, "LogedUserId");
+  const handleMenuClick = (userId: string) => {
+    setMenuOpenPost(menuOpenPost === userId ? null : userId);
+  };
 
-       try {
-         const actionText = isActive ? "Block user" : "Unblock user";
-         const confirmationText = isActive
-           ? "Are you sure you want to block this user?"
-           : "Are you sure you want to unblock this user? ";
+  const handleBlockUser = async (userId: string,LogedUserId: string,isActive: boolean) => {
+    console.log(userId, "userId");
+    console.log(LogedUserId, "LogedUserId");
 
-         Swal.fire({
-           title: confirmationText,
-           icon: "warning",
-           showCancelButton: true,
-           confirmButtonColor: "#3085d6",
-           cancelButtonColor: "#d33",
-           confirmButtonText: actionText,
-         }).then(async (result) => {
-           if (result.isConfirmed) {
-             const { data } = await ClientNew.patch(
-               "http://localhost:3000/api/message/blockuser",
-               { userId, LogedUserId },
-               {
-                 headers: {
-                   "Content-Type": "application/json",
-                 },
-               }
-             );
+    try {
+      const actionText = isActive ? "Block user" : "Unblock user";
+      const confirmationText = isActive
+        ? "Are you sure you want to block this user?"
+        : "Are you sure you want to unblock this user? ";
 
-             if (data.message == "User blocked") {
-               console.log(data.userStatus, "statues hereeeeeeeeeeeeeee");
-               setuserStatus(data.userStatus);
-             }
-           }
-         });
-       } catch (error) {
-         console.log(error);
-       }
-     };
+      Swal.fire({
+        title: confirmationText,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: actionText,
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const { data } = await ClientNew.patch(
+            `${API_MESSAGE_URL}/blockuser`,
+            { userId, LogedUserId },
+            {
+              headers: {
+                "Content-Type": CONTENT_TYPE_JSON,
+              },
+            }
+          );
 
+          if (data.message == "User blocked") {
+            setuserStatus(data.userStatus);
+          } else {
+            toast.error("User blocked Failed");
+          }
+        }
+      });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "An error occurred";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unknown error occurred");
+      }
+      console.error("Error verifying OTP:", error);
+    }
+  };
 
   useEffect(() => {
     const findUsers = async () => {
-      const { data } = await ClientNew.get(
-        "http://localhost:3000/api/chat/getUserdata"
-      );
-      if (data.message === "userId get") {
-        setuserID(data.userId);
+      try {
+        const { data } = await ClientNew.get(`${API_CHAT_URL}/getUserdata`);
+        if (data.message === "userId get") {
+          setuserID(data.userId);
+        } else {
+          toast.error("no userid found");
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const errorMessage =
+            error.response?.data?.message || "An error occurred";
+          toast.error(errorMessage);
+        } else {
+          toast.error("Unknown error occurred");
+        }
+        console.error("Error verifying OTP:", error);
       }
     };
     findUsers();
@@ -139,15 +134,12 @@ useEffect(() => {
 
   const followUser = async (userId: string, LoguserId: string) => {
     try {
-      console.log(userId, "userId");
-      console.log(LoguserId, "loged");
-
       const { data } = await ClientNew.post(
-        `http://localhost:3000/api/chat/followuser`,
+        `${API_CHAT_URL}/followuser`,
         { userId, LoguserId },
         {
           headers: {
-            "Content-type": "application/json",
+            "Content-type": CONTENT_TYPE_JSON,
           },
         }
       );
@@ -155,98 +147,99 @@ useEffect(() => {
       if (data.message === "followed users") {
         setuserFound(data.addFollower);
         updateUsers();
+      } else {
+        toast.error("followers found failed");
       }
     } catch (error) {
-      console.log(error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "An error occurred";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unknown error occurred");
+      }
+      console.error("Error verifying OTP:", error);
     }
   };
 
-       
-    
-
- 
-
   useEffect(() => {
     const getAllPost = async () => {
-      const { data } = await ClientNew.get(
-        `http://localhost:3000/api/chat/findallusers`,
-        {
+      try {
+        const { data } = await ClientNew.get(`${API_CHAT_URL}/findallusers`, {
           headers: {
-            "Content-type": "application/json",
+            "Content-type": CONTENT_TYPE_JSON,
           },
-        }
-      );
+        });
 
-      setgetAlluser(data);
+        if (data.message === "Get all users") {
+          setgetAlluser(data.Allusers);
+        } else {
+          toast.error("All users get fail");
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const errorMessage =
+            error.response?.data?.message || "An error occurred";
+          toast.error(errorMessage);
+        } else {
+          toast.error("Unknown error occurred");
+        }
+        console.error("Error verifying OTP:", error);
+      }
     };
 
     getAllPost();
   }, []);
 
+  const handleReport = async (userID: string) => {
+    const { value: text } = await Swal.fire({
+      input: "textarea",
+      inputLabel: "Report User",
+      inputPlaceholder: "Type here...",
+      inputAttributes: {
+        "aria-label": "Type your message here",
+      },
+      showCancelButton: true,
+    });
+    if (text) {
+      try {
+        const { data } = await ClientNew.patch(
+          `${API_USER_URL}/ReportUser`,
+          { userID, text },
+          {
+            headers: {
+              "Content-Type": CONTENT_TYPE_JSON,
+            },
+          }
+        );
 
- const handleReport = async (userID: string) => {
-   const { value: text } = await Swal.fire({
-     input: "textarea",
-     inputLabel: "Report User",
-     inputPlaceholder: "Type here...",
-     inputAttributes: {
-       "aria-label": "Type your message here",
-     },
-     showCancelButton: true,
-   });
-   if (text) {
-     const { data } = await ClientNew.patch(
-       "http://localhost:3000/api/user/ReportUser",
-       { userID, text },
-       {
-         headers: {
-           "Content-Type": "application/json",
-         },
-       }
-     );
+        if (data.message === "user Reported succesfully") {
+          toast.success("User Reported succesfully");
+        } else {
+          toast.error("User Reported Fails");
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          const errorMessage =
+            error.response?.data?.message || "An error occurred";
+          toast.error(errorMessage);
+        } else {
+          toast.error("Unknown error occurred");
+        }
+        console.error("Error verifying OTP:", error);
+      }
+    } else {
+      if (text.length === 0) {
+        Swal.fire("Please text here");
+      }
+      navigate("/homepage");
+    }
 
-     if (data.message === "user Reported succesfully") {
-       toast.success("User Reported succesfully");
-     }
-   } else {
-     if (text.length === 0) {
-       Swal.fire("Please text here");
-     }
-     navigate("/homepage");
-   }
-
-
-
-   try {
-   } catch (error) {
-     console.error("Error reporting post:", error);
-   }
- };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    try {
+    } catch (error) {
+      console.error("Error reporting post:", error);
+    }
+  };
 
   const handleSearch = async (event: FormEvent) => {
     event.preventDefault();
@@ -256,10 +249,10 @@ useEffect(() => {
     try {
       setLoading(true);
       const { data } = await ClientNew.get(
-        `http://localhost:3000/api/user/searched?search=${search}`,
+        `${API_USER_URL}/searched?search=${search}`,
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
           },
         }
       );
@@ -267,96 +260,43 @@ useEffect(() => {
       if (data.message === "get all users") {
         setSearchResult(data.SearchedUsers);
         setLoading(false);
+      } else {
+        toast.error("No user found");
       }
     } catch (error) {
       setLoading(false);
-      toast.error("Error Occurred!");
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "An error occurred";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unknown error occurred");
+      }
+      console.error("Error verifying OTP:", error);
     }
   };
 
-
-   
-
   return (
     <div className="bg-black text-white min-h-screen">
-      <nav className="px-4 py-3 shadow-md fixed w-full top-0 left-0 z-50 bg-black">
-        <div className="container mx-auto flex items-center justify-between">
-          {/* Header and Search Bar */}
-          <div className="flex items-center space-x-4">
-            {/* Logo Section */}
-            <h1
-              className="text-3xl font-bold"
-              style={{ fontFamily: "Viaoda Libre" }}
-            >
-              Clear View
-            </h1>
-          </div>
-          <form
-            onSubmit={handleSearch}
-            className="flex items-center space-x-2 mr-40"
-          >
-            <input
-              type="search"
-              placeholder="Search"
-              onChange={(e) => setSearch(e.target.value)}
-              className="bg-gray-800 text-white px-4 py-2 mr-8 rounded-full outline-none"
-            />
-            <Button style={{ color: "white" }} variant="outlined" type="submit">
-              Search
-            </Button>
-          </form>
-          {/* Account Management Section */}
-          {/* ... */}
-        </div>
-      </nav>
+      <Navbar2 />
 
       <div className="flex mt-20">
         {/* Sidebar */}
-        <aside className="w-1/5 p-4 space-y-4 fixed left-20 h-screen overflow-y-auto">
-          <div className="flex items-center space-x-2 ">
-            <FaHome style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px", color: "white" }}>
-              {" "}
-              <Link to="/homepage">Home</Link>{" "}
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FaEnvelope style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Message</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FaUserFriends style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Followers</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FaUsers style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Community</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FaBell style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Notification</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <MdOutlinePostAdd style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>
-              {" "}
-              <Link to="/createpost">createpost</Link>
-            </span>
-          </div>
-        </aside>
+        <SideBar2 />
+       
 
         {/* Main Content */}
-        <main className="w-4/5 ml-auto p-4">
+        <main className="w-4/5 ml-auto p-0">
           {/* Messages Section */}
-
-          <div className="space-y-4 p-5  w-full h-[100vh]">
+          <div className="fixed  bg-black w-full pt-10  pb-5">
             <h1
               style={{ fontSize: "25px" }}
               className=" flex text-xl font-bold ml-0"
             >
               People
             </h1>
-
+          </div>
+          <div className="space-y-4 p-5  mt-20 w-full h-[100vh]">
             <div className="space-y-4">
               {/* Loading or Results */}
               {Loading ? (

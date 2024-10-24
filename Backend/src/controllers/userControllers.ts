@@ -1,14 +1,16 @@
-import { log } from "console";
-import userServises from "../servises/userServises";
+import userServises from "../Servises/Userservises";
 import { Request, Response } from "express";
-import { generateOtp, sendVerifyMail } from "../utils/mail";
 import jwt from "jsonwebtoken";
-import { userPayload } from "../interface/userInterface/userPayload";
+import { userPayload } from "../Interface/userInterface/Userpayload";
 import dotenv from "dotenv";
-import { ACCESS_TOKEN } from "../config/JWT";
-import cloudinary from "../utils/Cloudinary";
-import { Posts } from "../entities/userEntities";
+import { ACCESS_TOKEN } from "../Config/Jwt";
+import cloudinary from "../Utils/Cloudinary";
 import fs from "fs";
+import { log } from "winston";
+import checkUpcomingBirthdays from "../Notifications/Notifications";
+// import { generateOtp, sendVerifyMail } from "../utils/mail";
+// import { log } from "console";
+// import { Posts } from "../Entities/Userentities";
 
 dotenv.config();
 class UserController {
@@ -36,6 +38,32 @@ class UserController {
     }
   }
 
+  async getUserInfos(req: Request, res: Response) {
+    try {
+
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
+      console.log(userId, "user id get her");
+
+      const getUserdata = await this.userService.getUserInfoses(userId);
+
+      return res
+        .status(200)
+        .json({ message: "get User data", userDetails: getUserdata });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async userLogin(req: Request, res: Response): Promise<void> {
     try {
       const userData = req.body;
@@ -43,9 +71,6 @@ class UserController {
       if (userdata) {
         let refreshtok = userdata.refreshToken;
         let accesstok = userdata.accessToken;
-
-        console.log(refreshtok, "refresh tocken.....................");
-        console.log(accesstok, "access tocken.....................");
 
         res
           .status(200)
@@ -86,6 +111,12 @@ class UserController {
     }
   }
 
+  async getNotifications(req:Request,res:Response){
+    console.log('hahahahaahhhaha');
+    
+      await checkUpcomingBirthdays()
+  }
+
   async forgetotp(req: Request, res: Response): Promise<void> {
     try {
       const { otp, email } = req.body;
@@ -123,7 +154,19 @@ class UserController {
 
   async ReportTheUser(req: Request, res: Response) {
     try {
-      const logeduserId = (req as any).userdata.id;
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const logeduserId = decoded.id;
+
+      // const logeduserId = (req as any).userdata.id;
       const { userID, text } = req.body;
       const getUsers = await this.userService.sendReportReason(
         userID,
@@ -161,7 +204,6 @@ class UserController {
         userId,
         username
       );
-
       res.status(200).json({ message: "updated succefully" });
     } catch (error) {
       console.log(error);
@@ -187,10 +229,7 @@ class UserController {
 
   async getIduser(req: Request, res: Response) {
     try {
-      console.log("recheddddddddddddddddddddddddddddddd......................");
-
       const id = req.params.id;
-
       const decoded = jwt.verify(id, ACCESS_TOKEN) as userPayload;
       console.log(
         decoded.id,
@@ -203,12 +242,12 @@ class UserController {
 
   async ReportPost(req: Request, res: Response) {
     try {
-      const { postId, text } = req.body;
+      const { postId, text, userId } = req.body;
       console.log(postId, "get post id");
       if (!postId) {
         res.status(400).json({ message: "PostId is required" });
       }
-      const getupdate = this.userService.passPostID(postId, text);
+      const getupdate = this.userService.passPostID(postId, text, userId );
       res.status(200).json({ message: "Post Reported succesfully" });
     } catch (error) {
       console.log(error);
@@ -273,9 +312,19 @@ class UserController {
     }
   }
 
-  async userProfile(req: Request, res: Response): Promise<void> {
+  async userProfile(req: Request, res: Response) {
     try {
-      const userId = (req as any).userdata.id;
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
       console.log(userId, "user id get her");
       let getdetails = await this.userService.userIDget(userId);
       if (getdetails) {
@@ -318,7 +367,17 @@ class UserController {
 
   async allUsers(req: Request, res: Response) {
     try {
-      const userId = (req as any).userdata.id;
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
       console.log(userId, "user id get her");
       const searchUser = req.query.search;
       if (!searchUser) {
@@ -328,23 +387,27 @@ class UserController {
         searchUser,
         userId
       );
-
-      console.log(
-        SearchedUsers,
-        "get searched userssssss.............................."
-      );
-
       if (SearchedUsers) {
-        res.status(200).json({ message: "get all users", SearchedUsers });
+        res.status(200).json({ message: "search users", SearchedUsers });
       }
     } catch (error) {
       console.log(error);
     }
   }
 
-  async getuserPost(req: Request, res: Response): Promise<void> {
+  async getuserPost(req: Request, res: Response) {
     try {
-      const userId = (req as any).userdata.id;
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
       let getdetails = await this.userService.postuserIDget(userId);
       if (getdetails) {
         res.status(200).json({ message: "User Post found", getdetails });
@@ -354,8 +417,9 @@ class UserController {
     }
   }
 
-  async updateProfile(req: Request, res: Response): Promise<void> {
+  async updateProfile(req:Request, res: Response): Promise<void> {
     try {
+
       const { name, password, newpassword, userId } = req.body;
       if (!req.file) {
         res.status(400).json({ error: "File is missing" });
@@ -372,7 +436,7 @@ class UserController {
         password,
         newpassword,
         imageUrl,
-        userId
+        userId,
       );
 
       if (userData) {

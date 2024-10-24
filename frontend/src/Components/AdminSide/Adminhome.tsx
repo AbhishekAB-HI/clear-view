@@ -1,40 +1,23 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import { Button } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import {
-  FaHome,
-  FaUsers,
-  FaUserFriends,
-  FaRegFileAlt,
-  FaSignOutAlt,
-  FaRegUser,
-} from "react-icons/fa";
+import {FaHome,FaUsers,FaUserFriends,FaRegFileAlt,FaSignOutAlt,FaRegUser} from "react-icons/fa";
 import Navbar from "./Navbar";
 import axios from "axios";
 import { useSelector, useDispatch } from "react-redux";
-import { clearAdminAccessTocken } from "../../Redux-store/redux-slice";
-import { store } from "../../Redux-store/reduxstore";
+import { clearAdminAccessTocken } from "../../Redux-store/Redux-slice";
+import { store } from "../../Redux-store/Reduxstore";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import Swal from "sweetalert2";
+import { IUser } from "../Interfaces/Interface";
+import { API_ADMIN_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 const AdminHomePage = () => {
-  interface IUser extends Document {
-    _id: any;
-    name: string;
-    email: string;
-    password: string;
-    isActive: boolean;
-    isAdmin: boolean;
-    isVerified?: boolean;
-    createdAt?: Date;
-    updatedAt?: Date;
-    otp?: number;
-  }
-
+ 
   const [searchTerm, setSearchTerm] = useState("");
   const [usersList, setUsersList] = useState<IUser[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5); // Change this to adjust how many users per page
+  const [itemsPerPage] = useState(5); 
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -45,14 +28,34 @@ const AdminHomePage = () => {
   useEffect(() => {
     const FetchUserdetails = async () => {
       try {
-        const { data } = await axios.get(
-          "http://localhost:3000/api/admin/admindashboardget"
-        );
+        const { data } = await axios.get(`${API_ADMIN_URL}/admindashboardget`);
         if (data.message === "user data get succesfull") {
           setUsersList(data.userdata);
+        }else{
+          toast.error("No data found")
         }
       } catch (error) {
-        console.log(error);
+         if (axios.isAxiosError(error)) {
+           if (!error.response) {
+             toast.error(
+               "Network error. Please check your internet connection."
+             );
+           } else {
+             const status = error.response.status;
+             if (status === 404) {
+               toast.error("Posts not found.");
+             } else if (status === 500) {
+               toast.error("Server error. Please try again later.");
+             } else {
+               toast.error("Something went wrong.");
+             }
+           }
+         } else if (error instanceof Error) {
+           toast.error(error.message);
+         } else {
+           toast.error("An unexpected error occurred.");
+         }
+         console.log("Error fetching posts:", error);
       }
     };
     FetchUserdetails();
@@ -67,53 +70,69 @@ const AdminHomePage = () => {
       console.log(error);
     }
   };
-const updateBlock = async (userId: string, isActive: boolean) => {
-  try {
-    const actionText = isActive ? "Unblock user" :"Block user" 
-    const confirmationText = isActive
-      ? "Are you sure you want to unblock this user?"
-      : "Are you sure you want to block this user? ";
-    
-    Swal.fire({
-      title: confirmationText,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: actionText,
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        const { data } = await axios.patch(
-          `http://localhost:3000/api/admin/blockuser`,
-          { userId, isActive },
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
+  const updateBlock = async (userId: string, isActive: boolean) => {
+    try {
+      const actionText = isActive ? "Unblock user" : "Block user";
+      const confirmationText = isActive
+        ? "Are you sure you want to unblock this user?"
+        : "Are you sure you want to block this user? ";
+
+      Swal.fire({
+        title: confirmationText,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: actionText,
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const { data } = await axios.patch(
+            `${API_ADMIN_URL}/blockuser`,
+            { userId, isActive },
+            {
+              headers: {
+                "Content-Type": CONTENT_TYPE_JSON,
+              },
+            }
+          );
+
+          setUsersList((prevUsersList) =>
+            prevUsersList.map((user) =>
+              user._id === userId ? { ...user, isActive: !user.isActive } : user
+            )
+          );
+
+          if (data.message === "User is unblocked") {
+            toast.success("User has been successfully unblocked.");
+          } else if (data.message === "User is blocked") {
+            toast.success("User has been successfully blocked.");
           }
-        );
-
-        setUsersList((prevUsersList) =>
-          prevUsersList.map((user) =>
-            user._id === userId ? { ...user, isActive: !user.isActive } : user
-          )
-        );
-
-        if (data.message === "User is unblocked") {
-          toast.success("User has been successfully unblocked.");
-        } else if (data.message === "User is blocked") {
-          toast.success("User has been successfully blocked.");
+        } else {
+          navigate("/Adminhome");
         }
-      } else {
-        navigate("/Adminhome");
-      }
-    });
-  } catch (error) {
-    console.error("Error blocking/unblocking user:", error);
-    toast.error("There was an error performing the action. Please try again.");
-  }
-};
-
+      });
+    } catch (error) {
+     if (axios.isAxiosError(error)) {
+       if (!error.response) {
+         toast.error("Network error. Please check your internet connection.");
+       } else {
+         const status = error.response.status;
+         if (status === 404) {
+           toast.error("Posts not found.");
+         } else if (status === 500) {
+           toast.error("Server error. Please try again later.");
+         } else {
+           toast.error("Something went wrong.");
+         }
+       }
+     } else if (error instanceof Error) {
+       toast.error(error.message);
+     } else {
+       toast.error("An unexpected error occurred.");
+     }
+     console.log("Error fetching posts:", error);
+    }
+  };
 
   // Filter users based on search term
   const filteredUsers = usersList.filter((user) =>

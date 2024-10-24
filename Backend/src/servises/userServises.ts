@@ -4,15 +4,14 @@ import {
   Checkuser,
   Confirmuser,
   tockens,
-  Posts,
-  Postsget,
-} from "../entities/userEntities";
-import { TokenResponce } from "../interface/userInterface/userDetail";
-import { userPayload } from "../interface/userInterface/userPayload";
-import userRepository from "../Repository/userRepository";
-import { generateAccessToken, generateRefreshToken } from "../utils/jwt";
-import HashPassword from "../utils/Hashpassword";
-import { adminuserId } from "../entities/adminEntities";
+} from "../Entities/Userentities";
+import { Posts, Postsget } from "../Entities/Postentities";
+import { TokenResponce } from "../Interface/userInterface/Userdetail";
+import { userPayload } from "../Interface/userInterface/Userpayload";
+import userRepository from "../Repository/Userrepository";
+import { generateAccessToken, generateRefreshToken } from "../Utils/Jwt";
+import HashPassword from "../Utils/Hashpassword";
+import { adminuserId } from "../Entities/Adminentities";
 import mongoose, { ObjectId } from "mongoose";
 
 class userServises {
@@ -28,6 +27,19 @@ class userServises {
     }
     const RegisterUser = await this.userRepository.userRegister(userData);
     return RegisterUser;
+  }
+
+  async getUserInfoses(userId: unknown): Promise<IUser | undefined> {
+    try {
+      const getUser = await this.userRepository.findUserInfo(userId);
+
+      if (!getUser) {
+        throw new Error("No user found");
+      }
+      return getUser;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async verifyUser(userdata: Partial<Checkuser>): Promise<tockens | undefined> {
@@ -103,7 +115,7 @@ class userServises {
     postId: string,
     userId: string,
     username: string
-  ): Promise<void> {
+  ): Promise<Posts> {
     const getComment = await this.userRepository.replythecomment(
       commentId,
       replymessage,
@@ -114,6 +126,8 @@ class userServises {
     if (!getComment) {
       throw new Error("no comments get");
     }
+
+    return getComment;
   }
 
   async userService() {}
@@ -128,15 +142,13 @@ class userServises {
     return findReply;
   }
 
-  async sendReportReason(userId: string, text: string, logeduserId:string) {
+  async sendReportReason(userId: string,text: string,logeduserId: string | unknown) {
     try {
-      const userDetails = await this.userRepository.sendTheData(
+      const userDetails = await this.userRepository.sendTheReportReason(
         userId,
         text,
         logeduserId
       );
-
-     
     } catch (error) {
       console.log(error);
     }
@@ -165,9 +177,8 @@ class userServises {
     return commentPost;
   }
 
-  async passPostID(postId: string, text: string) {
-    console.log(postId, "ppppppppppppppp");
-    const Reported = await this.userRepository.RepostPost(postId, text);
+  async passPostID(postId: string, text: string, userId:string) {
+    const Reported = await this.userRepository.RepostPost(postId, text, userId);
     if (!Reported) {
       throw new Error("No post found");
     }
@@ -285,7 +296,7 @@ class userServises {
     }
   }
 
-  async sendPostid(postId: any): Promise<any> {
+  async sendPostid(postId: string) {
     try {
       let getpostid = await this.userRepository.postidreceived(postId);
       return getpostid;

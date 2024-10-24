@@ -1,6 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { Message } from "../entities/userEntities";
-
+import { Message } from "../Entities/MessageEntities";
 
 const messageSchema: Schema = new Schema(
   {
@@ -25,10 +24,6 @@ const messageSchema: Schema = new Schema(
   }
 );
 
-
-
-
 const messageSchemaModel = mongoose.model<Message>("Message", messageSchema);
 
 export default messageSchemaModel;
-

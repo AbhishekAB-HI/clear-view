@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { IUser } from "../entities/userEntities";
+import { IUser } from "../Entities/Userentities";
 
 const UserSchema: Schema = new Schema(
   {
@@ -38,6 +38,21 @@ const UserSchema: Schema = new Schema(
         },
       },
     ],
+    ReportPost: [
+      {
+        postId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "post",
+        },
+        postreportReason: {
+          type: String,
+        },
+        userinfo: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "userdetail",
+        },
+      },
+    ],
     blockedUser: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -60,8 +75,7 @@ const UserSchema: Schema = new Schema(
   {
     timestamps: true,
   }
-); 
-
+);
 
 const UserSchemadata = mongoose.model<IUser>("userdetail", UserSchema);
 

@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import passport from "passport";
 import cookieSession from "cookie-session";
-import "./passport"; // Ensure that your passport configuration file is TypeScript-compatible
+import "./Passport";
 
 const app = express();
 
@@ -39,7 +39,7 @@ app.get("/auth/callback/success", (req: Request, res: Response) => {
   if (!req.user) {
     return res.redirect("/auth/callback/failure");
   }
-  res.send("Welcome " + (req.user as Express.User).email);
+  res.send("Welcome " + (req.user.email));
 });
 
 // Failure

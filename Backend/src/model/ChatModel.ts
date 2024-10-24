@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { Chats } from "../entities/userEntities";
+import { Chats } from "../Entities/Chatentities";
 
 const ChatModel: Schema = new Schema(
   {
@@ -15,8 +15,8 @@ const ChatModel: Schema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Message",
     },
-    roomId:{
-      type:String,
+    roomId: {
+      type: String,
     },
     groupAdmin: { type: mongoose.Schema.Types.ObjectId, ref: "userdetail" },
   },
@@ -28,23 +28,3 @@ const ChatModel: Schema = new Schema(
 const ChatSchemamodel = mongoose.model<Chats>("Chat", ChatModel);
 
 export default ChatSchemamodel;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,23 +1,24 @@
 import React, { useState } from "react";
 import { FaImage, FaVideo, FaSmile } from "react-icons/fa";
 import Picker from "@emoji-mart/react";
-import data from "@emoji-mart/data"; 
+import data from "@emoji-mart/data";
 import toast from "react-hot-toast";
 import Clintnew from "../../Redux-store/Axiosinterceptor";
-import { FaSpinner } from "react-icons/fa"; 
+import { FaSpinner } from "react-icons/fa";
+import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
+import axios from "axios";
+import { CreatePostModalProps } from "../Interfaces/Interface";
 
-interface CreatePostModalProps {
-  togglepostModal: () => void;
-  updateState: () => void;
-  userid: string | null;
-}
-
-const CreatePostModal = ({ togglepostModal,updateState, userid }: CreatePostModalProps) => {
+const CreatePostModal = ({
+  togglepostModal,
+  updateState,
+  userid,
+}: CreatePostModalProps) => {
   const [postContent, setPostContent] = useState("");
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
 
   const handlePostSubmit = async () => {
     console.log("Post Content:", postContent);
@@ -37,23 +38,42 @@ const CreatePostModal = ({ togglepostModal,updateState, userid }: CreatePostModa
     formData.append("userId", userid || "");
 
     try {
-      const { data } = await Clintnew.post(
-        "http://localhost:3000/api/user/createpost",
+      const { data } = await Clintnew.post(`${API_USER_URL}/createpost`,
         formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            "Content-Type":CONTENT_TYPE_MULTER,
           },
         }
       );
 
       if (data.message === "Post uploaded successfully") {
         toast.success("Post uploaded successfully");
-        togglepostModal()
-        updateState()
+        togglepostModal();
+        updateState();
+      }else{
+         toast.error("Post not uploaded");
       }
-    } catch (error) {
-      console.error(error);
+    } catch (error:unknown) {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        toast.error("Network error. Please check your internet connection.");
+      } else {
+        const status = error.response.status;
+        if (status === 404) {
+          toast.error("Posts not found.");
+        } else if (status === 500) {
+          toast.error("Server error. Please try again later.");
+        } else {
+          toast.error("Something went wrong.");
+        }
+      }
+    } else if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error("An unexpected error occurred.");
+    }
+    console.log("Error fetching posts:", error);
     } finally {
       setLoading(false);
     }

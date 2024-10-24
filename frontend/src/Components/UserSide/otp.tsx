@@ -5,11 +5,15 @@ import newlogo from "../images/newslogo.jpg";
 import CryptoJS from "crypto-js";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import {  toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 
 import "react-toastify/dist/ReactToastify.css";
 import { useDispatch } from "react-redux";
-import { setUserAccessTocken, setUserRefreshtocken } from "../../Redux-store/redux-slice";
+import {
+  setUserAccessTocken,
+  setUserRefreshtocken,
+} from "../../Redux-store/Redux-slice";
+import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 
 const Otppage: React.FC = () => {
   const [otp, setOtp] = useState<string>("");
@@ -21,7 +25,7 @@ const Otppage: React.FC = () => {
   const secretKey = "your-secret-key-crypto";
   const bytes = CryptoJS.AES.decrypt(encryptedEmail, secretKey);
   const email = bytes.toString(CryptoJS.enc.Utf8);
-   const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const startTimer = (duration: number) => {
@@ -80,18 +84,18 @@ const Otppage: React.FC = () => {
 
     try {
       const { data } = await axios.post(
-        "http://localhost:3000/api/user/verify-otp",
-        {  email ,otp},
+        `${API_USER_URL}/verify-otp`,
+        { email, otp },
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
           },
         }
       );
       console.log(data);
       if (data.message === "OTP verified successfully") {
-         dispatch(setUserAccessTocken(data.accessToken));
-         dispatch(setUserRefreshtocken(data.refreshtok));
+        dispatch(setUserAccessTocken(data.accessToken));
+        dispatch(setUserRefreshtocken(data.refreshtok));
         toast.success("OTP verified successfully");
         navigate("/homepage");
       }
@@ -134,32 +138,32 @@ const Otppage: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      console.log(email,otp,'emppppppppppppp')
-      let {data} = await axios.patch(
-        "http://localhost:3000/api/user/resend-otp",
+      let { data } = await axios.patch(
+        `${API_USER_URL}/resend-otp`,
         { email },
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
           },
         }
       );
 
       if (data.message === "resend otp successfully") {
-           toast.success("OTP resent successfully");
+        toast.success("OTP resent successfully");
+      }else{
+      toast.success("OTP resent Failed");
       }
-      // Start a new timer when OTP is resent
       startTimer(30);
-      window.location.reload()
+      window.location.reload();
     } catch (error) {
-       if (axios.isAxiosError(error)) {
-         const errorMessage =
-           error.response?.data?.message || "An error occurred";
-         toast.error(errorMessage);
-       } else {
-         toast.error("Unknown error occurred");
-       }
-       console.error("Error verifying OTP:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "An error occurred";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unknown error occurred");
+      }
+      console.error("Error verifying OTP:", error);
     }
   };
 

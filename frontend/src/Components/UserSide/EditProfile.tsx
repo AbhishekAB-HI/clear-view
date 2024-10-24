@@ -6,20 +6,13 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 import Clintnew from "../../Redux-store/Axiosinterceptor";
 import { FaSpinner } from "react-icons/fa"; // Optional spinner icon
+import { EditProfileModalProps } from "../Interfaces/Interface";
+import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
 
 
-interface EditProfileModalProps {
-  toggleModal: () => void;
-  updateProfileState: () => void;
-  userid: string | null;
-}
 
-const EditProfileModal: React.FC<EditProfileModalProps> = ({
-  toggleModal,
-  updateProfileState,
-  userid,
-}) => {
-  // Define Yup validation schema
+const EditProfileModal: React.FC<EditProfileModalProps> = ({toggleModal,updateProfileState,userid}) => {
+  
   const validationSchema = Yup.object().shape({
     name: Yup.string()
       .matches(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces")
@@ -63,22 +56,22 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         setLoading(true);
         try {
           const { data } = await Clintnew.post(
-            `http://localhost:3000/api/user/updateProfile`,
+            `${API_USER_URL}/updateProfile`,
             formData,
             {
               headers: {
-                "Content-Type": "multipart/form-data",
+                "Content-Type": CONTENT_TYPE_MULTER,
               },
             }
           );
-
           if (data.message === "userupdated successfully") {
             toast.success("Profile updated");
             updateProfileState();
             toggleModal();
+          }else{
+            toast.error("Profile updation failed")
           }
         } catch (error) {
-          console.log(error);
           if (axios.isAxiosError(error)) {
             const errorMessage =
               error.response?.data?.message || "An error occurred";
@@ -167,6 +160,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   placeholder="Enter your name"
                   required
                 />
+
                 {formik.touched.name && formik.errors.name ? (
                   <p className="text-red-500 text-sm">{formik.errors.name}</p>
                 ) : null}
@@ -199,6 +193,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   className="bg-gray-50 mb-2 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   required
                 />
+              
+               
                 {formik.touched.newpassword && formik.errors.newpassword ? (
                   <p className="text-red-500 text-sm">
                     {formik.errors.newpassword}

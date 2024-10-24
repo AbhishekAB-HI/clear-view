@@ -1,17 +1,15 @@
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App.tsx';
-import './index.css';
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App.tsx";
+import "./index.css";
 import * as React from "react";
-import { Provider } from 'react-redux';
-import { store } from './Redux-store/reduxstore.ts';
+import { Provider } from "react-redux";
+import { store } from "./Redux-store/Reduxstore.ts";
 
-createRoot(document.getElementById('root')!).render(
-  
-    <StrictMode>
-      <Provider store={store}>
-        <App />
-      </Provider>
-    </StrictMode>
- 
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <Provider store={store}>
+      <App />
+    </Provider>
+  </StrictMode>
 );

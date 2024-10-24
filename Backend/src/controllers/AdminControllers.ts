@@ -1,4 +1,4 @@
-import AdminServices from "../servises/adminServises";
+import AdminServices from "../Servises/Adminservises";
 import { Request, Response } from "express";
 
 class AdminController {
@@ -10,7 +10,6 @@ class AdminController {
       let userdata = await this.adminservises.verifyUser(userData);
       if (userdata) {
         let AdminTocken = userdata.admintocken;
-        console.log(AdminTocken, "adminnnnnnnnnnnnnnnnnnnnnn");
         res
           .status(200)
           .json({ message: "adminLogin succesfully", AdminTocken });
@@ -49,10 +48,7 @@ class AdminController {
 
   async deleteReportPost(req: Request, res: Response) {
     try {
-      console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeer");
       const deleteId = req.params.postid;
-      console.log(deleteId, "issssssssssssssssssssssssss");
-
       const userdata = await this.adminservises.deleteReportPost(deleteId);
       if (userdata) {
         res.status(200).json({ message: "delete post" });
@@ -66,9 +62,7 @@ class AdminController {
     try {
       const deleteId = req.params.id;
       const userdata = await this.adminservises.deletePost(deleteId);
-      if (userdata) {
-        res.status(200).json({ message: "delete post" });
-      }
+        res.status(200).json({ message: "delete post"});
     } catch (error) {
       console.log(error);
     }
@@ -76,10 +70,7 @@ class AdminController {
 
   async getAllReportUsers(req: Request, res: Response) {
     try {
-      console.log("1111111111111111111111111111");
-
       const foundusers = await this.adminservises.getAllReportUsers();
-
       res.status(200).json({ message: "All user found", foundusers });
     } catch (error) {
       console.log(error);
@@ -89,12 +80,10 @@ class AdminController {
     try {
       const page = parseInt(req.query.page as string, 5) || 1;
       const limit = parseInt(req.query.limit as string, 4) || 4;
-
       const { posts, total } = await this.adminservises.getAllReportedpost(
         page,
         limit
       );
-      console.log(posts, "posssssssa");
       res.status(200).json({
         message: "All posts found",
         data: {

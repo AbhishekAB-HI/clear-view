@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { Posts } from "../entities/userEntities";
+import { Posts } from "../Entities/Postentities";
 
 const postSchema: Schema = new Schema(
   {
@@ -27,6 +27,10 @@ const postSchema: Schema = new Schema(
       type: Number,
       default: 0,
     },
+    BlockPost: {
+      type: Boolean,
+      default:false
+    },
     LikeStatement: {
       type: Boolean,
       default: false,
@@ -45,8 +49,9 @@ const postSchema: Schema = new Schema(
         },
         parentComment: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "post",
+          ref: "post.comments",
         },
+
         content: {
           type: String,
           required: true,

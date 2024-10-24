@@ -1,16 +1,16 @@
 import mongoose, { ObjectId } from "mongoose";
-import { IUser, IUserReturn, Posts, Postsget } from "../entities/userEntities";
-import newspostSchemadata from "../model/newsModal";
-import UserSchemadata from "../model/userModel";
-import UserTempSchemadata from "../model/userTempModel";
-import cloudinary from "../utils/Cloudinary";
-import HashPassword from "../utils/Hashpassword";
+import { IUser, IUserReturn } from "../Entities/Userentities";
+import { Posts, Postsget } from "../Entities/Postentities";
+import newspostSchemadata from "../Model/Newsmodal";
+import UserSchemadata from "../Model/Usermodel";
+import UserTempSchemadata from "../Model/Usertempmodel";
+import cloudinary from "../Utils/Cloudinary";
+import HashPassword from "../Utils/Hashpassword";
 import {
   generateOtp,
   sendVerifyMail,
   sendVerifyMailforemail,
-} from "../utils/mail";
-import fs from "fs";
+} from "../Utils/Mail";
 
 class userRepository {
   async userRegister(
@@ -54,6 +54,15 @@ class userRepository {
       return updateUser ?? undefined;
     } catch (error) {
       console.error(`Error in mentorRegister: ${error}`);
+    }
+  }
+
+  async findUserInfo(userId: unknown) {
+    try {
+      const getUserinfo = await UserSchemadata.findById(userId);
+      return getUserinfo;
+    } catch (error) {
+      console.log(error);
     }
   }
 
@@ -201,6 +210,8 @@ class userRepository {
       { new: true }
     );
 
+    console.log(getPostdetails, "updateted here2222222222222222222222222222");
+
     const parnetid = getPostdetails?.comments.map((item) => item.parentComment);
     const getReplyComments = await newspostSchemadata.find({
       _id: postId,
@@ -212,17 +223,20 @@ class userRepository {
     return getPostdetails;
   }
 
-  async sendTheData(userID: string, text: string, logeduserId: string) {
+  async sendTheReportReason(
+    userID: string,
+    text: string,
+    logeduserId: string | unknown
+  ) {
     try {
       const findUser = await UserSchemadata.findById(logeduserId);
       if (findUser) {
         findUser.ReportUser.push({
-          userId: new mongoose.Types.ObjectId(userID), 
+          userId: new mongoose.Types.ObjectId(userID),
           reportReason: text,
         });
 
         await findUser.save();
-
       } else {
         console.log("User not found");
       }
@@ -289,22 +303,22 @@ class userRepository {
     return updatedPost;
   }
 
-  async RepostPost(postid: string, text: string) {
+  async RepostPost(postid: string, text: string, userId: string) {
     try {
-      const reported = await newspostSchemadata.findByIdAndUpdate(
-        postid,
-        { $set: { Reportpost: true, text: text } },
-        { new: true, upsert: false }
-      );
-
-      if (!reported) {
+      const reported = await UserSchemadata.findById(userId);
+      if (reported) {
+        reported?.ReportPost?.push({
+          postId: new mongoose.Types.ObjectId(postid),
+          postreportReason: text,
+          userinfo: new mongoose.Types.ObjectId(userId),
+        });
+      } else {
         throw new Error("Post not found");
       }
-
+      await reported.save();
       return reported;
     } catch (error) {
       console.error("Error updating post:", error);
-      throw error; // Rethrow the error to handle it in the calling code
     }
   }
 
@@ -378,7 +392,7 @@ class userRepository {
 
   async getAllthedata(): Promise<Posts[] | undefined> {
     const getAllpost = await newspostSchemadata
-      .find()
+      .find({ BlockPost: false })
       .populate("user")
       .populate("comments.user")
       .sort({ _id: -1 });
@@ -413,7 +427,7 @@ class userRepository {
     }
   }
 
-  async postidreceived(postId: string): Promise<any> {
+  async postidreceived(postId: string) {
     try {
       const deletePost = await newspostSchemadata.findById(postId);
       console.log(deletePost, "Post found");
@@ -438,12 +452,6 @@ class userRepository {
       }
       const deletePostdata = await newspostSchemadata.findByIdAndDelete(postId);
       console.log(deletePostdata, "Post deleted from database");
-
-      if (deletePostdata) {
-        return deletePostdata;
-      } else {
-        throw new Error("Failed to delete post");
-      }
     } catch (error) {
       console.log("Error:", error);
       throw error;

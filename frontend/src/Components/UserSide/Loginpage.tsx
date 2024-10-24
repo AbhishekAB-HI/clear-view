@@ -3,21 +3,23 @@ import { FcGoogle } from "react-icons/fc";
 import newlogo from "../images/newslogo.jpg";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import Navbar from "./Navbar";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useState } from "react";
-import { Toaster, toast } from "react-hot-toast";
-import { useDispatch, useSelector } from "react-redux";
-import { setUserAccessTocken,setUserDatails, setUserRefreshtocken} from "../../Redux-store/redux-slice";
+import {  toast } from "react-hot-toast";
+import { useDispatch } from "react-redux";
+import logoWeb from "../animations/Animation - 1724244656671.json";
+import {
+  setUserAccessTocken,
+  setUserRefreshtocken,
+} from "../../Redux-store/Redux-slice";
+import Lottie from "lottie-react";
+import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 
 const Loginpage: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState("");
-  const dispatch = useDispatch()
-  
-
-
+  const dispatch = useDispatch();
 
   const validationSchema = Yup.object().shape({
     email: Yup.string()
@@ -35,48 +37,65 @@ const Loginpage: React.FC = () => {
       .required("Password is required"),
   });
 
-   const googleSignIn = async() => {
-
-     window.location.href = "http://localhost:3000/auth";
-  
-   };
+  const googleSignIn = async () => {
+    window.location.href = "http://localhost:3000/auth";
+  };
 
   const handlesubmit = async (values: { email: string; password: string }) => {
     try {
       const { data } = await axios.post(
-        "http://localhost:3000/api/user/login",
+        `${API_USER_URL}/login`,
         values,
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
           },
         }
       );
 
       if (data.message === "user Login succesfully") {
-        toast.success("Login successfully")
+        toast.success("Login successfully");
         dispatch(setUserAccessTocken(data.accesstok));
         dispatch(setUserRefreshtocken(data.refreshtok));
         navigate("/homepage");
-      } 
-    
+      }else{
+        toast.error("user Login Failed");
+      }
     } catch (error) {
-       if (axios.isAxiosError(error)) {
-         const errorMessage =
-           error.response?.data?.message || "An error occurred";
-         toast.error(errorMessage);
-       } else {
-         toast.error("Unknown error occurred");
-       }
-       console.error("Error verifying OTP:", error);
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "An error occurred";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unknown error occurred");
+      }
+      console.error("Error verifying OTP:", error);
     }
   };
 
   return (
     <div>
-      <Navbar />
+      <nav className="fixed w-full top-0 left-0 z-50 bg-black border-b border-gray-700">
+        <div className="px-4 py-3 pb-5 shadow-md">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-0">
+              <Lottie
+                animationData={logoWeb}
+                className="w-24  sm:w-36" // Responsive sizing for logo
+              />
+              <h1
+                className="text-3xl sm:text-4xl  text-white  font-bold"
+                style={{ fontFamily: "Viaoda Libre" }}
+              >
+                Clear View
+              </h1>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       <div className="flex flex-col md:flex-row h-screen ">
-        <div className="flex-1 bg-purple-700 flex justify-center items-center order-1 md:order-2 p-5 md:p-10">
+        <div className="flex-1 bg-purple-700 flex justify-center items-center order-1 md:order-2 p-5 sm:p-20 md:p-10">
           <img
             src={newlogo}
             alt="News illustration"
@@ -85,7 +104,7 @@ const Loginpage: React.FC = () => {
         </div>
 
         <div className="flex-1 bg-black text-white flex flex-col justify-center p-5 md:p-10 order-2 md:order-1">
-          <div className="mt-10 text-center">
+          <div className="mt-10 mb-5 text-center">
             <h2
               className="text-3xl md:text-3xl"
               style={{ fontFamily: "junge" }}

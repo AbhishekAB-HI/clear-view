@@ -1,5 +1,3 @@
-import React from "react";
-import { IoEarthOutline } from "react-icons/io5";
 
 import logo from '../images/logo.png'
 import Lottie from "lottie-react";

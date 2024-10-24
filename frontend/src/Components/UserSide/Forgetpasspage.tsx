@@ -2,12 +2,13 @@ import "tailwindcss/tailwind.css";
 import newlogo from "../images/newslogo.jpg";
 import axios from "axios";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import Navbar from "./Navbar";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useState } from "react";
 import CryptoJS from "crypto-js";
-
+import Lottie from "lottie-react";
+import logoWeb from "../animations/Animation - 1724244656671.json";
+import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
+import toast from "react-hot-toast";
 const ForgetPassPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,26 +42,63 @@ const ForgetPassPage: React.FC = () => {
 
     try {
       const { data } = await axios.patch(
-        "http://localhost:3000/api/user/setforgetpass",
+        `${API_USER_URL}/setforgetpass`,
         dataget,
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
           },
         }
       );
 
       if (data.message === "Password Changed successfully") {
         navigate("/login");
+      }else{
+        toast.error("Password Changed  Failed");
       }
     } catch (error) {
-      console.error("Error resetting password:", error);
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        toast.error("Network error. Please check your internet connection.");
+      } else {
+        const status = error.response.status;
+        if (status === 404) {
+          toast.error("Posts not found.");
+        } else if (status === 500) {
+          toast.error("Server error. Please try again later.");
+        } else {
+          toast.error("Something went wrong.");
+        }
+      }
+    } else if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error("An unexpected error occurred.");
+    }
+    console.log("Error fetching posts:", error);
     }
   };
 
   return (
     <div>
-      <Navbar />
+      <nav className="fixed w-full top-0 left-0 z-50 bg-black border-b border-gray-700">
+        <div className="px-4 py-3 pb-5 shadow-md">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-0">
+              <Lottie
+                animationData={logoWeb}
+                className="w-24  sm:w-36" // Responsive sizing for logo
+              />
+              <h1
+                className="text-3xl sm:text-4xl  text-white  font-bold"
+                style={{ fontFamily: "Viaoda Libre" }}
+              >
+                Clear View
+              </h1>
+            </div>
+          </div>
+        </div>
+      </nav>
       <div className="flex flex-col md:flex-row h-screen">
         <div className="flex-1 bg-purple-700 flex justify-center items-center order-1 md:order-2 p-5 md:p-10">
           <img

@@ -1,5 +1,4 @@
 import "tailwindcss/tailwind.css";
-import { FcGoogle } from "react-icons/fc";
 import newlogo from "../images/newslogo.jpg";
 import { Toaster, toast } from "react-hot-toast";
 import axios from "axios";
@@ -7,12 +6,12 @@ import { useNavigate, Link } from "react-router-dom";
 import Navbar from "./Navbar";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { setAdminAccessTocken } from "../../Redux-store/redux-slice";
+import { useDispatch } from "react-redux";
+import { setAdminAccessTocken } from "../../Redux-store/Redux-slice";
+import { API_ADMIN_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 const AdminLoginpage: React.FC = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
 
   const validationSchema = Yup.object().shape({
     email: Yup.string()
@@ -30,31 +29,21 @@ const AdminLoginpage: React.FC = () => {
       .required("Password is required"),
   });
 
-
-     
-
-
-
-
   const handleSubmit = async (values: { email: string; password: string }) => {
     try {
-      const { data } = await axios.post(
-        "http://localhost:3000/api/admin/adminlogin",
-        values,
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const { data } = await axios.post(`${API_ADMIN_URL}/adminlogin`, values, {
+        headers: {
+          "Content-Type": CONTENT_TYPE_JSON,
+        },
+      });
 
       if (data.message === "adminLogin succesfully") {
-
-        console.log(data.AdminTocken,'admintoc............');
-        
+        console.log(data.AdminTocken, "admintoc............");
         dispatch(setAdminAccessTocken(data.AdminTocken));
-        toast.success('Admin Logined successfully');
+        toast.success("Admin Logined successfully");
         navigate("/Adminhome");
+      }else{
+        toast.error("admin login failed")
       }
     } catch (error) {
       if (axios.isAxiosError(error)) {

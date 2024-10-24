@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "./Navbar";
@@ -11,34 +11,12 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { clearAdminAccessTocken } from "../../Redux-store/redux-slice";
-import { store } from "../../Redux-store/reduxstore";
+import { clearAdminAccessTocken } from "../../Redux-store/Redux-slice";
+import { store } from "../../Redux-store/Reduxstore";
 import Swal from "sweetalert2";
+import { IUser } from "../Interfaces/Interface";
+import { API_ADMIN_URL } from "../Constants/Constants";
 
-
-export interface IReportUser {
-  userId: IUser;
-  reportReason: string;
-  image:string
-}
-
-
-export interface IUser extends Document {
-  id: any;
-  name: string;
-  email: string;
-  password: string;
-  isActive: boolean;
-  isAdmin: boolean;
-  isVerified?: boolean;
-  createdAt?: Date;
-  updatedAt?: Date;
-  image?: string;
-  followers: IUser[];
-  following: IUser[];
-  blockedUser: IUser[];
-  reportedUser: IReportUser[];
-}
 const truncateText = (text: string, maxLength: number) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 };
@@ -60,21 +38,30 @@ const UserReportmanagement = () => {
   useEffect(() => {
     const getAllPost = async () => {
       try {
-        const { data } = await axios.get(
-          `http://localhost:3000/api/admin/getReportuser`
-        );
+        const { data } = await axios.get(`${API_ADMIN_URL}/getReportuser`);
         if (data.message === "All user found") {
-            console.log(data.foundusers,'success.....................');
-            
           setGetpost(data.foundusers);
+        }else{
+          toast.error("No user found")
         }
       } catch (error) {
-        console.error(error);
+          if (axios.isAxiosError(error)) {
+            const errorMessage =
+              error.response?.data?.message || "An error occurred";
+            toast.error(errorMessage);
+          } else {
+            toast.error("Unknown error occurred");
+          }
+          console.error("Error during login:", error);
       }
     };
 
     getAllPost();
+     
   }, [currentPage]);
+
+
+  
 
   const handleDeletePost = async (id: string) => {
     try {
@@ -89,19 +76,28 @@ const UserReportmanagement = () => {
       }).then(async (result) => {
         if (result.isConfirmed) {
           const { data } = await axios.delete(
-            `http://localhost:3000/api/admin/deleteReportpost/${id}`
+            `${API_ADMIN_URL}/deleteReportpost/${id}`
           );
           if (data.message === "delete post") {
             toast.success("Post deleted successfully");
             setGetpost(getPost.filter((post) => post._id !== id));
             setTotalPosts((prev) => prev - 1);
+          }else{
+               toast.error("Post delete failed");
           }
         } else {
           navigate("/reportpage");
         }
       });
     } catch (error) {
-      console.error(error);
+        if (axios.isAxiosError(error)) {
+          const errorMessage =
+            error.response?.data?.message || "An error occurred";
+          toast.error(errorMessage);
+        } else {
+          toast.error("Unknown error occurred");
+        }
+        console.error("Error during login:", error);
     }
   };
 

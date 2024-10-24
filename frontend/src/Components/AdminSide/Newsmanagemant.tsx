@@ -12,21 +12,11 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { clearAdminAccessTocken } from "../../Redux-store/redux-slice";
-import { store } from "../../Redux-store/reduxstore";
-
-export interface Posts {
-  _id: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  description: string;
-  image: string;
-  videos: string;
-  likes: number;
-  comments: number;
-}
+import { clearAdminAccessTocken } from "../../Redux-store/Redux-slice";
+import { store } from "../../Redux-store/Reduxstore";
+import { Button } from "@mui/material";
+import { Posts } from "../Interfaces/Interface";
+import { API_ADMIN_URL } from "../Constants/Constants";
 
 const truncateText = (text: string, maxLength: number) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
@@ -50,49 +40,92 @@ const Newsmanagement = () => {
     const getAllPost = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:3000/api/admin/getpost?page=${currentPage}&limit=${postsPerPage}`
+          `${API_ADMIN_URL}/getpost?page=${currentPage}&limit=${postsPerPage}`
         );
         if (data.message === "All posts found") {
           setGetpost(data.data.posts);
           setTotalPosts(data.data.total);
+        }else{
+          toast.error("Post not found")
         }
       } catch (error) {
-        console.error(error);
+     if (axios.isAxiosError(error)) {
+       const errorMessage =
+         error.response?.data?.message || "An error occurred";
+       toast.error(errorMessage);
+     } else {
+       toast.error("Unknown error occurred");
+     }
+     console.error("Error during login:", error);
       }
     };
 
     getAllPost();
   }, [currentPage]);
 
-  const handleDeletePost = async (id: string) => {
+  
+    
+
+
+    const getAllPost = async () => {
+      try {
+        const { data } = await axios.get(
+          `${API_ADMIN_URL}/getpost?page=${currentPage}&limit=${postsPerPage}`
+        );
+        if (data.message === "All posts found") {
+          setGetpost(data.data.posts);
+          setTotalPosts(data.data.total);
+        }else{
+          toast.error("Post not found")
+        }
+      } catch (error) {
+      if (axios.isAxiosError(error)) {
+       const errorMessage =
+         error.response?.data?.message || "An error occurred";
+       toast.error(errorMessage);
+     } else {
+       toast.error("Unknown error occurred");
+     }
+     console.error("Error during login:", error);
+      }
+      }
+
+
+  const handleDeletePost = async (id: string,block:boolean) => {
     try {
+
+    const BlockUser =   block ? "Unblock Post" : "Block Post";
       Swal.fire({
-        title: "Are you sure?",
-        text: "You Want to delete this post",
+        title: "Are you sure ?",
         icon: "warning",
         showCancelButton: true,
         confirmButtonColor: "#3085d6",
         cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, delete it!",
-      }).then(async(result)=>{
-          if(result.isConfirmed){
-             const { data } = await axios.delete(
-               `http://localhost:3000/api/admin/deletepost/${id}`
-             );
-             if (data.message === "delete post") {
-               toast.success("Post deleted successfully");
-               setGetpost(getPost.filter((post) => post._id !== id));
-               setTotalPosts((prev) => prev - 1);
-             }
-
+        confirmButtonText: BlockUser,
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const { data } = await axios.delete(
+            `${API_ADMIN_URL}/deletepost/${id}`
+          );
+          if (data.message === "delete post") {
+            getAllPost();
+           
           }else{
-             navigate('/news')
+            toast.error("Post delete failed")
           }
-      })
-
-     
+        } else {
+          navigate("/news");
+        }
+      });
     } catch (error) {
-      console.error(error);
+       if (axios.isAxiosError(error)) {
+         const errorMessage =
+           error.response?.data?.message || "An error occurred";
+         toast.error(errorMessage);
+       } else {
+         toast.error("Unknown error occurred");
+       }
+       console.error("Error during login:", error);
     }
   };
 
@@ -103,6 +136,7 @@ const Newsmanagement = () => {
   };
 
   const totalPages = Math.ceil(totalPosts / postsPerPage);
+
 
   return (
     <div>
@@ -161,7 +195,7 @@ const Newsmanagement = () => {
                   <th className="py-3 px-5">No</th>
                   <th className="py-3 px-5">Image</th>
                   <th className="py-3 px-3">Description</th>
-                  <th className="py-3 px-3">Delete</th>
+                  <th className="py-3 px-3">Block</th>
                 </tr>
               </thead>
               <tbody>
@@ -189,12 +223,25 @@ const Newsmanagement = () => {
                       {truncateText(post.description, 100)}
                     </td>
                     <td className="py-2">
-                      <button
-                        onClick={() => handleDeletePost(post._id)}
-                        className="bg-red-500 text-white px-5 py-1 rounded-full"
+                      <Button
+                        variant="contained"
+                        onClick={() =>
+                          handleDeletePost(post._id, post.BlockPost)
+                        }
+                        className="text-white px-5 py-1 rounded-full"
+                        sx={{
+                          backgroundColor: post.BlockPost
+                            ? "#006400"
+                            : "#FF0000",
+                          "&:hover": {
+                            backgroundColor: post.BlockPost
+                              ? "#00CC00"
+                              : "#CC0000", // Adjust hover colors
+                          },
+                        }}
                       >
-                        Delete
-                      </button>
+                        {post.BlockPost ? "Unblock Post" : "Block Post"}
+                      </Button>
                     </td>
                   </tr>
                 ))}

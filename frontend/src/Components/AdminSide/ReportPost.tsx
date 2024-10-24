@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "./Navbar";
@@ -11,31 +11,20 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { clearAdminAccessTocken } from "../../Redux-store/redux-slice";
-import { store } from "../../Redux-store/reduxstore";
+import { clearAdminAccessTocken } from "../../Redux-store/Redux-slice";
+import { store } from "../../Redux-store/Reduxstore";
 import Swal from "sweetalert2";
+import { API_ADMIN_URL } from "../Constants/Constants";
+import { IPost } from "../Interfaces/Interface2";
 
-export interface Posts {
-  _id: string;
-  user: {
-    name: string;
-    email: string;
-  };
-  description: string;
-  image: string;
-  videos: string;
-  likes: number;
-  comments: number;
-  text:string
-}
 
-const truncateText = (text: string, maxLength: number) => {
-  return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
-};
+// const truncateText = (text: string, maxLength: number) => {
+//   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+// };
 
 const Reportmanagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [getPost, setGetpost] = useState<Posts[]>([]);
+  const [getPost, setGetpost] = useState<IPost[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [postsPerPage] = useState(5);
   const [totalPosts, setTotalPosts] = useState(0);
@@ -43,7 +32,7 @@ const Reportmanagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const adminTocken = useSelector(
+  const adminTocken = useSelector( 
     (state: ReturnType<typeof store.getState>) => state.accessTocken.AdminTocken
   );
 
@@ -51,47 +40,93 @@ const Reportmanagement = () => {
     const getAllPost = async () => {
       try {
         const { data } = await axios.get(
-          `http://localhost:3000/api/admin/getReportpost?page=${currentPage}&limit=${postsPerPage}`
+          `${API_ADMIN_URL}/getReportpost?page=${currentPage}&limit=${postsPerPage}`
         );
         if (data.message === "All posts found") {
+          console.log(data.data.posts,'&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&');
+          
           setGetpost(data.data.posts);
           setTotalPosts(data.data.total);
+        }else{
+          toast.error("Post found fails")
         }
       } catch (error) {
-        console.error(error);
+         if (axios.isAxiosError(error)) {
+           const errorMessage =
+             error.response?.data?.message || "An error occurred";
+           toast.error(errorMessage);
+         } else {
+           toast.error("Unknown error occurred");
+         }
+         console.error("Error during login:", error);
       }
     };
 
     getAllPost();
   }, [currentPage]);
 
-  const handleDeletePost = async (id: string) => {
-    try {
-        Swal.fire({
-          title: "Are you sure?",
-          text: "You Want to delete this post",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonColor: "#3085d6",
-          cancelButtonColor: "#d33",
-          confirmButtonText: "Yes, delete it!",
-        }).then(async(result)=>{
-          if(result.isConfirmed){
-            const { data } = await axios.delete(
-              `http://localhost:3000/api/admin/deleteReportpost/${id}`
-            );
-            if (data.message === "delete post") {
-              toast.success("Post deleted successfully");
-              setGetpost(getPost.filter((post) => post._id !== id));
-              setTotalPosts((prev) => prev - 1);
-            }
+     const getAllPost = async () => {
+       try {
+         const { data } = await axios.get(
+           `${API_ADMIN_URL}/getReportpost?page=${currentPage}&limit=${postsPerPage}`
+         );
+         if (data.message === "All posts found") {
+           console.log(data.data.posts, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
 
+           setGetpost(data.data.posts);
+           setTotalPosts(data.data.total);
+         } else {
+           toast.error("Post found fails");
+         }
+       } catch (error) {
+         if (axios.isAxiosError(error)) {
+           const errorMessage =
+             error.response?.data?.message || "An error occurred";
+           toast.error(errorMessage);
+         } else {
+           toast.error("Unknown error occurred");
+         }
+         console.error("Error during login:", error);
+       }
+     };
+  const handleDeletePost = async (id: any) => {
+    try {
+
+ 
+      Swal.fire({
+        title: "Are you sure?",
+        text: "You Want to delete this post",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#3085d6",
+        cancelButtonColor: "#d33",
+        confirmButtonText: "Yes, delete it!",
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          const { data } = await axios.delete(
+            `${API_ADMIN_URL}/deleteReportpost/${id}`
+          );
+          if (data.message === "delete post") {
+            toast.success("Post deleted successfully");
+              getAllPost();
+            setGetpost(getPost.filter((post) => post._id !== id));
+            setTotalPosts((prev) => prev - 1);
           }else{
-            navigate("/reportpage");
+             toast.error("Post delete failed"); 
           }
-        })
+        } else {
+          navigate("/reportpage");
+        }
+      });
     } catch (error) {
-      console.error(error);
+     if (axios.isAxiosError(error)) {
+       const errorMessage =
+         error.response?.data?.message || "An error occurred";
+       toast.error(errorMessage);
+     } else {
+       toast.error("Unknown error occurred");
+     }
+     console.error("Error during login:", error);
     }
   };
 
@@ -156,50 +191,81 @@ const Reportmanagement = () => {
               <thead>
                 <tr className="bg-gray-800">
                   <th className="py-3 px-5">No</th>
-                  <th className="py-3 px-5">Image</th>
+                  <th className="py-3 px-5">Posts</th>
                   <th className="py-3 px-3">Report Reason</th>
                   <th className="py-3 px-3">Description</th>
-
+                  <th className="py-3 px-3">Reported by</th>
                   <th className="py-3 px-3">Delete</th>
                 </tr>
               </thead>
               <tbody>
-                {getPost.map((post, index) => (
-                  <tr key={post._id}>
-                    <td className="py-2">
-                      {index + 1 + (currentPage - 1) * postsPerPage}
-                    </td>
-                    <td className="py-2">
-                      {post.image && post.image.length > 0 ? (
-                        <img
-                          src={post.image}
-                          alt="post"
-                          className="w-20 h-20 object-cover rounded-lg"
-                        />
-                      ) : post.videos && post.videos.length > 0 ? (
-                        <video controls className="w-20 h-20 rounded-lg">
-                          <source src={post.videos} type="video/mp4" />
-                        </video>
-                      ) : (
-                        <span>No media</span>
-                      )}
-                    </td>
-                    <td className="py-2 text-red-600">
-                      {truncateText(post.text, 100)}
-                    </td>
-                    <td className="py-2">
-                      {truncateText(post.description, 100)}
-                    </td>
-                    <td className="py-2">
-                      <button
-                        onClick={() => handleDeletePost(post._id)}
-                        className="bg-red-500 text-white px-5 py-1 rounded-full"
-                      >
-                        Delete
-                      </button>
+                {getPost.length > 0 ? (
+                  getPost.map((post, index) => (
+                    <tr key={index}>
+                      <td className="py-2">
+                        {index + 1 + (currentPage - 1) * postsPerPage}
+                      </td>
+                      <td className="py-2">
+                        {post.postId &&
+                        post.postId.image &&
+                        post.postId.image.length > 0 ? (
+                          <img
+                            src={post.postId.image} // Ensure you're accessing the correct image
+                            alt="post"
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                        ) : post.postId &&
+                          post.postId.videos &&
+                          post.postId.videos.length > 0 ? (
+                          <video controls className="w-20 h-20 rounded-lg">
+                            <source src={post.postId.videos} type="video/mp4" />
+                          </video>
+                        ) : (
+                          <span>No media</span>
+                        )}
+                      </td>
+                      <td className="py-2 text-red-600">{post.reportReason}</td>
+                      <td className="py-2">
+                        {post.postId && post.postId.description
+                          ? post.postId.description
+                          : "No description available"}
+                      </td>
+                      <td className="py-2">
+                        {post.reporter && post.reporter.name
+                          ? post.reporter.name
+                          : "Anonymous"}
+                      </td>
+                      <td className="py-2">
+                        <button
+                          onClick={() => {
+                            // Check if postId exists before trying to delete
+                            if (post.postId && post.postId._id) {
+                              handleDeletePost(post.postId._id); // Call with valid ID
+                            } else {
+                              console.error(
+                                "Cannot delete: postId is null or undefined",
+                                post
+                              );
+                              // Optionally, you can show a toast or alert to inform the user
+                              toast.error(
+                                "Cannot delete this post because it no longer exists."
+                              );
+                            }
+                          }}
+                          className="bg-red-500 text-white px-5 py-1 rounded-full"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td className="py-4 text-center text-gray-500" colSpan={6}>
+                      No posts available
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
 

@@ -9,7 +9,9 @@ import CryptoJS from "crypto-js";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import toast from "react-hot-toast";
-
+import Lottie from "lottie-react";
+import logoWeb from "../animations/Animation - 1724244656671.json";
+import { API_USER_URL } from "../Constants/Constants";
 const Registerpage: React.FC = () => {
   
   const navigate = useNavigate();
@@ -52,7 +54,7 @@ const Registerpage: React.FC = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/api/user/register",
+        `${API_USER_URL}/register`,
         { name, email, password },
         {
           headers: {
@@ -69,6 +71,8 @@ const Registerpage: React.FC = () => {
           secretKey
         ).toString();
         navigate("/verify-otp", { state: { email: encryptedEmail } });
+      }else{
+        toast.error("OTP Send Failed");
       }
     } catch (error) {
       console.log(error);
@@ -86,8 +90,25 @@ const Registerpage: React.FC = () => {
   };
 
   return (
-    <div>   
-      <Navbar />
+    <div>
+      <nav className="fixed w-full top-0 left-0 z-50 bg-black border-b border-gray-700">
+        <div className="px-4 py-3 pb-3 shadow-md">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center space-x-0">
+              <Lottie
+                animationData={logoWeb}
+                className="w-24  sm:w-36" // Responsive sizing for logo
+              />
+              <h1
+                className="text-3xl sm:text-4xl  text-white  font-bold"
+                style={{ fontFamily: "Viaoda Libre" }}
+              >
+                Clear View
+              </h1>
+            </div>
+          </div>
+        </div>
+      </nav>
       <div className="flex flex-col md:flex-row h-screen">
         <div className="flex-1 bg-purple-700 flex justify-center items-center order-1 md:order-2 p-5 md:p-10">
           <img
@@ -98,7 +119,7 @@ const Registerpage: React.FC = () => {
         </div>
 
         <div className="flex-1 bg-black text-white flex flex-col justify-center p-5 md:p-10 order-2 md:order-1">
-          <div className="mt-10 text-center mb-5">
+          <div className="mt-28 text-center mb-5">
             <h2
               className="text-3xl md:text-3xl"
               style={{ fontFamily: "junge" }}
@@ -203,26 +224,24 @@ const Registerpage: React.FC = () => {
                   >
                     Sign up
                   </button>
+                  <div className="text-center text-sm mt-5 ">
+                    <p
+                      className="text-white"
+                      style={{ fontFamily: "Roboto, sans-serif" }}
+                    >
+                      Already have an account? <Link to="/login">Login</Link>
+                    </p>
+                    <p
+                      className="text-gray-400 mt-3"
+                      style={{ fontFamily: "Roboto, sans-serif" }}
+                    >
+                      <Link to="/forgetpass"> Forgot password?</Link>
+                    </p>
+                    <br />
+                  </div>
                 </Form>
               )}
             </Formik>
-
-            <div className="text-center text-sm mt-2 ">
-              <p
-                className="text-gray-400"
-                style={{ fontFamily: "Roboto, sans-serif" }}
-              >
-                <Link to="/forgetpass"> Forgot password?</Link>
-              </p>
-              <br />
-
-              <p
-                className="text-white"
-                style={{ fontFamily: "Roboto, sans-serif" }}
-              >
-                Already have an account? <Link to="/login">Login</Link>
-              </p>
-            </div>
           </div>
         </div>
       </div>

@@ -1,16 +1,11 @@
-import { IUser, Message } from "../entities/userEntities";
-import messageRepository from "../Repository/messageRepository";
+import { IUser} from "../Entities/Userentities";
+import { Message } from "../Entities/Chatentities";
+import messageRepository from "../Repository/Messagerepository";
 
 class MessageServices {
   constructor(private messageRepo: messageRepository) {}
 
-  async sendAllmessages(
-    userId: string,
-    content: string,
-    chatId: string,
-    imageUrls: string[],
-    videoUrls: string[]
-  ): Promise<Message | undefined> {
+  async sendAllmessages( userId: string,content: string,chatId: string,imageUrls: string[],videoUrls: string[]): Promise<Message | undefined> {
     const getAllmessges = await this.messageRepo.sendAllDataToRepo(
       userId,
       content,
@@ -26,17 +21,20 @@ class MessageServices {
     return getAllmessges;
   }
 
+  async blockUserhere(
+    userId: string,
+    logedUserId: string
+  ): Promise<boolean | undefined> {
+    try {
+      const findUserStatus = await this.messageRepo.findUserBlock(
+        userId,
+        logedUserId
+      );
 
-  async blockUserhere(userId:string,logedUserId:string):Promise<boolean|undefined>{
-       try {
-
-      const findUserStatus = await this.messageRepo.findUserBlock(userId,logedUserId)
-        
-        return findUserStatus;
-       } catch (error) {
-        console.log(error);
-        
-       }
+      return findUserStatus;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async findAllmessages(chatid: string): Promise<Message[] | undefined> {
@@ -48,17 +46,14 @@ class MessageServices {
     return gettheMessages;
   }
 
-  async getUserInfomation(userid: string):Promise <IUser|null> {
-                  
-     const  getUsers = await this.messageRepo.getalluserinfo(userid);
+  async getUserInfomation(userid: string): Promise<IUser | null> {
+    const getUsers = await this.messageRepo.getalluserinfo(userid);
 
-     if(!getUsers){
-      throw new Error("No user founded")
-     }
+    if (!getUsers) {
+      throw new Error("No user founded");
+    }
 
-     return getUsers;
-
-
+    return getUsers;
   }
 }
 

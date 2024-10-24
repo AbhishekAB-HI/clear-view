@@ -1,10 +1,27 @@
 import { ObjectId } from "mongoose";
-import { Chats, IUser } from "../entities/userEntities";
-import ChatSchemamodel from "../model/ChatModel";
-import UserSchemadata from "../model/userModel";
+import { IUser } from "../Entities/Userentities";
+import { Chats } from "../Entities/Chatentities";
+import ChatSchemamodel from "../Model/Chatmodel";
+import UserSchemadata from "../Model/Usermodel";
+import NotifiactSchemaModal from "../Model/NotificationSchema";
+import { Notification } from "../Entities/Notification";
 
 class chatRepository {
-  async findAccesschat(userId: string, chatId: string): Promise<Chats | null> {
+  async findAccessgroupchat(chatId: string): Promise<Chats | null> {
+    let isChat = await ChatSchemamodel.findById(chatId)
+      .populate("users", "-password")
+      .populate("latestMessage");
+    isChat = await ChatSchemamodel.populate(isChat, {
+      path: "latestMessage.sender",
+      select: "name pic email",
+    });
+    return isChat;
+  }
+
+  async findAccesschat(
+    userId: string | unknown,
+    chatId: string
+  ): Promise<Chats | null> {
     let isChat = await ChatSchemamodel.find({
       isGroupchat: false,
       $and: [
@@ -56,7 +73,31 @@ class chatRepository {
     }
   }
 
-  async findAllchats(userId: string): Promise<IUser[] | undefined> {
+  async createNewGroup(groupname: string, userLists: IUser[], userId: unknown) {
+    try {
+      const newGroupChat = new ChatSchemamodel({
+        chatName: groupname,
+        isGroupchat: true,
+        users: [...userLists.map((user) => user._id), userId],
+        groupAdmin: userId,
+      });
+      const savedGroupChat = await newGroupChat.save();
+      savedGroupChat;
+
+      const fullGroupChat = await ChatSchemamodel.findOne({
+        _id: savedGroupChat._id,
+      })
+        .populate("users", "-password")
+        .populate("groupAdmin", "-password");
+
+      return fullGroupChat;
+    } catch (error) {
+      console.error("Error creating group chat:", error);
+      throw new Error("Failed to create group chat");
+    }
+  }
+
+  async findAllchats(userId: string | unknown): Promise<IUser[] | undefined> {
     try {
       const chats = await ChatSchemamodel.find({
         users: { $elemMatch: { $eq: userId } },
@@ -75,37 +116,33 @@ class chatRepository {
     }
   }
 
-  async getUserIdHere(userId: string):Promise<boolean|undefined> {
+  async getUserIdHere(userId: string | unknown): Promise<boolean | undefined> {
+    try {
+      const UserFounded = await UserSchemadata.findById(userId);
 
-     try {
+      const findtheUsers = await UserSchemadata.find({});
 
-       const UserFounded = await UserSchemadata.findById(userId);
+      const findAllUserid = findtheUsers.map((item: any) =>
+        item._id.toString()
+      );
 
-       const findtheUsers = await UserSchemadata.find({});
+      const Blocked = UserFounded?.blockedUser.some((blockedUser) =>
+        findAllUserid.includes(blockedUser.toString())
+      );
 
-       const findAllUserid = findtheUsers.map((item:any) => item._id.toString());
+      console.log(Blocked, "2222222222222222222222222222222222222222222222");
 
-       const Blocked = UserFounded?.blockedUser.some((blockedUser) =>
-         findAllUserid.includes(blockedUser.toString())
-       );
+      return Blocked;
 
-       console.log(Blocked,'2222222222222222222222222222222222222222222222')
+      // const findAllUserid =   findtheUsers.map((item)=> item._id)
 
-       return Blocked;
-
-
-          // const findAllUserid =   findtheUsers.map((item)=> item._id)
-          
       //  const Blocked = UserFounded?.blockedUser.some(
       //    (blockedUser) => blockedUser.toString() === findAllUserid
       //  );
       //  return Blocked;
-      
-     } catch (error) {
+    } catch (error) {
       console.log(error);
-      
-     }
-   
+    }
   }
 
   async addrepFollowers(
@@ -187,7 +224,61 @@ class chatRepository {
 
   //           }
   // }
-  async findAllFollowers(userId: string): Promise<IUser[] | undefined> {
+
+  async findAllNotifications(userId:unknown): Promise<Notification[] | undefined> {
+    try {
+      // const findAllnotifications =await NotifiactSchemaModal.find({ isRead: false })
+      //   .populate("sender")
+      //   .populate("chat")
+      //   .exec();
+      console.log("###########################################");
+      
+      const Chats = await ChatSchemamodel.find({ users: userId });
+
+      const findAllchatid = Chats.map((chat) => chat._id);
+
+      console.log(findAllchatid,'2222222222222222222222222222');
+      
+
+     if (findAllchatid.length > 0) {
+      const findAllnotifications = await NotifiactSchemaModal.find({
+        chat: { $in: findAllchatid }, // Match multiple chat IDs
+        sender: { $ne: userId }, // Exclude documents where sender is the userId
+      })
+        .populate("sender")
+        .populate("chat");
+
+
+         NotifiactSchemaModal.find({ sender: userId });
+
+      
+
+       console.log(findAllnotifications, "get full notifications");
+       return findAllnotifications;
+     } else {
+       console.log("No chat IDs found for the user.");
+       return [];
+     }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async FindAllUsers(userId: unknown) {
+    try {
+      const findAllusers = await UserSchemadata.find({ _id: { $ne: userId } });
+      if (!findAllusers) {
+        throw new Error("No users found");
+      }
+      return findAllusers;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async findAllFollowers(
+    userId: string | unknown
+  ): Promise<IUser[] | undefined> {
     try {
       const currentUser = await UserSchemadata.findById(userId);
       if (!currentUser) {
@@ -213,7 +304,9 @@ class chatRepository {
     }
   }
 
-  async findAllOtherusers(userId: string): Promise<IUser[] | undefined> {
+  async findAllOtherusers(
+    userId: string | unknown
+  ): Promise<IUser[] | undefined> {
     try {
       //  const followerUser:any = await UserSchemadata.findById(userId);
 
@@ -230,7 +323,9 @@ class chatRepository {
     }
   }
 
-  async findOtherMessages(userId: string): Promise<IUser[] | undefined> {
+  async findOtherMessages(
+    userId: string | unknown
+  ): Promise<IUser[] | undefined> {
     try {
       const currentUser = await UserSchemadata.findById(userId);
       if (!currentUser) {
@@ -243,7 +338,6 @@ class chatRepository {
         _id: { $ne: userId, $nin: blockedUsers },
       });
 
-      // Return the filtered users
       return foundUsers;
     } catch (error) {
       console.error("Error finding users:", error);
@@ -251,7 +345,23 @@ class chatRepository {
     }
   }
 
-  async findOtherusers(userId: string): Promise<IUser[] | undefined> {
+  async findgroupChats(userId: unknown): Promise<Chats[] | undefined> {
+    try {
+      const groupChats = await ChatSchemamodel.find({
+        isGroupchat: true,
+        users: { $in: [userId] },
+      }).populate({
+        path: "users",
+        select: "name email image",
+      });
+
+      return groupChats;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async findOtherusers(userId: string | unknown): Promise<IUser[] | undefined> {
     try {
       const currentUser = await UserSchemadata.findById(userId);
       if (!currentUser) {

@@ -1,130 +1,187 @@
-import { Link, useNavigate } from "react-router-dom";
-import {
-  FaBell,
-  FaEnvelope,
-  FaHome,
-  FaUserFriends,
-  FaUsers,
-} from "react-icons/fa";
-import { MdOutlinePostAdd } from "react-icons/md";
-import { Button } from "@mui/material";
+
+
 import toast from "react-hot-toast";
-import {
-    FormEvent,
-  useEffect,
-  useState,
-} from "react";
+import { FormEvent, useEffect, useState } from "react";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
 import ThreeDot from "react-loading";
-import { store } from "../../Redux-store/reduxstore";
+import { store } from "../../Redux-store/Reduxstore";
+import Navbar2 from "./Navbar2";
+import SideBar2 from "./Sidebar2";
+import { API_CHAT_URL, API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
+import axios from "axios";
+import { IUser } from "../Interfaces/Interface";
 const FollowingPage = () => {
-  interface IUser {
-    _id: any;
-    name: string;
-    email: string;
-    image: string;
-    password: string;
-    isActive: boolean;
-    isAdmin: boolean;
-    isVerified?: boolean;
-    createdAt?: Date;
-    updatedAt?: Date;
-    following: boolean;
-  }
-
+ 
   const [Loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [searchResult, setSearchResult] = useState<IUser[]>([]);
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
-  const [userID, setuserID] = useState<string>("")
-   const [userFound, setuserFound] = useState(false)
+  const [userID, setuserID] = useState<string>("");
+  const [userFound, setuserFound] = useState(false);
   type RootState = ReturnType<typeof store.getState>;
 
-
   const updateUsers = async () => {
-    const { data } = await ClientNew.get(
-      `http://localhost:3000/api/chat/allusers`,
-      {
-        headers: {
-          "Content-type": "application/json",
-        },
-      }
-    );
 
-    setgetAlluser(data);
+      try {
+         const { data } = await ClientNew.get(`${API_CHAT_URL}/allusers`, {
+           headers: {
+             "Content-type": CONTENT_TYPE_JSON,
+           },
+         });
+
+          if (data.message === "Other users found"){
+            setgetAlluser(data.otherusers);
+          }else{
+            toast.error("Failed to get other users")
+          }
+      
+      } catch (error:unknown) {
+         if (axios.isAxiosError(error)) {
+           if (!error.response) {
+             toast.error(
+               "Network error. Please check your internet connection."
+             );
+           } else {
+             const status = error.response.status;
+             if (status === 404) {
+               toast.error("Posts not found.");
+             } else if (status === 500) {
+               toast.error("Server error. Please try again later.");
+             } else {
+               toast.error("Something went wrong.");
+             }
+           }
+         } else if (error instanceof Error) {
+           toast.error(error.message);
+         } else {
+           toast.error("An unexpected error occurred.");
+         }
+         console.log("Error fetching posts:", error);
+        
+      }
+   
   };
 
 
   useEffect(() => {
-    const findUsers = async () => {
-      const { data } = await ClientNew.get(
-        "http://localhost:3000/api/chat/getUserdata"
-      );
-      if (data.message === "userId get") {
-        setuserID(data.userId);
-      }
-    };
-    findUsers();
+      const findUsers = async () => {
+        try {
+            const { data } = await ClientNew.get(`${API_CHAT_URL}/getUserdata`);
+            if (data.message === "userId get") {
+              setuserID(data.userId);
+            }else{
+              toast.error("user id not found")
+            }
+        } catch (error:unknown) {
+           if (axios.isAxiosError(error)) {
+             if (!error.response) {
+               toast.error(
+                 "Network error. Please check your internet connection."
+               );
+             } else {
+               const status = error.response.status;
+               if (status === 404) {
+                 toast.error("Posts not found.");
+               } else if (status === 500) {
+                 toast.error("Server error. Please try again later.");
+               } else {
+                 toast.error("Something went wrong.");
+               }
+             }
+           } else if (error instanceof Error) {
+             toast.error(error.message);
+           } else {
+             toast.error("An unexpected error occurred.");
+           }
+           console.log("Error fetching posts:", error);
+        }
+        
+        };
+      findUsers();
   }, []);
 
- const followUser = async (userId: string, LoguserId:string ) => {
-   try {
-
-          console.log(userId,'userId');
-          console.log(LoguserId, "loged");
-           const { data } = await ClientNew.post(
-             `http://localhost:3000/api/chat/followuser`,
-             { userId, LoguserId  },
-             {
-               headers: {
-                 "Content-type": "application/json",
-               },
-             }
-           ); 
-
-           if (data.message === "followed users") {
-            console.log(data.addFollower,'1111111111111111');
-             setuserFound(data.addFollower);
-             updateUsers();
-           }
-      
-   } catch (error) {
-     console.log(error);
-   }
- };
-
-
- 
-
-  useEffect(() => {
-    const getAllPost = async () => {
-      const { data } = await ClientNew.get(
-        `http://localhost:3000/api/chat/allusers`,
+  const followUser = async (userId: string, LoguserId: string) => {
+    try {
+      const { data } = await ClientNew.post(
+        `${API_CHAT_URL}/followuser`,
+        { userId, LoguserId },
         {
           headers: {
-            "Content-type": "application/json",
+            "Content-type": CONTENT_TYPE_JSON,
           },
         }
       );
+      if (data.message === "followed users") {
+        setuserFound(data.addFollower);
+        updateUsers();
+      }else{
+         toast.error("followed user failed");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (!error.response) {
+          toast.error("Network error. Please check your internet connection.");
+        } else {
+          const status = error.response.status;
+          if (status === 404) {
+            toast.error("Posts not found.");
+          } else if (status === 500) {
+            toast.error("Server error. Please try again later.");
+          } else {
+            toast.error("Something went wrong.");
+          }
+        }
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+      console.log("Error fetching posts:", error);
+    }
+  };
 
-      setgetAlluser(data);
+  useEffect(() => {
+    const getAllPost = async () => {
+        try {
+           const { data } = await ClientNew.get(`${API_CHAT_URL}/allusers`, {
+             headers: {
+               "Content-type": CONTENT_TYPE_JSON,
+             },
+           });
+
+             if (data.message === "Other users found") {
+               setgetAlluser(data.otherusers);
+             } else {
+               toast.error("Failed to get other users");
+             }
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+              if (!error.response) {
+                toast.error(
+                  "Network error. Please check your internet connection."
+                );
+              } else {
+                const status = error.response.status;
+                if (status === 404) {
+                  toast.error("Posts not found.");
+                } else if (status === 500) {
+                  toast.error("Server error. Please try again later.");
+                } else {
+                  toast.error("Something went wrong.");
+                }
+              }
+            } else if (error instanceof Error) {
+              toast.error(error.message);
+            } else {
+              toast.error("An unexpected error occurred.");
+            }
+            console.log("Error fetching posts:", error);
+        }
+     
     };
 
     getAllPost();
   }, []);
-
-  
-
-
-
-
-
-
-
-
-
-
-
 
   const handleSearch = async (event: FormEvent) => {
     event.preventDefault();
@@ -134,105 +191,65 @@ const FollowingPage = () => {
     try {
       setLoading(true);
       const { data } = await ClientNew.get(
-        `http://localhost:3000/api/user/searched?search=${search}`,
+        `${API_USER_URL}/searched?search=${search}`,
         {
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": CONTENT_TYPE_JSON,
           },
         }
       );
-
       if (data.message === "get all users") {
         setSearchResult(data.SearchedUsers);
         setLoading(false);
+      }else{
+        toast.error("No user found here")
       }
     } catch (error) {
       setLoading(false);
-      toast.error("Error Occurred!");
+   if (axios.isAxiosError(error)) {
+     if (!error.response) {
+       toast.error("Network error. Please check your internet connection.");
+     } else {
+       const status = error.response.status;
+       if (status === 404) {
+         toast.error("Posts not found.");
+       } else if (status === 500) {
+         toast.error("Server error. Please try again later.");
+       } else {
+         toast.error("Something went wrong.");
+       }
+     }
+   } else if (error instanceof Error) {
+     toast.error(error.message);
+   } else {
+     toast.error("An unexpected error occurred.");
+   }
+   console.log("Error fetching posts:", error);
     }
   };
 
   return (
     <div className="bg-black text-white min-h-screen">
-      <nav className="px-4 py-3 shadow-md fixed w-full top-0 left-0 z-50 bg-black">
-        <div className="container mx-auto flex items-center justify-between">
-          {/* Header and Search Bar */}
-          <div className="flex items-center space-x-4">
-            {/* Logo Section */}
-            <h1
-              className="text-3xl font-bold"
-              style={{ fontFamily: "Viaoda Libre" }}
-            >
-              Clear View
-            </h1>
-          </div>
-          <form
-            onSubmit={handleSearch}
-            className="flex items-center space-x-2 mr-40"
-          >
-            <input
-              type="search"
-              placeholder="Search"
-              onChange={(e) => setSearch(e.target.value)}
-              className="bg-gray-800 text-white px-4 py-2 mr-8 rounded-full outline-none"
-            />
-            <Button style={{ color: "white" }} variant="outlined" type="submit">
-              Search
-            </Button>
-          </form>
-          {/* Account Management Section */}
-          {/* ... */}
-        </div>
-      </nav>
+      <Navbar2 />
 
       <div className="flex mt-20">
         {/* Sidebar */}
-        <aside className="w-1/5 p-4 space-y-4 fixed left-20 h-screen overflow-y-auto">
-          <div className="flex items-center space-x-2 ">
-            <FaHome style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px", color: "white" }}>
-              {" "}
-              <Link to="/homepage">Home</Link>{" "}
-            </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FaEnvelope style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Message</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FaUserFriends style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Followers</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FaUsers style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Community</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <FaBell style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>Notification</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <MdOutlinePostAdd style={{ fontSize: "30px" }} />
-            <span style={{ fontSize: "20px" }}>
-              {" "}
-              <Link to="/createpost">createpost</Link>
-            </span>
-          </div>
-        </aside>
+        <SideBar2 />
 
         {/* Main Content */}
-        <main className="w-4/5 ml-auto p-4">
+        <main className="w-4/5 ml-auto p-0">
           {/* Messages Section */}
-
-          <div className="space-y-4 p-5  w-full h-[100vh]">
+          <div className="fixed  bg-black w-full pt-10  pb-5">
             <h1
               style={{ fontSize: "25px" }}
               className=" flex text-xl font-bold ml-0"
             >
               Following
             </h1>
+          </div>
 
-            <div className="space-y-4">
+          <div className="space-y-4 p-5 mt-20  w-full h-[100vh]">
+            <div className="space-y-4   w-full h-[100vh]">
               {/* Loading or Results */}
               {Loading ? (
                 <div className="flex justify-center items-center">
@@ -248,7 +265,7 @@ const FollowingPage = () => {
                     key={user._id}
                     className="flex items-center justify-between bg-gray-900 p-4 rounded-lg"
                   >
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-5 w-full">
                       <img
                         src={user.image}
                         alt="Profile"
@@ -266,12 +283,12 @@ const FollowingPage = () => {
                         onClick={() => followUser(user._id, userID)}
                         color={!userFound ? "blue" : "white"}
                         className={
-                          !userFound 
+                          !userFound
                             ? "mr-10 px-4 py-2 text-white font-semibold rounded-full border border-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors duration-300"
                             : "mr-10 px-4 py-2 text-white font-semibold bg-blue-600 rounded-full border border-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors duration-300"
                         }
                       >
-                        {!userFound? "Following" : "Follow"}
+                        {!userFound ? "Following" : "Follow"}
                       </button>
                     </div>
                   </div>

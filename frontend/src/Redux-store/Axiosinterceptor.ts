@@ -1,6 +1,6 @@
 import axios from "axios";
-import { store } from "../Redux-store/reduxstore";
-import { clearuserAccessTocken, setUserAccessTocken } from "./redux-slice";
+import { store } from "./Reduxstore";
+import { clearuserAccessTocken, setUserAccessTocken } from "./Redux-slice";
 import toast from "react-hot-toast";
 
 const ClientNew = axios.create({
@@ -10,41 +10,38 @@ const ClientNew = axios.create({
   },
 });
 
-
-
-
 ClientNew.interceptors.request.use(
   (config) => {
     const state = store.getState();
-    const accessToken = state.accessTocken.userTocken; 
-     console.log(accessToken,'geteeeeeeeeeeeeeeee');
-     
+    const accessToken = state.accessTocken.userTocken;
+    console.log(accessToken, "geteeeeeeeeeeeeeeee");
+
     if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`; 
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
 
     return config;
   },
   (error) => {
-    return Promise.reject(error); 
+    return Promise.reject(error);
   }
 );
 
 ClientNew.interceptors.response.use(
-  (response) => response, 
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
     if (
       error.response &&
-      error.response.status === 401 && 
-      !originalRequest._retry 
+      error.response.status === 401 &&
+      !originalRequest._retry
     ) {
       originalRequest._retry = true;
 
       try {
         const state = store.getState();
-        const refreshToken = state.accessTocken.userRefreshTocken; 
+        const refreshToken = state.accessTocken.userRefreshTocken;
 
         if (refreshToken) {
           const { data } = await axios.post(
@@ -62,8 +59,8 @@ ClientNew.interceptors.response.use(
         }
       } catch (refreshError) {
         console.error("Session has been expired", refreshError);
-        store.dispatch(clearuserAccessTocken()); 
-        window.location.href = "/login"; 
+        store.dispatch(clearuserAccessTocken());
+        window.location.href = "/login";
         return Promise.reject(refreshError);
       }
     }
@@ -71,7 +68,7 @@ ClientNew.interceptors.response.use(
     if (error.response && error.response.status === 403) {
       const errorCode = error.response.data.code;
       if (errorCode === "ACCOUNT_INACTIVE") {
-        store.dispatch(clearuserAccessTocken()); 
+        store.dispatch(clearuserAccessTocken());
         toast.error("Your account is Blocked. Please contact support.");
         window.location.href = "/login";
         return Promise.reject(
@@ -86,7 +83,7 @@ ClientNew.interceptors.response.use(
       }
     }
 
-    return Promise.reject(error); 
+    return Promise.reject(error);
   }
 );
 

@@ -3,13 +3,6 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "./Navbar";
 import Swal from "sweetalert2";
-import {
-  FaHome,
-  FaUsers,
-  FaUserFriends,
-  FaRegFileAlt,
-  FaSignOutAlt,
-} from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { clearAdminAccessTocken } from "../../Redux-store/Redux-slice";
@@ -17,6 +10,7 @@ import { store } from "../../Redux-store/Reduxstore";
 import { Button } from "@mui/material";
 import { Posts } from "../Interfaces/Interface";
 import { API_ADMIN_URL } from "../Constants/Constants";
+import Adminsidebar from "./Adminsidebar";
 
 const truncateText = (text: string, maxLength: number) => {
   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
@@ -32,9 +26,7 @@ const Newsmanagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const adminTocken = useSelector(
-    (state: ReturnType<typeof store.getState>) => state.accessTocken.AdminTocken
-  );
+  const adminTocken = useSelector((state: ReturnType<typeof store.getState>) => state.accessTocken.AdminTocken);
 
   useEffect(() => {
     const getAllPost = async () => {
@@ -142,37 +134,8 @@ const Newsmanagement = () => {
     <div>
       <Navbar />
       <div className="flex">
-        <aside className="w-64 bg-black text-white p-4 h-screen fixed left-20 top-20">
-          <div className="flex flex-col space-y-4">
-            <div className="flex items-center space-x-2">
-              <FaHome style={{ fontSize: "20px" }} />
-              <span>Dashboard</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaUsers style={{ fontSize: "20px" }} />
-              <Link to="/Adminhome">User Management</Link>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaUserFriends style={{ fontSize: "20px" }} />
-              <Link to="/news">News Management</Link>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <Link to="/reportpage">Post Report Management</Link>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <span>
-                {" "}
-                <Link to="/userReportpage">User Report Management</Link>
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaSignOutAlt style={{ fontSize: "20px" }} />
-              <button onClick={handleLogout}>Log out</button>
-            </div>
-          </div>
-        </aside>
+       
+        <Adminsidebar />
 
         <main className="ml-64 flex-1 p-4">
           <div className="container mx-auto">

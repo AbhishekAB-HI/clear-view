@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 import Postpage from "./Addpost";
 import { IPost } from "../Interfaces/Interface";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
-const SideNavBar2 = () => {
+const SideNavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [saveid, setsaveid] = useState<string | any>(null);
   type RootState = ReturnType<typeof store.getState>;
@@ -66,6 +66,11 @@ const SideNavBar2 = () => {
     getUserId();
   }, [userDetails]);
 
+  
+
+ 
+ 
+
   const togglepostModal = () => {
     setShowpostModal(!showpostModal);
   };
@@ -92,9 +97,9 @@ const SideNavBar2 = () => {
       {/* Sidebar */}
       <aside
         className={`fixed top-20 left-0 pt-10 h-full bg-black  border-r border-t border-gray-700 text-gray-100 w-10 p-6 space-y-6 
-        shadow-xl transition-all duration-300 ease-in-out z-55
+        shadow-xl transition-all duration-300 ease-in-out z-50
         ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        md:translate-x-0 md:w-80 md:left-0`}
+        md:translate-x-0 md:w-72 md:left-0`}
       >
         {/* Navigation Links */}
         <nav className="space-y-2">
@@ -161,4 +166,4 @@ const SideNavBar2 = () => {
   );
 };
 
-export default SideNavBar2;
+export default SideNavBar;

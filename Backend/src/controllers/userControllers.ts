@@ -1,16 +1,13 @@
+
 import userServises from "../Servises/Userservises";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { userPayload } from "../Interface/userInterface/Userpayload";
 import dotenv from "dotenv";
-import { ACCESS_TOKEN } from "../Config/Jwt";
+import { ACCESS_TOKEN } from "../Config/Jwt"; 
 import cloudinary from "../Utils/Cloudinary";
 import fs from "fs";
-import { log } from "winston";
-import checkUpcomingBirthdays from "../Notifications/Notifications";
-// import { generateOtp, sendVerifyMail } from "../utils/mail";
-// import { log } from "console";
-// import { Posts } from "../Entities/Userentities";
+
 
 dotenv.config();
 class UserController {
@@ -40,7 +37,6 @@ class UserController {
 
   async getUserInfos(req: Request, res: Response) {
     try {
-
       const token = req.header("Authorization")?.split(" ")[1];
       if (!token) {
         return res
@@ -111,11 +107,7 @@ class UserController {
     }
   }
 
-  async getNotifications(req:Request,res:Response){
-    console.log('hahahahaahhhaha');
-    
-      await checkUpcomingBirthdays()
-  }
+ 
 
   async forgetotp(req: Request, res: Response): Promise<void> {
     try {
@@ -139,6 +131,28 @@ class UserController {
     }
   }
 
+  async getBlockedUsers(req: Request, res: Response) {
+    try {
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
+      const FindUsers = await this.userService.findBlockedUsers(userId);
+
+
+      res.status(200).json({ message: "Get Blocked users", FindUsers });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async LikePost(req: Request, res: Response) {
     try {
       const { postId, userId } = req.body;
@@ -147,6 +161,38 @@ class UserController {
       }
       const getupdate = await this.userService.passLikePostID(postId, userId);
       res.status(200).json({ message: "Post liked succesfully" });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getProfileview(req: Request, res: Response) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 2;
+      const { userid } = req.query;
+      const getUserProfile = await this.userService.passProfileid(
+        userid,
+        page,
+        limit
+      );
+      if (
+        !getUserProfile ||
+        !getUserProfile.userinfo ||
+        !getUserProfile.postinfo ||
+        !getUserProfile.totalpost
+      ) {
+        throw new Error("No user details found");
+      }
+
+      const { userinfo, postinfo, totalpost } = getUserProfile;
+
+      res.status(200).json({
+        message: "Get user Profile",
+        userinfo,
+        postinfo,
+        totalpost,
+      });
     } catch (error) {
       console.log(error);
     }
@@ -231,11 +277,6 @@ class UserController {
     try {
       const id = req.params.id;
       const decoded = jwt.verify(id, ACCESS_TOKEN) as userPayload;
-      console.log(
-        decoded.id,
-        "userd id get here......................................"
-      );
-
       res.status(200).json({ message: "user id get", userId: decoded.id });
     } catch (error) {}
   }
@@ -247,7 +288,7 @@ class UserController {
       if (!postId) {
         res.status(400).json({ message: "PostId is required" });
       }
-      const getupdate = this.userService.passPostID(postId, text, userId );
+      const getupdate = this.userService.passPostID(postId, text, userId);
       res.status(200).json({ message: "Post Reported succesfully" });
     } catch (error) {
       console.log(error);
@@ -338,7 +379,6 @@ class UserController {
   async deletePost(req: Request, res: Response): Promise<void> {
     try {
       const postId = req.params.id;
-
       if (!postId) {
         res.status(400).json({ message: "Invalid post ID" });
         return;
@@ -353,13 +393,47 @@ class UserController {
     }
   }
 
+  async getBreakingNews(req: Request, res: Response) {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 2;
+
+      const { search } = req.query as {
+        search: string;
+      };
+
+      const { total, posts } = await this.userService.getBreakingNewsDetails(
+        page,
+        limit,
+        search
+      );
+
+      res.status(200).json({
+        message: "getAllpostdetails",
+        data: {
+          posts,
+          total,
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async getAllPost(req: Request, res: Response) {
     try {
-      const getAlldetails = await this.userService.getpostdetails();
+      const { search, category } = req.query as {
+        search: string;
+        category: string;
+      };
 
-      if (getAlldetails) {
-        res.status(200).json({ message: "getAllpostdetails", getAlldetails });
-      }
+      const { posts } = await this.userService.getpostdetails(search,category);
+      res.status(200).json({
+        message: "getAllpostdetails",
+        data: { posts},
+      });
     } catch (error) {
       console.log(error);
     }
@@ -397,6 +471,8 @@ class UserController {
 
   async getuserPost(req: Request, res: Response) {
     try {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 2;
       const token = req.header("Authorization")?.split(" ")[1];
       if (!token) {
         return res
@@ -408,54 +484,93 @@ class UserController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-      let getdetails = await this.userService.postuserIDget(userId);
+      let getdetails = await this.userService.postuserIDget(
+        userId,
+        page,
+        limit
+      );
+
+      if (!getdetails || !getdetails.posts || !getdetails.total) {
+        throw new Error("No user details or posts get here");
+      }
+
+      const { posts, total } = getdetails;
+
       if (getdetails) {
-        res.status(200).json({ message: "User Post found", getdetails });
+        res.status(200).json({ message: "User Post found", posts, total });
       }
     } catch (error) {
       console.log(error);
     }
   }
 
-  async updateProfile(req:Request, res: Response): Promise<void> {
+  async updatePassword(req: Request, res: Response) {
     try {
+      const { userId, password, newpassword } = req.body;
+      if (!userId || !password || !newpassword) {
+        throw new Error("No password get here");
+      }
+      const userUpdate = await this.userService.PassUserDetails(
+        userId,
+        password,
+        newpassword
+      );
 
-      const { name, password, newpassword, userId } = req.body;
+      res.status(200).json({ message: "Update password" });
+    } catch (error) {
+      console.log(error);
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(400).json({ message: errorMessage });
+    }
+  }
+
+  async updateProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const { name, userId } = req.body;
       if (!req.file) {
-        res.status(400).json({ error: "File is missing" });
+        throw new Error("File is missing");
       }
       const file = req.file as Express.Multer.File;
       const result = await cloudinary.uploader.upload(file.path);
       const imageUrl = result.secure_url;
-      if (!name || !password || !newpassword || !userId) {
-        throw new Error("Data is missing");
+      if (!name || !userId) {
+        throw new Error("Required data is missing");
       }
 
       const userData = await this.userService.userDetailsdata(
         name,
-        password,
-        newpassword,
         imageUrl,
-        userId,
+        userId
       );
 
       if (userData) {
         res.status(200).json({ message: "userupdated successfully" });
+      } else {
+        res.status(400).json({ message: "Failed to update user" });
       }
     } catch (error) {
       console.log(error);
-      if (error instanceof Error) {
-        if (error.message) {
-          res.status(400).json({ message: error.message });
-        } else {
-          res.status(409).json({ message: error.message });
-        }
-      }
+      const errorMessage =
+        error instanceof Error ? error.message : "An unknown error occurred";
+      res.status(400).json({ message: errorMessage });
     }
   }
 
   async editPost(req: Request, res: Response): Promise<void> {
     try {
+      const unlinkFiles = (files: Express.Multer.File[]): void => {
+        files.forEach((file) => {
+          fs.unlink(file.path, (err) => {
+            if (err) {
+              console.error(`Failed to delete file: ${file.path}`, err);
+            } else {
+              console.log(`Successfully deleted file: ${file.path}`);
+            }
+          });
+        });
+      };
+
       const { content, postId } = req.body;
       console.log(postId, "post id");
       if (!content || !postId) {
@@ -506,6 +621,8 @@ class UserController {
       } else {
         res.status(500).json({ message: "Failed to save post" });
       }
+      if (files?.images) unlinkFiles(files.images);
+      if (files?.videos) unlinkFiles(files.videos);
     } catch (error) {
       console.error("Error during post creation:", error);
       res
@@ -513,21 +630,25 @@ class UserController {
         .json({ message: "Server error during post creation", error });
     }
   }
-  unlinkFiles = (files: Express.Multer.File[]) => {
-    files.forEach((file) => {
-      fs.unlink(file.path, (err) => {
-        if (err) {
-          console.error(`Failed to delete file ${file.path}:`, err);
-        } else {
-          console.log(`Successfully deleted file ${file.path}`);
-        }
-      });
-    });
-  };
 
   async createPost(req: Request, res: Response): Promise<void> {
     try {
-      const { content, userId } = req.body;
+      const unlinkFiles = (files: Express.Multer.File[]): void => {
+        files.forEach((file) => {
+          fs.unlink(file.path, (err) => {
+            if (err) {
+              console.error(`Failed to delete file: ${file.path}`, err);
+            } else {
+              console.log(`Successfully deleted file: ${file.path}`);
+            }
+          });
+        });
+      };
+
+      const { content, userId, Category } = req.body;
+
+      console.log(Category, "Category");
+
       if (!content || !userId) {
         res.status(400).json({ message: "Content or user ID is missing" });
         return;
@@ -538,7 +659,6 @@ class UserController {
         videos?: Express.Multer.File[];
       };
 
-      // Handle image upload to Cloudinary
       const imageUploadPromises = files?.images
         ? files.images.map((file) =>
             cloudinary.uploader.upload(file.path, { resource_type: "image" })
@@ -550,24 +670,20 @@ class UserController {
           )
         : [];
 
-      // Wait for all uploads to complete
       const uploadedImages = await Promise.all(imageUploadPromises);
       const uploadedVideos = await Promise.all(videoUploadPromises);
 
-      // Extract Cloudinary URLs for images and videos, default to empty arrays if no uploads
-      const imageUrls: string[] =
-        uploadedImages.length > 0
-          ? uploadedImages.map((upload) => upload.secure_url)
-          : [];
-      const videoUrls: string[] =
-        uploadedVideos.length > 0
-          ? uploadedVideos.map((upload) => upload.secure_url)
-          : [];
+      const imageUrls: string[] = uploadedImages.map(
+        (upload) => upload.secure_url
+      );
+      const videoUrls: string[] = uploadedVideos.map(
+        (upload) => upload.secure_url
+      );
 
-      // Save post data to the database with images and videos if they exist
       const userData = await this.userService.postDetailsdata(
         userId,
         content,
+        Category,
         imageUrls,
         videoUrls
       );
@@ -579,13 +695,8 @@ class UserController {
       } else {
         res.status(500).json({ message: "Failed to save post" });
       }
-
-      if (files?.images) {
-        this.unlinkFiles(files.images);
-      }
-      if (files?.videos) {
-        this.unlinkFiles(files.videos);
-      }
+      if (files?.images) unlinkFiles(files.images);
+      if (files?.videos) unlinkFiles(files.videos);
     } catch (error) {
       console.error("Error during post creation:", error);
       res

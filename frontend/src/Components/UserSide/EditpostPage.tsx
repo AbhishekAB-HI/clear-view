@@ -32,27 +32,38 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
     videos: Yup.mixed().notRequired(),
   });
 
-  const handleImageChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setFieldValue: any
-  ) => {
+   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const files = e.target.files;
+     if (files) {
+       const newImages = Array.from(files);
+       const totalImages = postImages.length + newImages.length;
+
+       if (totalImages > 4) {
+         toast.error("You can only upload a maximum of 4 images.");
+         return; 
+       }
+
+       setPostImages((prevImages) => [...prevImages, ...newImages]);
+     }
+   };
+
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      setPostImages((prevImages) => [...prevImages, ...Array.from(files)]);
-      setFieldValue("images", files);
+    if (files) {
+      const newVideos = Array.from(files);
+      const totalVideos = postVideos.length + newVideos.length;
+
+      if (totalVideos > 4) {
+        toast.error("You can only upload a maximum of 4 videos.");
+        return;
+      }
+
+      setPostVideos((prevVideos) => [...prevVideos, ...newVideos]);
+      e.target.value = "";
     }
   };
 
-  const handleVideoChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setFieldValue: any
-  ) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      setPostVideos((prevVideos) => [...prevVideos, ...Array.from(files)]);
-      setFieldValue("videos", files);
-    }
-  };
 
   const handlePostSubmit = async (values: any, { setSubmitting }: any) => {
     setLoading(true);
@@ -122,9 +133,9 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
     setShowEmojiPicker(false);
   };
 
-  const handleImageRemove = (index: number) => {
-    setPostImages((prevImages) => prevImages.filter((_, i) => i !== index));
-  };
+const handleImageRemove = (index: number) => {
+  setPostImages((prevImages) => prevImages.filter((_, i) => i !== index));
+};
 
   const handleVideoRemove = (index: number) => {
     setPostVideos((prevVideos) => prevVideos.filter((_, i) => i !== index));
@@ -169,11 +180,10 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
                       >
                         <img
                           src={URL.createObjectURL(image)}
-                          alt="preview"
+                          alt="Preview"
                           className="w-20 h-20 object-cover rounded-lg"
                         />
                         <button
-                          type="button"
                           onClick={() => handleImageRemove(index)}
                           className="absolute top-0 right-0 bg-red-600 text-white rounded-full px-2 py-1 text-sm"
                         >
@@ -185,6 +195,7 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
                 )}
 
                 {/* Display multiple videos */}
+
                 {postVideos.length > 0 && (
                   <div className="mb-2">
                     {postVideos.map((video, index) => (
@@ -193,12 +204,11 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
                         className="relative inline-block mr-2 mb-2"
                       >
                         <video
-                          src={URL.createObjectURL(video)}
+                          src={URL.createObjectURL(video)} // Create a preview URL for the video
                           controls
-                          className="w-32 h-32 object-cover rounded-lg"
+                          className="w-20 h-20 object-cover rounded-lg"
                         ></video>
                         <button
-                          type="button"
                           onClick={() => handleVideoRemove(index)}
                           className="absolute top-0 right-0 bg-red-600 text-white rounded-full px-2 py-1 text-sm"
                         >
@@ -219,7 +229,7 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
                       id="upload-image"
                       accept="image/*"
                       multiple
-                      onChange={(e) => handleImageChange(e, setFieldValue)}
+                      onChange={handleImageChange}
                       className="hidden"
                     />
                   </label>
@@ -231,7 +241,7 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
                       id="upload-videos"
                       accept="video/*"
                       multiple
-                      onChange={(e) => handleVideoChange(e, setFieldValue)}
+                      onChange={handleVideoChange}
                       className="hidden"
                     />
                   </label>
@@ -270,7 +280,7 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
                 <div className="absolute bottom-16 left-0">
                   <Picker
                     data={data}
-                    onEmojiSelect={(emoji:unknown) =>
+                    onEmojiSelect={(emoji: unknown) =>
                       handleEmojiSelect(emoji, setFieldValue, values.content)
                     }
                   />

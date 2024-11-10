@@ -20,6 +20,7 @@ import {
   CONTENT_TYPE_JSON,
 } from "../Constants/Constants";
 import { IUser } from "../Interfaces/Interface";
+import SideNavBar from "./SideNavbar";
 const PeoplePage = () => {
  
   const [Loading, setLoading] = useState(false);
@@ -279,16 +280,11 @@ const PeoplePage = () => {
   return (
     <div className="bg-black text-white min-h-screen">
       <Navbar2 />
-
-      <div className="flex mt-20">
-        {/* Sidebar */}
-        <SideBar2 />
-       
-
-        {/* Main Content */}
+      <SideNavBar />
+      <div className="flex mt-12">
         <main className="w-4/5 ml-auto p-0">
           {/* Messages Section */}
-          <div className="fixed  bg-black w-full pt-10  pb-5">
+          <div className="fixed  bg-black w-full pl-5     pt-5  pb-5">
             <h1
               style={{ fontSize: "25px" }}
               className=" flex text-xl font-bold ml-0"
@@ -314,6 +310,11 @@ const PeoplePage = () => {
                     className="flex items-center justify-between bg-gray-900 p-4 rounded-lg"
                   >
                     <div className="flex items-center space-x-4">
+              
+              
+              
+              
+              
                       <img
                         src={user.image}
                         alt="Profile"

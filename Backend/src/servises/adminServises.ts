@@ -5,6 +5,7 @@ import { adminPayload } from "../Interface/userInterface/Userpayload";
 import adminRepository from "../Repository/Adminrepository";
 import HashPassword from "../Utils/Hashpassword";
 import { generateAdminAccessToken } from "../Utils/Jwt";
+import { ICounts } from "../Interface/userInterface/Userdetail";
 
 class AdminServices {
   constructor(private adminRepository: adminRepository) {}
@@ -77,8 +78,14 @@ class AdminServices {
     }
   }
 
-  async getAllReportedpost( page: number,limit: number): Promise<{ posts: ReportedPost[] | any; total: number }> {
-    const reportedPostsData = await this.adminRepository.findReportPost(page,limit);
+  async getAllReportedpost(
+    page: number,
+    limit: number
+  ): Promise<{ posts: ReportedPost[] | any; total: number }> {
+    const reportedPostsData = await this.adminRepository.findReportPost(
+      page,
+      limit
+    );
     if (reportedPostsData) {
       return {
         posts: reportedPostsData.posts,
@@ -102,6 +109,18 @@ class AdminServices {
     }
 
     throw new Error("No posts found");
+  }
+
+  async getpostAnduserdetails(): Promise<ICounts | undefined> {
+    try {
+      const verifyuser = await this.adminRepository.findallpostanduser();
+       if (!verifyuser) {
+         throw new Error("No users found");
+       }
+      return verifyuser;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async getUserdetails(): Promise<IUser[] | undefined> {

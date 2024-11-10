@@ -29,9 +29,48 @@ class ChatController {
         return res.status(400).json({ message: "User ID is missing" });
       }
       const OtherFiledata = await this.ChatServices.getOthermessage(userId);
-      res
-        .status(200)
-        .json({ message: "other message get here", OtherFiledata });
+
+      if (
+        !OtherFiledata?.formattedChats ||
+        !OtherFiledata.foundUsers ||
+        !OtherFiledata.formatgroupchats
+      ) {
+        throw Error(" No users or message not found");
+      }
+
+      const { formattedChats, foundUsers, formatgroupchats } = OtherFiledata;
+      res.status(200).json({
+        message: "other message get here",
+        formattedChats,
+        foundUsers,
+        formatgroupchats,
+      });
+
+      // res
+      //   .status(200)
+      //   .json({ message: "other message get here", OtherFiledata });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getAllUsers(req: Request, res: Response) {
+    try {
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
+
+      const getTheuser = await this.ChatServices.findAllUsers(userId);
+
+      res.status(200).json({ message: "Get all users", getTheuser });
     } catch (error) {
       console.log(error);
     }
@@ -144,19 +183,26 @@ class ChatController {
     }
   }
 
+  async gotomessagepage(req: Request, res: Response) {
+    try {
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async getNotifications(req: Request, res: Response) {
     try {
-        const token = req.header("Authorization")?.split(" ")[1];
-        if (!token) {
-          return res
-            .status(401)
-            .json({ message: "Unauthorized: Token is missing" });
-        }
-        const decoded = jwt.verify(
-          token,
-          process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
-        ) as userPayload;
-        const userId = decoded.id;
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
       const notifications = await this.ChatServices.getAllNotifications(userId);
       res.status(200).json({ message: "get all notifications", notifications });
     } catch (error) {
@@ -199,6 +245,26 @@ class ChatController {
     }
   }
 
+  async getuserstatus(req: Request, res: Response) {
+    try {
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
+      const getStatus = await this.ChatServices.getUserStatus(userId);
+      res.status(200).json({ message: "Updated status", getStatus });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async blockUserStatus(req: Request, res: Response) {
     try {
       const token = req.header("Authorization")?.split(" ")[1];
@@ -222,50 +288,15 @@ class ChatController {
   async followuser(req: Request, res: Response) {
     try {
       const { userId, LoguserId } = req.body;
-
       const addFollower = await this.ChatServices.AddToFollowers(
         userId,
         LoguserId
       );
-
-      console.log(addFollower, "status00000000000000000000");
-
       res.status(200).json({ message: "followed users", addFollower });
     } catch (error) {
       console.log(error);
     }
   }
-
-  // async groupAddChat(req: Request, res: Response) {
-  //   try {
-  //     const { chatId } = req.body;
-  //     const token = req.header("Authorization")?.split(" ")[1];
-  //     if (!token) {
-  //       return res
-  //         .status(401)
-  //         .json({ message: "Unauthorized: Token is missing" });
-  //     }
-  //     const decoded = jwt.verify(
-  //       token,
-  //       process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
-  //     ) as userPayload;
-  //     const userId = decoded.id;
-
-  //     if (!chatId) {
-  //       console.log("Chat id not found");
-  //       return res.status(400).send("Chat id not found");
-  //     }
-  //     if (!userId) {
-  //       throw new Error("User is not authenticated");
-  //     }
-  //     console.log(chatId, "chat id");
-  //     console.log(userId, "user id");
-
-  //     const fullChat = await this.ChatServices.SendGroupId(userId, chatId);
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }
 
   async accessgroupChat(req: Request, res: Response) {
     const { chatId } = req.body;

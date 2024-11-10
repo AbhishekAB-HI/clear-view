@@ -80,28 +80,37 @@ const RenderReplies: React.FC<RenderRepliesProps> = ({
   setReplyContent: React.Dispatch<React.SetStateAction<string>>;
 }) => {
      
+
   return post.comments
     .filter((reply) => reply.parentComment === parentCommentId)
     .map((reply, replyIndex) => (
-      <div key={replyIndex} className="ml-10 mt-2">
-        <div className="flex items-start mb-2">
+      <div key={replyIndex} className=" mt-1">
+        <div className="flex items-start mb-1">
           <img
             src={reply.user.image}
             alt="User avatar"
-            className="w-8 h-8 rounded-full mr-3"
+            className="w-6 h-6 rounded-full mr-3"
           />
           <div>
             <p className="font-semibold">
-              <span className="text-blue-600">
+              <span
+                style={{ fontSize: "15px", fontWeight: "" }}
+                className="text-blue-600"
+              >
                 {reply.userName} {"   :  "}
               </span>
-              <span className="text-white">{reply.content}</span>
+              <span
+                style={{ fontSize: "13px", fontWeight: "lighter" }}
+                className="text-white"
+              >
+                {reply.content}
+              </span>
             </p>
-            <small className="text-gray-500">
+            <small style={{ fontSize: "10px" }} className="text-gray-500">
               Posted on:{" "}
               <span>{new Date(reply.timestamp).toLocaleDateString()}</span>
             </small>
-            <small className="ml-2" style={{ color: "blue" }}>
+            <small className="ml-2" style={{ color: "blue", fontSize: "10px" }}>
               <button onClick={() => handleReply(post._id, reply._id)}>
                 Reply
               </button>
@@ -131,18 +140,17 @@ const RenderReplies: React.FC<RenderRepliesProps> = ({
                 </button>
               </div>
             )}
-
-            {/* Recursively render nested replies */}
-            <RenderReplies      
+            
+            <RenderReplies
               post={post}
               parentCommentId={reply._id}
               saveid={saveid}
               replyingTo={replyingTo}
               replyContent={replyContent}
               handleReply={handleReply}
-
               setReplyContent={setReplyContent}
             />
+
           </div>
         </div>
       </div>
@@ -207,31 +215,43 @@ const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepo
           .map((comment, index) => (
             <div
               key={index}
-              className="border-b text-left border-gray-300 py-2 flex items-start"
+              className="border-b text-left border-gray-500 py-2 flex items-start"
             >
               <img
                 src={comment.user.image}
                 alt="User avatar"
-                className="w-10 h-10 rounded-full mr-4"
+                className="w-8 h-8 rounded-full mr-4"
               />
               <div>
-                <p style={{ fontSize: "15px" }} className="font-semibold">
+                <p
+                  style={{ fontSize: "15px", fontWeight: "" }}
+                  className="font-semibold"
+                >
                   {comment.user.name}
                 </p>
-                <p>{comment.content}</p>
-                <small className="text-gray-500">
-                  Posted on:{" "}
+                <p style={{ fontSize: "14px" }} className="text-gray-300">
+                  {comment.content}
+                </p>
+                <small style={{ fontSize: "10px" }} className="text-gray-500">
+                  Comment on:{" "}
                   <span>
                     {new Date(comment.timestamp).toLocaleDateString()}
                   </span>
                 </small>
-
-                <small className="ml-2" style={{ color: "blue" }}>
+                <small
+                  className="ml-2"
+                  style={{ color: "blue", fontSize: "10px" }}
+                >
                   <button onClick={() => handleReply(post._id, comment._id)}>
                     Reply
                   </button>
                 </small>
-
+                <small
+                  className="ml-2"
+                  style={{ color: "blue", fontSize: "10px" }}
+                >
+                 
+                </small>
                 {replyingTo?.commentId === comment._id && (
                   <div className="mt-2 ml-10">
                     <textarea
@@ -255,8 +275,8 @@ const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepo
                     </button>
                   </div>
                 )}
-
-                <RenderReplies
+              
+                 <RenderReplies
                   post={post}
                   parentCommentId={comment._id}
                   saveid={saveid}
@@ -266,6 +286,7 @@ const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepo
                   handleReplySubmit={handleReplySubmit}
                   setReplyContent={setReplyContent}
                 />
+                 
               </div>
             </div>
           ))
@@ -277,4 +298,3 @@ const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepo
 };
 
 export default CommentSection;
-

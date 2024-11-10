@@ -29,6 +29,8 @@ import FollowingPage from "./Components/Userside/Following";
 import PeoplePage from "./Components/Userside/PeoplePage";
 import UserReportmanagement from "./Components/AdminSide/UserReportPage";
 import GroupChatPage from "./Components/Userside/GroupChatpage";
+import AdminDashboard from "./Components/AdminSide/AdminDashboard";
+import ViewProfilePage from "./Components/Userside/ViewProfile";
 
 function App() {
   const [showModal, setShowModal] = useState(false);
@@ -66,8 +68,10 @@ function App() {
           {/* <Route path="/" element={<HomePage />} /> */}
           <Route path="/homepage" element={<HomeLoginPage />} />
           <Route path="/chatpage/:chatId/:dataId" element={<ChatPage />} />
-          <Route path="/groupchatpage/:chatId/:dataId/:groupname" element={<GroupChatPage />} />
-
+          <Route
+            path="/groupchatpage/:chatId/:dataId/:groupname"
+            element={<GroupChatPage />}
+          />
           <Route path="/profile" element={<HomeProfilepage />} />
           {/* <Route path="/videopage/:roomId" element={<Videopage />} /> */}
           <Route path="/room/:roomId" element={<RoomPage />} />
@@ -89,6 +93,8 @@ function App() {
           <Route path="/news" element={<Newsmanagement />} />
           <Route path="/reportpage" element={<Reportmanagement />} />
           <Route path="/userReportpage" element={<UserReportmanagement />} />
+          <Route path="/viewProfile" element={<ViewProfilePage />} />
+
           <Route
             path="/forgetpass"
             element={<UserLogoutPrivateRoute element={<Forgetpassword />} />}
@@ -108,6 +114,10 @@ function App() {
           <Route
             path="/Adminhome"
             element={<AdminprivateRoute element={<AdminHomePage />} />}
+          />
+          <Route
+            path="/Admindashboard"
+            element={<AdminprivateRoute element={<AdminDashboard />} />}
           />
         </Routes>
       </Router>

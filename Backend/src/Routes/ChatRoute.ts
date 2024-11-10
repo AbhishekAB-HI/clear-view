@@ -13,22 +13,14 @@ router.post("/", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.accessChat(req, res)
 );
 
-
 router.post("/forgroup", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.accessgroupChat(req, res)
 );
 
-
-
-
-
-// router.post("/groupAddChat", AuthenticationMiddleware, async (req, res) =>
-//   chatcontroller.groupAddChat(req, res)
-// );
-
 router.get("/allusers", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.getAllUser(req, res)
 ); 
+
 router.get("/allmessages", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.getAllmessages(req, res)
 );
@@ -38,6 +30,9 @@ router.get("/getgroupchats", AuthenticationMiddleware, async (req, res) =>
 );
 
 
+router.get("/getUsers", AuthenticationMiddleware, async (req, res) =>
+  chatcontroller.getAllUsers(req, res)
+);
 
 router.get("/findallusers", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.FindAllUser(req, res)
@@ -51,25 +46,30 @@ router.get("/getnotifications", async (req, res) => {
   chatcontroller.getNotifications(req, res);
 });
 
+
+router.get("/gotopage",async (req,res)=>{
+    chatcontroller.gotomessagepage(req,res)
+});
+
+
 router.get("/groupusers", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.findAllUsers(req, res)
 );
-
-
 
 router.post("/createGroup", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.CreateNewGroup(req, res)
 );
 
-
-
-
-
-
-
 router.post("/followuser", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.followuser(req, res)
 );
+
+
+
+router.get("/userstatus", AuthenticationMiddleware, async (req, res) =>
+  chatcontroller.getuserstatus(req, res)
+);
+
 router.get("/getUserdata", AuthenticationMiddleware, async (req, res) =>
   chatcontroller.getUserDetails(req, res)
 );

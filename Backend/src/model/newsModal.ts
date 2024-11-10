@@ -23,13 +23,17 @@ const postSchema: Schema = new Schema(
     text: {
       type: String,
     },
+    category: {
+      type: String,
+      required:true
+    },
     likeCount: {
       type: Number,
       default: 0,
     },
     BlockPost: {
       type: Boolean,
-      default:false
+      default: false,
     },
     LikeStatement: {
       type: Boolean,

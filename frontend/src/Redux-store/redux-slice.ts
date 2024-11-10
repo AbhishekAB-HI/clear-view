@@ -28,8 +28,9 @@ type userstate = {
   userDetils: string;
   AdminTocken: string;
   userRefreshTocken: string;
-  chats: Chats[]; 
+  chats: Chats[];
   SelectedChat: Chats[];
+  Notification: Chats[];
 };
 
 const stateinfo: userstate = {
@@ -39,6 +40,7 @@ const stateinfo: userstate = {
   AdminTocken: localStorage.getItem("admintocken") || "",
   chats: [], 
   SelectedChat: [],
+  Notification:[]
 };
 
 
@@ -80,6 +82,9 @@ const stateinfo: userstate = {
      setSelectedChat: (state, action) => {
        state.SelectedChat = action.payload; 
      },
+     setNotifications:(state,action)=>{
+       state.Notification= action.payload
+     }
    },
  });
 
@@ -91,8 +96,9 @@ const stateinfo: userstate = {
     setAdminAccessTocken,
     clearAdminAccessTocken,
     setUserRefreshtocken,
-    setChats, 
+    setChats,
     setSelectedChat,
+    setNotifications,
   } = userTockeninfo.actions;
 
   export const accesstockenSlice = userTockeninfo.reducer

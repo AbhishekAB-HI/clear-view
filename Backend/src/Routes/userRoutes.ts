@@ -17,20 +17,20 @@ interface MulterRequest extends Request {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "../../SECOND-PROJECT/Backend/src/Images");
+    cb(null, "../../SECOND-PROJECT-UPDATION/Backend/src/Images");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); 
+    cb(null, Date.now() + path.extname(file.originalname));
   },
 });
 
 const upload = multer({
   storage,
   limits: {
-    fileSize: 500 * 1024 * 1024, 
+    fileSize: 500 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    const filetypes = /jpeg|jpg|png|gif|mp4|avi|mov/; 
+    const filetypes = /jpeg|jpg|png|gif|mp4|avi|mov/;
     const extname = filetypes.test(
       path.extname(file.originalname).toLowerCase()
     );
@@ -50,35 +50,30 @@ const userController = new UserController(newUserservise);
 
 const REFRESH_TOKEN_PRIVATE_KEY = "key_for_refresht";
 
-// user login routes-------------------------------------------------------------------------
 
 router.post("/register", async (req, res) =>
   userController.userRegister(req, res)
 );
 
-router.get("/getUserinfo",AuthenticationMiddleware, async (req, res) =>
+router.get("/getUserinfo", AuthenticationMiddleware, async (req, res) =>
   userController.getUserInfos(req, res)
 );
-
 
 router.post("/verify-otp", async (req, res) =>
   userController.userCheckOtp(req, res)
 );
+
 router.patch("/resend-otp", async (req, res) =>
   userController.resendotp(req, res)
 );
 router.post("/login", async (req, res) => userController.userLogin(req, res));
+
 router.post("/forgetmail", async (req, res) =>
   userController.verifymailforget(req, res)
 );
 router.post("/verifyforgetotp", async (req, res) =>
   userController.forgetotp(req, res)
 );
-
-router.get("/checkNotifications", async (req, res) =>
-  userController.getNotifications(req, res)
-);
-
 
 
 router.patch("/setforgetpass", async (req, res) =>
@@ -103,13 +98,17 @@ router.patch("/ReportUser", AuthenticationMiddleware, async (req, res) =>
   userController.ReportTheUser(req, res)
 );
 
+router.get("/getProfile", AuthenticationMiddleware, async (req, res) =>
+  userController.getProfileview(req, res)
+);
+
+router.get("/blockedUser", AuthenticationMiddleware, async (req, res) =>
+  userController.getBlockedUsers(req, res)
+);
+
 router.get("/userdget/:id", async (req, res) =>
   userController.getIduser(req, res)
 );
-
-// user login routes-------------------------------------------------------------------------
-
-// refresh tocken route-------------------------------------------------------------
 
 router.post("/auth/refresh-token", async (req, res) => {
   const { refreshToken } = req.body;
@@ -124,11 +123,8 @@ router.post("/auth/refresh-token", async (req, res) => {
     const newAccessToken = generateAccessToken({ id: user.id });
     res.json({ accessToken: newAccessToken });
   });
- 
-  // refresh tocken route-------------------------------------------------------------
-});
 
-// user logined info -------------------------------------------------------------------------------------
+});
 
 router.get("/userprofile", AuthenticationMiddleware, async (req, res) =>
   userController.userProfile(req, res)
@@ -136,6 +132,10 @@ router.get("/userprofile", AuthenticationMiddleware, async (req, res) =>
 
 router.get("/getAllpost", async (req, res) =>
   userController.getAllPost(req, res)
+);
+
+router.get("/getBreakingNews", async (req, res) =>
+  userController.getBreakingNews(req, res)
 );
 
 router.get("/searched", AuthenticationMiddleware, async (req, res) =>
@@ -156,7 +156,6 @@ router.post(
   upload.single("image"),
   async (req: Request, res: Response) => {
     const multerReq = req as MulterRequest;
-    
     if (multerReq.file) {
       console.log("Uploaded file:", multerReq.file.path);
     } else {
@@ -166,21 +165,27 @@ router.post(
   }
 );
 
+router.patch("/updatePassword",AuthenticationMiddleware,
+  async (req: Request, res: Response) => {
+    await userController.updatePassword(req, res);
+  }
+);
+
 router.post(
   "/createpost",
   AuthenticationMiddleware,
-  upload.fields([
-    { name: "images", maxCount: 10 },
-    { name: "videos", maxCount: 2 },
-  ]),
+  upload.fields([{ name: "images", maxCount: 4 },{ name: "videos", maxCount: 4 },]),
   async (req: Request, res: Response) => {
     const multerReq = req as Request & {
       files: { images?: Express.Multer.File[]; videos?: Express.Multer.File[] };
     };
     if (multerReq.files?.images) {
-      multerReq.files.images.forEach((file) => {
-        console.log("Uploaded image file:", file);
-      });
+      if (multerReq.files?.images.length>4){
+        throw new Error("Max image count is 4")
+      }
+        multerReq.files.images.forEach((file) => {
+          console.log("Uploaded image file:", file);
+        });
     } else {
       console.log("No images received");
     }
@@ -198,8 +203,8 @@ router.post(
 router.post(
   "/editpost",
   upload.fields([
-    { name: "images", maxCount: 10 },
-    { name: "videos", maxCount: 2 },
+    { name: "images", maxCount: 4 },
+    { name: "videos", maxCount: 4 },
   ]),
   async (req: Request, res: Response) => {
     const multerReq = req as Request & {
@@ -223,6 +228,5 @@ router.post(
   }
 );
 
-// user logined info -------------------------------------------------------------------------------------
 
 export default router;

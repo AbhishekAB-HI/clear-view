@@ -6,7 +6,8 @@ export interface Posts {
   _id: ObjectId;
   user: ObjectId;
   description: string;
-  image: string;
+  category:string
+  image: string
   videos: string;
   reportPost: Boolean;
   text: string;
@@ -15,7 +16,7 @@ export interface Posts {
   likeCount: number;
   LikeStatement: boolean;
   userName: string;
-  BlockPost:boolean;
+  BlockPost: boolean;
 }
 
 

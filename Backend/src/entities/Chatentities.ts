@@ -7,8 +7,10 @@ export interface Chats {
   chatName: string;
   isGroupchat: boolean;
   users: IUser[];
-  latestMessage: Message;
+  latestMessage: Message 
   groupAdmin: IUser[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 //  export interface Igroup {
@@ -23,6 +25,20 @@ export interface Message extends Document {
   videos: string;
   chat: mongoose.Types.ObjectId;
   readBy: mongoose.Types.ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FormattedChat {
+  chatName: string;
+  lastMessage: string;
+  lastMessageTime: Date;
+}
+
+export interface IUser1 extends Document {
+  _id: mongoose.Types.ObjectId;
+  URL: string;
+  alinkColor: string;
 }
 
 export interface IUser extends Document {

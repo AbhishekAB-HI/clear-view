@@ -70,21 +70,17 @@ router.post("/",AuthenticationMiddleware,upload.fields([{ name: "images", maxCou
 );
 
 router.get("/:chatId", AuthenticationMiddleware, async (req, res) =>MessageController.allChats(req, res));
+
 router.get("/getuserId/:userTocken", async (req, res) =>
   MessageController.getId(req, res)
 );
-
 
 router.get("/getuserimage/:chatId", async (req, res) =>
   MessageController.getUserInfo(req, res)
 );
 
-
 router.patch("/blockuser", AuthenticationMiddleware, async (req, res) =>
   MessageController.blockUserNow(req, res)
 );
-// router.get("/getStatus", async (req, res) =>
-//   MessageController.blockUserStatus(req, res)
-// );
 
 export default router;

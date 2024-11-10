@@ -142,7 +142,11 @@ class userServises {
     return findReply;
   }
 
-  async sendReportReason(userId: string,text: string,logeduserId: string | unknown) {
+  async sendReportReason(
+    userId: string,
+    text: string,
+    logeduserId: string | unknown
+  ) {
     try {
       const userDetails = await this.userRepository.sendTheReportReason(
         userId,
@@ -152,6 +156,54 @@ class userServises {
     } catch (error) {
       console.log(error);
     }
+  }
+
+  async passProfileid(
+    userId: unknown,
+    page: number,
+    limit: number
+  ): Promise<
+    | {
+        userinfo: IUser | null;
+        postinfo: Posts[] | null;
+        totalpost: number | undefined;
+      }
+    | undefined
+  > {
+    try {
+      const profileData = await this.userRepository.passProfileId(
+        userId,
+        page,
+        limit
+      );
+      if (
+        !profileData ||
+        !profileData.userinfo ||
+        !profileData.postinfo ||
+        !profileData.totalpost
+      ) {
+        throw new Error("No user details found");
+      }
+
+      const { userinfo, postinfo, totalpost } = profileData;
+      return {
+        userinfo,
+        postinfo,
+        totalpost,
+      };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+ 
+
+  async  findBlockedUsers(userId: unknown):Promise<IUser[]|undefined> {
+    const blockedUsers = await this.userRepository.findBlockedUserinRepo(userId);
+    if (!blockedUsers) {
+      throw new Error("No post found");
+    }
+    return blockedUsers;
   }
 
   async passLikePostID(postId: string, userId: mongoose.Types.ObjectId) {
@@ -177,7 +229,7 @@ class userServises {
     return commentPost;
   }
 
-  async passPostID(postId: string, text: string, userId:string) {
+  async passPostID(postId: string, text: string, userId: string) {
     const Reported = await this.userRepository.RepostPost(postId, text, userId);
     if (!Reported) {
       throw new Error("No post found");
@@ -265,15 +317,32 @@ class userServises {
     }
   }
 
-  async getpostdetails(): Promise<Posts[] | undefined> {
-    const getAlldata = await this.userRepository.getAllthedata();
+  async getBreakingNewsDetails(
+    page: number,
+    limit: number,
+    search: string | any | string[] | any[] = ""
+  ): Promise<{ total: number; posts: Posts[] | undefined }> {
+    const { total, posts } = await this.userRepository.getAllbeeakingnews(
+      page,
+      limit,
+      search
+    );
 
-    if (!getAlldata) {
-      throw new Error("No data is found");
-    }
-    if (getAlldata) {
-      return getAlldata;
-    }
+    return {
+      total,
+      posts,
+    };
+  }
+
+  async getpostdetails(search: string | any | string[] | any[] = "",category: string): Promise<{ posts: Posts[] | undefined }> {
+    const {  posts } = await this.userRepository.getAllthedata(
+      search,
+      category
+    );
+
+    return {
+      posts,
+    };
   }
 
   async findSearchedusers(
@@ -305,13 +374,22 @@ class userServises {
     }
   }
 
-  async postuserIDget(userId: unknown): Promise<Posts[] | undefined> {
+  async postuserIDget(
+    userId: unknown,
+    page: number,
+    limit: number
+  ): Promise<{ posts: Posts[]; total: number } | undefined> {
     try {
-      let userProfile = await this.userRepository.getpostUserdata(userId);
-      if (!userProfile) {
-        throw new Error("No user details get here");
+      let userProfile = await this.userRepository.getPostUserData(
+        userId,
+        page,
+        limit
+      );
+      if (!userProfile || !userProfile.posts || !userProfile.total) {
+        throw new Error("No user details or posts get here");
       }
-      return userProfile;
+      const { posts, total } = userProfile;
+      return { posts, total };
     } catch (error) {
       console.log(error);
     }
@@ -341,6 +419,7 @@ class userServises {
   async postDetailsdata(
     userId: string,
     content: string,
+    Category: string,
     imageFiles: string[],
     videoFiles: string[]
   ): Promise<Posts | undefined> {
@@ -348,6 +427,7 @@ class userServises {
       let userProfile = await this.userRepository.findUserdetails(
         userId,
         content,
+        Category,
         imageFiles,
         videoFiles
       );
@@ -359,48 +439,58 @@ class userServises {
     } catch (error) {}
   }
 
+  async PassUserDetails(userId: string, password: string, newpassword: string) {
+    try {
+      const findUser = await this.userRepository.findUserData(userId);
+
+      if (!findUser) {
+        throw new Error("No Data is found");
+      }
+      const checkpassword = await HashPassword.comparePassword(
+        password,
+        findUser.password
+      );
+
+      if (!checkpassword) {
+        throw new Error("Incorrect password. Please try again.");
+      }
+      const newpasswordhashed = await HashPassword.hashPassword(newpassword);
+      const updateduser = await this.userRepository.updateUserpassword(
+        userId,
+        newpasswordhashed
+      );
+    } catch (error) {
+      console.log(error);
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while updating profile"
+      );
+    }
+  }
+
   async userDetailsdata(
     name: string,
-    password: string,
-    newpassword: string,
     image: string,
     userid: string
   ): Promise<IUser | undefined> {
     try {
-      const verifybyid = await this.userRepository.checkPassword(userid);
-
-      if (!verifybyid) {
-        throw new Error("No user found");
-      }
-
-      if (verifybyid.password) {
-        const verifyPassword = await HashPassword.comparePassword(
-          password,
-          verifybyid.password
-        );
-        if (!verifyPassword) {
-          throw new Error("Wrong password");
-        }
-      }
-
       const updateduser = await this.userRepository.updateUserProfile(
         name,
-        password,
-        newpassword,
         image,
         userid
       );
+      if (!updateduser) {
+        throw new Error("Failed to update user");
+      }
       return updateduser;
     } catch (error) {
-      if (error instanceof Error) {
-        console.log("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-        console.log(error.message);
-        throw new Error(error.message);
-      } else {
-        console.log("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
-        console.log(error);
-        throw new Error("an unknown error occured");
-      }
+      console.error("Service error:", error);
+      throw new Error(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while updating profile"
+      );
     }
   }
 }

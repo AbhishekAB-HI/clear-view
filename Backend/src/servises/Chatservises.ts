@@ -1,8 +1,9 @@
 import { promises } from "dns";
 import { IUser } from "../Entities/Userentities";
-import { Chats } from "../Entities/Chatentities";
+import { Chats, FormattedChat } from "../Entities/Chatentities";
 import chatRepository from "../Repository/Chatrepository";
 import { Notification } from "../Entities/Notification";
+import { error } from "console";
 
 class ChatServices {
   constructor(private chatRepository: chatRepository) {}
@@ -57,6 +58,14 @@ class ChatServices {
     }
   }
 
+  async getUserStatus(userId: string | unknown) {
+    try {
+      const getStatus = await this.chatRepository.getUserIdstatus(userId);
+    } catch (error) {
+       console.log(error);
+    }
+  }
+
   async getUserBlockStatus(
     userId: string | unknown
   ): Promise<boolean | undefined> {
@@ -76,7 +85,6 @@ class ChatServices {
       LoguserId
     );
 
-    console.log(addedFollower, "serviswessssssssssss");
     return addedFollower;
   }
   async getAllChats(userId: string | unknown): Promise<IUser[] | undefined> {
@@ -108,7 +116,9 @@ class ChatServices {
     }
   }
 
-  async getAllNotifications(userId:unknown): Promise<Notification[] | undefined> {
+  async getAllNotifications(
+    userId: unknown
+  ): Promise<Notification[] | undefined> {
     try {
       const data = await this.chatRepository.findAllNotifications(userId);
 
@@ -156,17 +166,47 @@ class ChatServices {
     }
   }
 
-  async getOthermessage(
-    userId: string | unknown
-  ): Promise<IUser[] | undefined> {
+  async getOthermessage(userId: string | unknown): Promise<
+    | {
+        foundUsers: IUser[];
+        formattedChats: FormattedChat[];
+        formatgroupchats: FormattedChat[];
+      }
+    | undefined
+  > {
     try {
       const getAllusershere = await this.chatRepository.findOtherMessages(
         userId
       );
 
-      if (getAllusershere) {
-        return getAllusershere;
+      if (
+        !getAllusershere?.formattedChats ||
+        !getAllusershere.foundUsers ||
+        !getAllusershere.formatgroupchats
+      ) {
+        throw Error(" No users or message not found");
       }
+
+      const { formattedChats, foundUsers, formatgroupchats } = getAllusershere;
+
+      return {
+        formattedChats,
+        foundUsers,
+        formatgroupchats,
+      };
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async findAllUsers(userId: unknown): Promise<IUser[] | undefined> {
+    try {
+      const getUsers = await this.chatRepository.findAllUsersFound(userId);
+
+      if (!getUsers) {
+        throw new Error("No users found");
+      }
+      return getUsers;
     } catch (error) {
       console.log(error);
     }

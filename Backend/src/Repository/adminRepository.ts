@@ -4,6 +4,7 @@ import newspostSchemadata from "../Model/Newsmodal";
 import UserSchemadata from "../Model/Usermodel";
 import cloudinary from "../Utils/Cloudinary";
 import HashPassword from "../Utils/Hashpassword";
+import { ICounts } from "../Interface/userInterface/Userdetail";
 
 class adminRepository {
   async findAdminbyemail(email: string | undefined) {
@@ -18,7 +19,9 @@ class adminRepository {
     try {
       const usersWithReports = await UserSchemadata.find({
         ReportUser: { $exists: true, $not: { $size: 0 } },
-      }).populate({ path: "ReportUser.userId" }).exec();
+      })
+        .populate({ path: "ReportUser.userId" })
+        .exec();
 
       const reports = usersWithReports.flatMap((user) =>
         user.ReportUser.map((report) => ({
@@ -27,61 +30,59 @@ class adminRepository {
           reportReason: report.reportReason,
         }))
       );
-      return reports; 
+      return reports;
     } catch (error) {
       console.log(error);
     }
   }
 
- async  findReportPost(page: number, limit: number) {
-  try {
-
-    const offset = (page - 1) * limit;
-    const reportedPosts = await UserSchemadata.find({
-      ReportPost: { $exists: true, $not: { $size: 0 } },
-    }).populate({ path: "ReportPost.postId" }).skip(offset).limit(limit).exec();
-
-
-     const postReports = reportedPosts.flatMap((user) =>
-      user.ReportPost?.map((report) => {
-        if (!report.postId) return null; // Skip if postId is null
-        return {
-          reporter: { _id: user._id, name: user.name },
-          postId: report.postId,
-          reportReason: report.postreportReason,
-        };
+  async findReportPost(page: number, limit: number) {
+    try {
+      const offset = (page - 1) * limit;
+      const reportedPosts = await UserSchemadata.find({
+        ReportPost: { $exists: true, $not: { $size: 0 } },
       })
-    ).filter(report => report !== null); 
+        .populate({ path: "ReportPost.postId" })
+        .skip(offset)
+        .limit(limit)
+        .exec();
 
-    
+      const postReports = reportedPosts
+        .flatMap((user) =>
+          user.ReportPost?.map((report) => {
+            if (!report.postId) return null; // Skip if postId is null
+            return {
+              reporter: { _id: user._id, name: user.name },
+              postId: report.postId,
+              reportReason: report.postreportReason,
+            };
+          })
+        )
+        .filter((report) => report !== null);
 
-    // const postReports = reportedPosts.flatMap((user) =>
-    //   user.ReportPost?.map((report) => ({
-    //     reporter: { _id: user._id, name: user.name },
-    //     postId: report.postId,
-    //     reportReason: report.postreportReason,
-    //   }))
-    // );
-   
-    const totalReports = await UserSchemadata.countDocuments({
-      ReportPost: { $exists: true, $not: { $size: 0 } },
-    });
- 
-    return {
-      posts: postReports, 
-      total: totalReports, 
-    };
-  } catch (error) {
-    console.error("Error fetching reported posts:", error);
-    throw error;
+      // const postReports = reportedPosts.flatMap((user) =>
+      //   user.ReportPost?.map((report) => ({
+      //     reporter: { _id: user._id, name: user.name },
+      //     postId: report.postId,
+      //     reportReason: report.postreportReason,
+      //   }))
+      // );
+
+      const totalReports = await UserSchemadata.countDocuments({
+        ReportPost: { $exists: true, $not: { $size: 0 } },
+      });
+
+      return {
+        posts: postReports,
+        total: totalReports,
+      };
+    } catch (error) {
+      console.error("Error fetching reported posts:", error);
+      throw error;
+    }
   }
-}
 
-
-  async findPost(
-    page: number,
-    limit: number
-  ): Promise<{ posts: Posts[]; total: number }> {
+  async findPost( page: number, limit: number): Promise<{ posts: Posts[]; total: number }> {
     const offset = (page - 1) * limit;
 
     const posts = await newspostSchemadata
@@ -167,6 +168,30 @@ class adminRepository {
     //   return deletPost;
     // }
   }
+
+  async findallpostanduser(): Promise<ICounts> {
+    try {
+      const totalUsers = await UserSchemadata.countDocuments();
+      if (totalUsers === 0) {
+        throw new Error("No users found");
+      }
+
+      const totalPosts = await newspostSchemadata.countDocuments();
+      if (totalPosts === 0) {
+        throw new Error("No posts found");
+      }
+
+      return {
+        totalUsers,
+        totalPosts,
+      };
+    } catch (error) {
+      console.error("Error fetching users and posts:", error);
+      throw new Error("Error fetching data");
+    }
+  }
+
+  
 
   async findUsers(): Promise<IUser[]> {
     const userDatas = await UserSchemadata.find();

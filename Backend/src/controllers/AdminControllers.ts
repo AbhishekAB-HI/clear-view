@@ -26,6 +26,28 @@ class AdminController {
       }
     }
   }
+ 
+
+  async  getalldetails(req: Request, res: Response) {
+    try {
+      let userdata = await this.adminservises.getpostAnduserdetails();
+
+      console.log(userdata,'1111111111111111111111111111111111111111111');
+      
+    
+        res.status(200).json({ message: "user and post data get succesfull", userdata });
+    } catch (error) {
+      console.log(error);
+      if (error instanceof Error) {
+        if (error.message === "No users found") {
+          res.status(409).json({ message: error.message });
+        }
+        if (error.message) {
+          res.status(400).json({ message: error.message });
+        }
+      }
+    }
+  }
 
   async adminHomePage(req: Request, res: Response) {
     try {
@@ -62,7 +84,7 @@ class AdminController {
     try {
       const deleteId = req.params.id;
       const userdata = await this.adminservises.deletePost(deleteId);
-        res.status(200).json({ message: "delete post"});
+      res.status(200).json({ message: "delete post" });
     } catch (error) {
       console.log(error);
     }
@@ -103,9 +125,7 @@ class AdminController {
     try {
       const page = parseInt(req.query.page as string, 5) || 1;
       const limit = parseInt(req.query.limit as string, 4) || 4;
-
       const { posts, total } = await this.adminservises.getAllpost(page, limit);
-
       res.status(200).json({
         message: "All posts found",
         data: {

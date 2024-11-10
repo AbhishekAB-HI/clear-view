@@ -65,8 +65,8 @@ export const sendVerifyMailforemail = async (
     secure: false,
     service: "gmail",
     auth: {
-      user: process.env.USEREMAIL as string,
-      pass: process.env.USERPASSWORD as string,
+      user: process.env.USER_EMAIL as string,
+      pass: process.env.USER_PASSWORD as string,
     },
   });
   const mailDetails = {

@@ -9,15 +9,13 @@ import googleauthRoutes from "./Routes/Googleroute";
 import chatRoutes from "./Routes/Chatroute";
 import messageRoute from "./Routes/Messageroute";
 import jwt from "jsonwebtoken";
-import '../src/Notifications/Notifications'
 import logger from "./logger";
 import morgan from "morgan";
 import { Socket } from "socket.io";
+import { ActiveUsersType } from "./Interface/userInterface/Userdetail";
 
 const morganFormat = ":method :url :status :response-time ms";
-
 const app = express();
-
 connectDB();
 
 app.use(
@@ -86,10 +84,15 @@ const server = app.listen(port, () => {
 
 const io = require("socket.io")(server, {
   pingTimeout: 60000,
+  //  The server is waiting for the connection 60 sec in not connectc it will be disconnect                       
   cors: {
     origin: "http://localhost:5173",
   },
 });
+
+
+
+let activeUsers = [] as ActiveUsersType[];
 
 io.on("connection", (socket: Socket) => {
   console.log("connection to socket.io");
@@ -98,20 +101,35 @@ io.on("connection", (socket: Socket) => {
       id: string;
     };
     let userId = decoded.id;
-
     socket.join(userId);
     socket.emit("connected");
+     if (!activeUsers.some((user) => user.userId === userId)) {
+       activeUsers.push({ userId: userId, socketId: socket.id });
+     }
+     socket.emit("get-users", activeUsers);
   });
+
+   socket.on("logout", (userId) => {
+     activeUsers = activeUsers.filter((user) => user.userId !== userId);
+     socket.emit("get-users", activeUsers);
+   });
 
   socket.on("join chat", (room: string) => {
     socket.join(room);
     console.log("User joined Room : " + room);
   });
 
+  socket.on("sendNotification", (data) => {
+      const { userId, notification } = data;
+      io.to(userId).emit("receiveNotification", notification);
+    });
+
+
   socket.on("typing", (room: string) => socket.in(room).emit("typing"));
   socket.on("stop typing", (room: string) =>
     socket.in(room).emit("stop typing")
   );
+
 
   interface NewMessage {
     chat: {
@@ -131,8 +149,11 @@ io.on("connection", (socket: Socket) => {
     chat.users.forEach((user: string) => {
       if (user === newMessageReceived.sender._id) return;
       socket.in(user).emit("message received", newMessageReceived);
+      socket.in(user).emit("notification received", newMessageReceived);
     });
   });
+
+
   socket.off("setup", (userdata: string) => {
     const decoded = jwt.verify(userdata, "key_for_accesst") as {
       id: string;
@@ -142,3 +163,5 @@ io.on("connection", (socket: Socket) => {
     socket.leave(userId);
   });
 });
+
+

@@ -23,20 +23,23 @@ import toast from "react-hot-toast";
 import { OrbitProgress } from "react-loading-indicators";
 import Swal from "sweetalert2";
 import Navbar2 from "./Navbar2";
-import SideBar2 from "./Sidebar2";
 import {
   API_MESSAGE_URL,
   CONTENT_TYPE_JSON,
   CONTENT_TYPE_MULTER,
 } from "../Constants/Constants";
-import { userInfo } from "../Interfaces/Interface";
-
+import { ActiveUsersType, userInfo } from "../Interfaces/Interface";
+import SideNavBar from "./SideNavbar";
+import { ActiveUsershere, handleTyping, initilizeSocket, joinChatRoom, sendMessage, setupOnMessageReceived, stopTyping } from "./GlobalSocket/CreateSocket";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
 let selectedChatCompare: any;
 
-const ChatPage = () => {
- 
+interface YourComponentProps {
+  userToken: string;
+  users:any[]; // Replace `ActiveUsersType` with the actual type of your `users` array
+}
+const ChatPage: React.FC<YourComponentProps> = (users) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState<string>("");
@@ -54,14 +57,38 @@ const ChatPage = () => {
   const [istyping, setIsTyping] = useState(false);
   const [userId, setUserId] = useState<string | any>(null);
   const [userStatus, setuserStatus] = useState(false);
+  const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
+  const [isOnline,setIsOnline] = useState(false)
+  useEffect(() => {
+    const socketInstance = initilizeSocket(userToken);
+    
+      ActiveUsershere(setActiveUsers);
+
+    const onMessageReceived = (newMessageReceived: any) => {
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare._id !== newMessageReceived.chat._id
+      ) {
+        setMessages((prevMessages) => [...prevMessages, newMessageReceived]);
+        scrollToBottom();
+      } else {
+      }
+    };
+
+    setupOnMessageReceived(onMessageReceived);
+    return () => {
+      socketInstance.off("message received");
+    };
+  }, []);
 
   useEffect(() => {
     const GetUserId = async () => {
-      try {        
+      try {
         const { data } = await axios.get(
           `${API_MESSAGE_URL}/getuserimage/${chatId}`
         );
         if (data.message === "Get user id") {
+          console.log("2222222222222222222222222222222222222222222222222222",data)
           setuserinfo(data.userinfo);
         } else {
           toast.error("User id not found");
@@ -90,12 +117,12 @@ const ChatPage = () => {
         console.log("Error fetching posts:", error);
       }
     };
-
+    
     GetUserId();
   }, []);
 
-
   useEffect(() => {
+       handleOnline();
     scrollToBottom();
   }, [messages]);
 
@@ -105,7 +132,6 @@ const ChatPage = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-
     if (files && files.length > 0) {
       toast.success("file uploaded");
       const imageFiles: File[] = [];
@@ -126,11 +152,7 @@ const ChatPage = () => {
       if (videoFiles.length > 0) {
         setPostVideos((prevVideos) => [...prevVideos, ...videoFiles]);
       }
-
-      
     }
-
-     
   };
 
   const handleEmojiSelect = (emoji: any) => {
@@ -139,9 +161,11 @@ const ChatPage = () => {
   };
 
   type RootState = ReturnType<typeof store.getState>;
+
   const selectedChat = useSelector(
     (state: RootState) => state.accessTocken.SelectedChat
   );
+
   const userToken = useSelector(
     (state: RootState) => state.accessTocken.userTocken
   );
@@ -162,7 +186,8 @@ const ChatPage = () => {
       });
       if (data.message === "Get all messages") {
         setMessages(data.Allmessage);
-        socket.emit("join chat", dataId);
+        joinChatRoom(dataId);
+        // socket.emit("join chat", dataId);
       } else {
         toast.error("Failed to get all messages");
       }
@@ -192,7 +217,7 @@ const ChatPage = () => {
   const handleSubmit = async (e: FormEvent) => {
     setLoading(true);
     e.preventDefault();
-    socket.emit("stop typing", dataId);
+    // socket.emit("stop typing", dataId);
 
     if (
       !newMessage.trim() &&
@@ -223,8 +248,8 @@ const ChatPage = () => {
 
       if (data) {
         setLoading(false);
-      
-        socket.emit("new message", data);
+        sendMessage(data);
+        // socket.emit("new message", data);
         setMessages([...messages, data]);
         setNewMessage("");
         setPostImages([]);
@@ -317,14 +342,6 @@ const ChatPage = () => {
   };
 
   useEffect(() => {
-    socket = io(ENDPOINT);
-    socket.emit("setup", userToken);
-    socket.on("connection", () => setSocketConnected(true));
-    socket.on("typing", () => setIsTyping(true));
-    socket.on("stop typing", () => setIsTyping(false));
-  }, []);
-
-  useEffect(() => {
     fetchMessages();
     selectedChatCompare = selectedChat;
     scrollToBottom();
@@ -369,29 +386,32 @@ const ChatPage = () => {
     getUserToken();
   }, [userToken]);
 
-  useEffect(() => {
-    socket.on("message received", (newMessageReceived: any) => {
-      if (
-        !selectedChatCompare ||
-        selectedChatCompare._id !== newMessageReceived.chat._id
-      ) {
-        setMessages([...messages, newMessageReceived]);
-        scrollToBottom();
-      } else {
-      }
-    });
-  }, [messages, selectedChatCompare]);
-
   const handleMenuClick = (userId: string) => {
     setMenuOpenPost(menuOpenPost === userId ? null : userId);
   };
+
+
+  const handleOnline = () =>{
+    console.log(
+      "9999999999999999999999999999999999999999999999999999999999999999",
+      userinfo
+    );
+    console.log(
+      "888888888888888888888888888888888888888888888888888888888888888888",
+      activeUsers
+    );
+    activeUsers.some((user) => user.userId === userinfo?._id)?setIsOnline(true):setIsOnline(false)
+    
+
+  }
 
   const typingHandler = (e: ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
 
     if (!typing) {
       setTyping(true);
-      socket.emit("typing", dataId);
+      handleTyping(dataId);
+      // socket.emit("typing", dataId);
     }
     let lastTypingTime = new Date().getTime();
     var timerLength = 3000;
@@ -399,7 +419,8 @@ const ChatPage = () => {
       var timeNow = new Date().getTime();
       var timeDiff = timeNow - lastTypingTime;
       if (timeDiff >= timerLength && typing) {
-        socket.emit("stop typing", dataId);
+        stopTyping(dataId);
+        // socket.emit("stop typing", dataId);
         setTyping(false);
       }
     }, timerLength);
@@ -407,12 +428,18 @@ const ChatPage = () => {
 
   return (
     <div className="bg-black text-white min-h-screen">
-      <Navbar2 />
+      <Navbar2  />
       <div className="flex mt-20">
-        <SideBar2 />
+        <SideNavBar />
         <main className="w-full lg:w-4/5 ml-auto p-4 flex flex-col space-y-4 relative h-screen">
           <div className="top-30 fixed w-full lg:w-4/5 rounded-xl bg-gray-900 p-4 flex items-center justify-between z-50">
-            <div className="flex items-center space-x-4">
+            {/* <div
+              className={`flex items-center space-x-4 ${
+                activeUsers.some((user) => user.userId === userinfo?._id)
+                  ? "bg-gray-300"
+                  : "bg-green-500"
+              }`}
+            >
               <label
                 htmlFor="profile-image-upload"
                 className="cursor-pointer bg-gray-700 p-2 rounded-full"
@@ -429,7 +456,39 @@ const ChatPage = () => {
               <h1 className="text-lg lg:text-2xl font-bold">
                 {userinfo?.name}
               </h1>
+            </div> */}
+
+            <div className="flex items-center space-x-4 p-3 rounded-lg ">
+              {/* Profile Image Container with Active Status Indicator */}
+              <div className="relative">
+                <label
+                  htmlFor="profile-image-upload"
+                  className="cursor-pointer block"
+                >
+                  <img
+                    src={userinfo?.image || "/api/placeholder/40/40"}
+                    alt="Profile"
+                    className="rounded-full w-10 h-10 object-cover border border-gray-200"
+                  />
+                </label>
+
+                {/* Active Status Indicator */}
+                <div
+                  className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                    // activeUsers.some((user) => user.userId === userinfo?._id)
+                    isOnline
+                      ? "bg-green-500"
+                      : "bg-gray-400"
+                  }`}
+                />
+              </div>
+
+              {/* User Name */}
+              <h1 className="text-lg font-semibold text-white">
+                {userinfo?.name || "User Name"}
+              </h1>
             </div>
+
             <div className="flex items-center space-x-4 lg:space-x-10 mr-2 lg:mr-20">
               <button
                 onClick={handleJoinRoom}
@@ -468,7 +527,7 @@ const ChatPage = () => {
                 <div
                   className={`flex items-start space-x-2 ${
                     m.sender._id === userId ? "justify-end" : "justify-start"
-                  }`}
+                  } `}
                   key={m._id}
                 >
                   {m.sender._id !== userId && (
@@ -513,7 +572,7 @@ const ChatPage = () => {
                         )}
                       </div>
                     )}
-                    <p className="text-xs lg:text-sm text-gray-400 mt-2">
+                    <p className="text-xs text-left lg:text-sm text-gray-400 mt-2">
                       {new Date(m.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",

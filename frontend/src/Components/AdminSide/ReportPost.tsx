@@ -16,6 +16,7 @@ import { store } from "../../Redux-store/Reduxstore";
 import Swal from "sweetalert2";
 import { API_ADMIN_URL } from "../Constants/Constants";
 import { IPost } from "../Interfaces/Interface2";
+import Adminsidebar from "./Adminsidebar";
 
 
 // const truncateText = (text: string, maxLength: number) => {
@@ -142,7 +143,7 @@ const Reportmanagement = () => {
     <div>
       <Navbar />
       <div className="flex">
-        <aside className="w-64 bg-black text-white p-4 h-screen fixed left-20 top-20">
+        {/* <aside className="w-64 bg-black text-white p-4 h-screen fixed left-20 top-20">
           <div className="flex flex-col space-y-4">
             <div className="flex items-center space-x-2">
               <FaHome style={{ fontSize: "20px" }} />
@@ -170,7 +171,9 @@ const Reportmanagement = () => {
               <button onClick={handleLogout}>Log out</button>
             </div>
           </div>
-        </aside>
+        </aside> */}
+
+        <Adminsidebar />
 
         <main className="ml-64 flex-1 p-4">
           <div className="container mx-auto">

@@ -1,17 +1,18 @@
  import mongoose, {ObjectId, Types} from 'mongoose'
  
  export  interface IPost {
-  _id: string;
-  user: any;
-  description: string;
-  image: string;
-  videos: string;
-  likeCount: number;
-  LikeStatement: boolean;
-  likes: string[];
-  comments: IComment[];
-  userName: string;
-}
+   _id: string;
+   user: any;
+   description: string;
+   category: string;
+   image: string;
+   videos: string;
+   likeCount: number;
+   LikeStatement: boolean;
+   likes: string[];
+   comments: IComment[];
+   userName: string;
+ }
 
  export interface IComment {
   user: any;
@@ -25,6 +26,12 @@
 export interface ReplyingToState {
   postId: string;
   commentId: string;
+}
+
+export interface CreatePostHomeModalProps {
+  togglepostModal: () => void;
+  updatehomeState: () => void;
+  userid: string | null;
 }
 
 export interface CreatePostModalProps {
@@ -75,6 +82,31 @@ export interface IReportUser {
   reportReason: string;
   image: string;
 }
+
+
+
+export interface IUser1 extends Document {
+  _id: mongoose.Types.ObjectId;
+}
+
+ export interface ActiveUsersType {
+   userId: string;
+   socketId: string;
+ }
+
+
+
+
+
+
+
+
+export interface FormattedChat {
+  chatName: string;
+  lastMessage: string;
+  lastMessageTime: Date;
+}
+
 
 export interface Message extends Document {
   sender: mongoose.Types.ObjectId;

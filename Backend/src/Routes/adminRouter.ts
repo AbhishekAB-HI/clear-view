@@ -15,6 +15,11 @@ router.post("/adminlogin", async (req, res) =>
 router.get("/admindashboardget", async (req, res) =>
   admincontroller.adminHomePage(req, res)
 );
+
+router.get("/getalldetails", async (req, res) =>
+  admincontroller.getalldetails(req, res)
+);
+
 router.patch("/blockuser", async (req, res) =>
   admincontroller.handleBlocking(req, res)
 );

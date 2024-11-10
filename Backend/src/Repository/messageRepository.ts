@@ -58,11 +58,22 @@ class messageRepository {
   ): Promise<boolean | undefined> {
     const UserFounded = await UserSchemadata.findById(logedUserId);
 
+    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    
+
     const Blocked = UserFounded?.blockedUser.some(
       (blockedUser) => blockedUser.toString() === userId
     );
+
+
+    console.log(Blocked,'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
+    
     let updateBlock;
     if (Blocked) {
+       console.log(
+         Blocked,
+         "111111111111111111111111111111111111111111111111111111111111"
+       );
       updateBlock = await UserSchemadata.findByIdAndUpdate(
         logedUserId,
         {
@@ -71,12 +82,19 @@ class messageRepository {
         { new: true }
       );
     } else {
+
+
       updateBlock = await UserSchemadata.findByIdAndUpdate(
         logedUserId,
         {
           $addToSet: { blockedUser: userId },
         },
         { new: true }
+      );
+
+      console.log(
+        updateBlock,
+        "111111111111111111111111111111111111111111111111111111111111"
       );
     }
 

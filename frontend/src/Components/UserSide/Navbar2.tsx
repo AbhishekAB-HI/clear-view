@@ -9,15 +9,13 @@ import { clearuserAccessTocken } from "../../Redux-store/Redux-slice";
 import { FaBell, FaUserCircle } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
 import { IPost, Notification } from "../Interfaces/Interface";
-import { API_CHAT_URL, API_USER_URL } from "../Constants/Constants";
+import { API_CHAT_URL, API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 import toast from "react-hot-toast";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
-
+import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
 const Navbar2 = () => {
   type RootState = ReturnType<typeof store.getState>;
-  const userDetails = useSelector(
-    (state: RootState) => state.accessTocken.userTocken
-  );
+  const userDetails = useSelector((state: RootState) => state.accessTocken.userTocken);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPost, setFilteredPost] = useState<IPost[]>([]);
@@ -27,7 +25,8 @@ const Navbar2 = () => {
   const [AccOpen, setAccOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
+  const [Notificationview, setNotificationview] = useState(false);
+   const getchat = useSelector((state: RootState) => state.accessTocken.chats);
   useEffect(() => {
     const getNotifications = async () => {
       try {
@@ -86,35 +85,64 @@ const Navbar2 = () => {
     try {
       dispatch(clearuserAccessTocken());
       localStorage.removeItem("usertocken");
-      navigate("/homepage");
+      navigate("/login");
     } catch (error) {
       console.log(error);
     }
   };
 
-  const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value;
-    setSearchQuery(query);
-    if (query === "") {
-      setFilteredPost(Userpost);
-    } else {
-      const filtered = Userpost.filter((user) =>
-        user.description.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredPost(filtered);
-    }
-  };
+
+
+
+   const movetomessagepage = async (chatId: String) => {
+     try {
+       const { data } = await ClientNew.post(
+         `${API_CHAT_URL}`,
+         { chatId },
+         {
+           headers: {
+             "Content-type": CONTENT_TYPE_JSON,
+           },
+         }
+       );
+
+       if (data.message === "Chat created succesfully") {
+         if (!getchat.find((c) => c._id === data.fullChat._id))
+           dispatch(setChats([data.fullChat, ...getchat]));
+         dispatch(setSelectedChat(data.fullChat));
+         navigate(`/chatpage/${chatId}/${data.fullChat._id}`);
+       } else {
+         toast.error("Chat created  Failed");
+       }
+     } catch (error) {
+       if (axios.isAxiosError(error)) {
+         if (!error.response) {
+           toast.error("Network error. Please check your internet connection.");
+         } else {
+           const status = error.response.status;
+           if (status === 404) {
+             toast.error("Posts not found.");
+           } else if (status === 500) {
+             toast.error("Server error. Please try again later.");
+           } else {
+             toast.error("Something went wrong.");
+           }
+         }
+       } else if (error instanceof Error) {
+         toast.error(error.message);
+       } else {
+         toast.error("An unexpected error occurred.");
+       }
+       console.log("Error fetching posts:", error);
+     }
+   };
 
   return (
     <nav className="fixed w-full top-0 left-0 z-50 bg-black border-b border-gray-700">
-      <div className="px-4 py-3 pb-20 shadow-md">
-        {/* Logo and Site Name */}
+      <div className="px-4 py-3 pb-6 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <Lottie
-              animationData={logoWeb}
-              className="w-12 sm:w-16 md:w-20" // Responsive sizing for logo
-            />
+            <Lottie animationData={logoWeb} className="w-12 sm:w-16 md:w-20" />
             <h1
               className="text-2xl sm:text-3xl font-bold"
               style={{ fontFamily: "Viaoda Libre" }}
@@ -123,22 +151,16 @@ const Navbar2 = () => {
             </h1>
           </div>
 
-          {/* Desktop Search Form */}
-          <form className="hidden lg:flex items-center space-x-2">
-            <input
-              type="search"
-              onChange={handleSearch}
-              placeholder="Search"
-              className="bg-gray-800 text-white px-5 py-1 rounded-full outline-none w-full sm:w-64 md:w-80 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200" // Enhanced styling
-            />
-          </form>
+         
 
           {/* Account Dropdown */}
           <div className="flex items-center space-x-4 md:space-x-6 lg:mr-10 text-white text-base md:text-lg">
             <div className="relative inline-block">
               {/* Bell Icon */}
-              <FaBell className="text-[20px] hover:text-[22px] hover:cursor-pointer" />
-
+              <FaBell
+                onClick={() => setNotificationview(!Notificationview)}
+                className="text-[20px] hover:text-[22px] hover:cursor-pointer"
+              />
               {/* Notification Count */}
               {SaveAllNotifications && SaveAllNotifications.length > 0 && (
                 <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
@@ -146,7 +168,34 @@ const Navbar2 = () => {
                 </span>
               )}
             </div>
+            {/* Notification Modal */}
 
+            {Notificationview && (
+              <div className="absolute right-60 mt-80 w-80 bg-white shadow-lg rounded-lg z-10">
+                <div className="p-4">
+                  <h2 className="text-lg font-bold text-gray-700 mb-2">
+                    Notifications
+                  </h2>
+                  {SaveAllNotifications.length > 0 ? (
+                    SaveAllNotifications.map((notification) => (
+                      <div
+                        onClick={() =>
+                          movetomessagepage(notification.sender._id)
+                        }
+                        key={notification.id}
+                        className="p-2 border-b hover:cursor-pointer border-gray-300"
+                      >
+                        <small className="text-sm text-red-600 font-medium p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition duration-300 ease-in-out">
+                          You have a message from {notification.sender.name}
+                        </small>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No new notifications</p>
+                  )}
+                </div>
+              </div>
+            )}
             {userDetails ? (
               <div className="relative inline-block text-left">
                 <button
@@ -205,19 +254,7 @@ const Navbar2 = () => {
         </div>
       </div>
 
-      {/* Mobile Search Form */}
-      <div className="">
-        {showMobileSearch && (
-          <form className="lg:hidden flex justify-center mt-10 px-4">
-            <input
-              type="search"
-              onChange={handleSearch}
-              placeholder="Search"
-              className="bg-gray-800 text-white px-3 py-1 mb-5   rounded-full outline-none w-full"
-            />
-          </form>
-        )}
-      </div>
+      
     </nav>
   );
 };

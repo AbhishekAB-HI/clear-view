@@ -7,53 +7,59 @@ import { useFormik } from "formik";
 import Clintnew from "../../Redux-store/Axiosinterceptor";
 import { FaSpinner, FaUpload, FaTrashAlt } from "react-icons/fa";
 import { EditProfileModalProps } from "../Interfaces/Interface";
-import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
+import { API_USER_URL, CONTENT_TYPE_JSON, CONTENT_TYPE_MULTER } from "../Constants/Constants";
 
-const EditProfileModal: React.FC<EditProfileModalProps> = ({
+const EditPasswordModal: React.FC<EditProfileModalProps> = ({
   toggleModal,
   updateProfileState,
   userid,
 }) => {
   const [loading, setLoading] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isImageUploaded, setIsImageUploaded] = useState(false);
+ 
 
   const validationSchema = Yup.object().shape({
-    name: Yup.string()
-      .matches(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces")
-      .required("Name is required"),
+    password: Yup.string()
+      .min(8, "Password must be at least 8 characters long")
+      .matches(/[A-Z]/, "Password must contain at least one uppercase letter")
+      .matches(/\d/, "Password must contain at least one number")
+      .matches(
+        /[@$!%*?&#]/,
+        "Password must contain at least one special character"
+      )
+      .required("Password is required"),
+    newpassword: Yup.string()
+      .min(8, "New password must be at least 8 characters long")
+      .required("New password is required"),
   });
 
   const formik = useFormik({
     initialValues: {
-      name: "",
-      image: null as File | null,
+      password: "",
+      newpassword: "",
     },
     validationSchema: validationSchema,
     onSubmit: async (values) => {
       const formData = new FormData();
-      formData.append("name", values.name);
-      if (values.image) {
-        formData.append("image", values.image);
-      }
+      formData.append("password", values.password);
+      formData.append("newpassword", values.newpassword);
       if (userid) {
         formData.append("userId", userid);
       }
       setLoading(true);
       try {
-        const { data } = await Clintnew.post(
-          `${API_USER_URL}/updateProfile`,
+        const { data } = await Clintnew.patch(
+          `${API_USER_URL}/updatePassword`,
           formData,
           {
             headers: {
-              "Content-Type": CONTENT_TYPE_MULTER,
+              "Content-Type": CONTENT_TYPE_JSON,
             },
           }
         );
-        if (data.message === "userupdated successfully") {
+        if (data.message === "Update password") {
           toast.success("Profile updated");
           updateProfileState();
-          toggleModal();
+          toggleModal()
         } else {
           toast.error("Profile updation failed");
         }
@@ -73,29 +79,9 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
     },
   });
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const file = e.target.files[0];
-      formik.setFieldValue("image", file);
-      const imageUrl = URL.createObjectURL(file);
-      setImagePreview(imageUrl);
-      setIsImageUploaded(true);
-    }
-  };
+ 
 
-  const removeImage = () => {
-    formik.setFieldValue("image", null);
-    setImagePreview(null);
-    setIsImageUploaded(false);
 
-    // Reset the file input value to allow re-uploading the same file
-    const fileInput = document.querySelector(
-      'input[name="image"]'
-    ) as HTMLInputElement;
-    if (fileInput) {
-      fileInput.value = "";
-    }
-  };
 
   return (
     <div
@@ -107,7 +93,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
         <div className="relative bg-white rounded-lg shadow-lg dark:bg-gray-800">
           <div className="flex items-center justify-between p-5 border-b dark:border-gray-700">
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Edit Profile
+              Change Your Password
             </h3>
             <button
               type="button"
@@ -131,64 +117,14 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
             </button>
           </div>
           <div className="p-6">
-            <div className="flex flex-col items-center mb-5 space-y-4">
-              {/* Modern Image Upload with Preview and Remove Option */}
-              <div className="relative flex flex-col items-center group">
-                <img
-                  src={imagePreview || profileimg}
-                  alt="Profile Preview"
-                  className="h-32 w-32 rounded-full border-4 border-gray-200 shadow-md object-cover transition-transform transform hover:scale-105"
-                />
-                <label
-                  className={`cursor-pointer mt-4 p-2 rounded-lg bg-blue-500 text-white flex items-center space-x-2 hover:bg-blue-600 transition duration-150 ease-in-out ${
-                    isImageUploaded ? "opacity-50 cursor-not-allowed" : ""
-                  }`}
-                >
-                  <FaUpload className="text-sm" />
-                  <span>Upload Image</span>
-                  <input
-                    type="file"
-                    name="image"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    disabled={isImageUploaded}
-                  />
-                </label>
-                {imagePreview && (
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    className="mt-2 p-2 text-red-500 hover:text-red-700 flex items-center space-x-2 transition duration-150 ease-in-out"
-                  >
-                    <FaTrashAlt className="text-sm" />
-                    <span>Remove Image</span>
-                  </button>
-                )}
-              </div>
-            </div>
             <form
               onSubmit={formik.handleSubmit}
-              method="POST"
-              encType="multipart/form-data"
+              method="PATCH"
               className="space-y-6"
             >
               {/* Other form fields */}
+
               <div>
-                <input
-                  type="text"
-                  name="name"
-                  value={formik.values.name}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  className="w-full px-4 py-3 text-black rounded-lg bg-gray-50 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  placeholder="Enter your name"
-                  required
-                />
-                {formik.touched.name && formik.errors.name ? (
-                  <p className="text-red-500 text-sm">{formik.errors.name}</p>
-                ) : null}
-              </div>
-              {/* <div>
                 <input
                   type="password"
                   name="password"
@@ -204,8 +140,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     {formik.errors.password}
                   </p>
                 ) : null}
-              </div> */}
-              {/* <div>
+              </div>
+              <div>
                 <input
                   type="password"
                   name="newpassword"
@@ -221,7 +157,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                     {formik.errors.newpassword}
                   </p>
                 ) : null}
-              </div> */}
+              </div>
               <button
                 type="submit"
                 className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200 flex justify-center items-center"
@@ -237,4 +173,4 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
   );
 };
 
-export default EditProfileModal;
+export default EditPasswordModal;

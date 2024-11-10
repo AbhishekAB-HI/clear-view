@@ -23,7 +23,6 @@ import toast from "react-hot-toast";
 import { OrbitProgress } from "react-loading-indicators";
 import Swal from "sweetalert2";
 import Navbar2 from "./Navbar2";
-import SideBar2 from "./Sidebar2";
 import {
   API_MESSAGE_URL,
   CONTENT_TYPE_JSON,
@@ -31,16 +30,16 @@ import {
 } from "../Constants/Constants";
 import { userInfo } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
-
+import { initilizeSocket } from "./GlobalSocket/CreateSocket";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
 let selectedChatCompare: any;
 
-const GroupChatPage = () => {
+const ChatPage = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState<string>("");
-  const { chatId, dataId, groupname } = useParams<{chatId: string; dataId: any; groupname:string}>();
+  const { chatId, dataId } = useParams<{ chatId: any; dataId: any }>();
   const [socketConnected, setSocketConnected] = useState(false);
   const [postContent, setPostContent] = useState("");
   const [postImages, setPostImages] = useState<File[]>([]);
@@ -59,9 +58,9 @@ const GroupChatPage = () => {
     const GetUserId = async () => {
       try {
         const { data } = await axios.get(
-          `${API_MESSAGE_URL}/getuserid/${chatId}`
+          `${API_MESSAGE_URL}/getuserimage/${chatId}`
         );
-        if (data.message == "Get user id") {
+        if (data.message === "Get user id") {
           setuserinfo(data.userinfo);
         } else {
           toast.error("User id not found");
@@ -104,7 +103,6 @@ const GroupChatPage = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-
     if (files && files.length > 0) {
       toast.success("file uploaded");
       const imageFiles: File[] = [];
@@ -134,9 +132,11 @@ const GroupChatPage = () => {
   };
 
   type RootState = ReturnType<typeof store.getState>;
+
   const selectedChat = useSelector(
     (state: RootState) => state.accessTocken.SelectedChat
   );
+
   const userToken = useSelector(
     (state: RootState) => state.accessTocken.userTocken
   );
@@ -420,7 +420,9 @@ const GroupChatPage = () => {
                   className="rounded-full w-10 h-10"
                 />
               </label>
-              <h1 className="text-lg lg:text-2xl font-bold">{groupname}</h1>
+              <h1 className="text-lg lg:text-2xl font-bold">
+                {userinfo?.name}
+              </h1>
             </div>
             <div className="flex items-center space-x-4 lg:space-x-10 mr-2 lg:mr-20">
               <button
@@ -464,36 +466,26 @@ const GroupChatPage = () => {
                   key={m._id}
                 >
                   {m.sender._id !== userId && (
-                    <div className="flex flex-col items-start">
-                      {/* Profile Image */}
-                      <img
-                        className="rounded-full w-8 h-8 lg:w-12 lg:h-12"
-                        src={
-                          m.sender.image
-                            ? m.sender.image
-                            : "https://dummyimage.com/150x150/cccccc/ffffff&text=Uploadimage"
-                        }
-                        alt="profile"
-                      />
-
-                      {/* Sender's Name */}
-                      <p className="text-xs lg:text-sm text-gray-400 mt-1">
-                        {m.sender.name}
-                      </p>
-                    </div>
+                    <img
+                      className="rounded-full w-8 h-8 lg:w-12 lg:h-12"
+                      src={
+                        m.sender.image
+                          ? m.sender.image
+                          : "https://dummyimage.com/150x150/cccccc/ffffff&text=Uploadimage"
+                      }
+                      alt="profile"
+                    />
                   )}
-
                   <div
-                    className={`max-w-xs lg:max-w-md rounded-lg p-2 mt-2 ${
+                    className={`max-w-xs lg:max-w-md rounded-lg p-2 mt-5 ${
                       m.sender._id === userId
                         ? "bg-green-600 text-white shadow-md"
                         : "bg-gray-700 text-white shadow-md"
                     }`}
                   >
-                    <p className="text-sm lg:text-lg font-semibold">
+                    <p className="text-sm  lg:text-lg font-semibold">
                       {m.content}
                     </p>
-
                     {(m.image || m.videos) && (
                       <div className="mt-2">
                         {m.image && m.image.length > 0 ? (
@@ -515,8 +507,7 @@ const GroupChatPage = () => {
                         )}
                       </div>
                     )}
-
-                    <p className="text-xs lg:text-sm text-gray-400 mt-2">
+                    <p className="text-xs text-left lg:text-sm text-gray-400 mt-2">
                       {new Date(m.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -563,6 +554,7 @@ const GroupChatPage = () => {
                 <IoSend className="hover:text-green-500 text-xl lg:text-3xl" />
               </button>
 
+              {/* Image Upload Label and Input */}
               <label
                 htmlFor="upload-files"
                 className="cursor-pointer w-10 h-10 lg:w-12 lg:h- mt-3 ml-2 lg:ml-10"
@@ -590,4 +582,4 @@ const GroupChatPage = () => {
   );
 };
 
-export default GroupChatPage;
+export default ChatPage;

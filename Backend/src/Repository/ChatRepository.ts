@@ -1,6 +1,6 @@
-import { ObjectId } from "mongoose";
+import { ObjectId, Types } from "mongoose";
 import { IUser } from "../Entities/Userentities";
-import { Chats } from "../Entities/Chatentities";
+import { Chats, FormattedChat, IUser1 } from "../Entities/Chatentities";
 import ChatSchemamodel from "../Model/Chatmodel";
 import UserSchemadata from "../Model/Usermodel";
 import NotifiactSchemaModal from "../Model/NotificationSchema";
@@ -56,6 +56,18 @@ class chatRepository {
 
     if (isChat.length > 0) {
       let fullChat = isChat[0];
+
+      const deletedNotifications = await NotifiactSchemaModal.deleteMany({
+        chat: fullChat._id,
+      });
+
+      if (deletedNotifications.deletedCount > 0) {
+        console.log(
+          `${deletedNotifications.deletedCount} notifications deleted for chat ID: ${fullChat._id}`
+        );
+      } else {
+        console.log(`No notifications found for chat ID: ${fullChat._id}`);
+      }
       return fullChat;
     } else {
       const chatData = {
@@ -65,6 +77,7 @@ class chatRepository {
         roomId: getPincode,
       };
       const createChat = await ChatSchemamodel.create(chatData);
+
       const fullChat = await ChatSchemamodel.findOne(createChat._id).populate(
         "users",
         "-password"
@@ -116,6 +129,17 @@ class chatRepository {
     }
   }
 
+  async getUserIdstatus(userId: string | unknown) {
+    try {
+      const UserFounded = await UserSchemadata.findById(userId);
+
+      console.log(UserFounded,'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx');
+  
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async getUserIdHere(userId: string | unknown): Promise<boolean | undefined> {
     try {
       const UserFounded = await UserSchemadata.findById(userId);
@@ -130,16 +154,7 @@ class chatRepository {
         findAllUserid.includes(blockedUser.toString())
       );
 
-      console.log(Blocked, "2222222222222222222222222222222222222222222222");
-
       return Blocked;
-
-      // const findAllUserid =   findtheUsers.map((item)=> item._id)
-
-      //  const Blocked = UserFounded?.blockedUser.some(
-      //    (blockedUser) => blockedUser.toString() === findAllUserid
-      //  );
-      //  return Blocked;
     } catch (error) {
       console.log(error);
     }
@@ -214,51 +229,25 @@ class chatRepository {
     }
   }
 
-  // async findAllUsers(userId:string){
-  //           try {
-
-  //        const      await UserSchemadata.findById(userId);
-
-  //           } catch (error) {
-  //             console.log(error);
-
-  //           }
-  // }
-
-  async findAllNotifications(userId:unknown): Promise<Notification[] | undefined> {
+  async findAllNotifications(
+    userId: unknown
+  ): Promise<Notification[] | undefined> {
     try {
-      // const findAllnotifications =await NotifiactSchemaModal.find({ isRead: false })
-      //   .populate("sender")
-      //   .populate("chat")
-      //   .exec();
-      console.log("###########################################");
-      
       const Chats = await ChatSchemamodel.find({ users: userId });
-
       const findAllchatid = Chats.map((chat) => chat._id);
+      if (findAllchatid.length > 0) {
+        const findAllnotifications = await NotifiactSchemaModal.find({
+          chat: { $in: findAllchatid },
+          sender: { $ne: userId },
+        })
+          .populate("sender")
+          .populate("chat");
 
-      console.log(findAllchatid,'2222222222222222222222222222');
-      
-
-     if (findAllchatid.length > 0) {
-      const findAllnotifications = await NotifiactSchemaModal.find({
-        chat: { $in: findAllchatid }, // Match multiple chat IDs
-        sender: { $ne: userId }, // Exclude documents where sender is the userId
-      })
-        .populate("sender")
-        .populate("chat");
-
-
-         NotifiactSchemaModal.find({ sender: userId });
-
-      
-
-       console.log(findAllnotifications, "get full notifications");
-       return findAllnotifications;
-     } else {
-       console.log("No chat IDs found for the user.");
-       return [];
-     }
+        return findAllnotifications;
+      } else {
+        console.log("No chat IDs found for the user.");
+        return [];
+      }
     } catch (error) {
       console.log(error);
     }
@@ -308,12 +297,6 @@ class chatRepository {
     userId: string | unknown
   ): Promise<IUser[] | undefined> {
     try {
-      //  const followerUser:any = await UserSchemadata.findById(userId);
-
-      //  const isAlreadyFollowers = followerUser.followers.some(
-      //    (followers:any) => followers.toString() === logedUserId
-      //  );
-
       const foundUsers = await UserSchemadata.find({ _id: { $ne: userId } });
       if (foundUsers) {
         return foundUsers;
@@ -323,25 +306,106 @@ class chatRepository {
     }
   }
 
-  async findOtherMessages(
-    userId: string | unknown
-  ): Promise<IUser[] | undefined> {
+  async findOtherMessages(userId: string | unknown | ObjectId): Promise<
+    | {
+        foundUsers: IUser[];
+        formattedChats: FormattedChat[];
+        formatgroupchats: FormattedChat[];
+      }
+    | undefined
+  > {
     try {
       const currentUser = await UserSchemadata.findById(userId);
+
       if (!currentUser) {
         throw new Error("User not found");
       }
 
       const blockedUsers = currentUser.blockedUser || [];
 
+      const findUser = await ChatSchemamodel.find({
+        isGroupchat: false,
+        latestMessage: { $ne: null },
+        users: { $in: [userId] },
+      })
+        .populate({ path: "users" })
+        .exec();
+
+      const otherUserIds = findUser.flatMap((chat) =>
+        chat.users
+          .map((user) => user._id) // Ensure `_id` matches your populated user type
+          .filter(
+            (id) => !(id as Types.ObjectId).equals(userId as Types.ObjectId)
+          )
+      );
+
       const foundUsers = await UserSchemadata.find({
-        _id: { $ne: userId, $nin: blockedUsers },
+        _id: { $in: otherUserIds, $ne: userId, $nin: blockedUsers },
       });
 
-      return foundUsers;
+      const eachUser = foundUsers.map((user) => user._id);
+
+      const groupchats = await ChatSchemamodel.find({
+        chatName: { $ne: "sender" },
+        users: {
+          $all: [userId],
+          $in: eachUser,
+        },
+      })
+        .sort({ "latestMessage.createdAt": -1 })
+        .populate({
+          path: "latestMessage",
+          select: "content createdAt",
+        })
+        .exec();
+
+      const chats = await ChatSchemamodel.find({
+        chatName: "sender",
+        users: {
+          $all: [userId],
+          $in: eachUser,
+        },
+      })
+        .sort({ "latestMessage.createdAt": -1 })
+        .populate({
+          path: "latestMessage",
+          select: "content createdAt",
+        })
+        .exec();
+
+      const formattedChats = chats.map((chat) => ({
+        chatName: chat.chatName,
+        lastMessage: chat.latestMessage?.content || "No messages yet",
+        lastMessageTime: chat.latestMessage?.createdAt || "N/A",
+      }));
+
+      const formatgroupchats = groupchats.map((chat) => ({
+        chatName: chat.chatName,
+        lastMessage: chat.latestMessage?.content || "No messages yet",
+        lastMessageTime: chat.latestMessage?.createdAt || "N/A",
+      }));
+
+      return { foundUsers, formattedChats, formatgroupchats };
     } catch (error) {
       console.error("Error finding users:", error);
       return undefined;
+    }
+  }
+
+  async findAllUsersFound(userId: unknown): Promise<IUser[] | undefined> {
+    try {
+      const currentUser = await UserSchemadata.findById(userId);
+      if (!currentUser) {
+        throw new Error("User not found");
+      }
+      const blockedUsers = currentUser.blockedUser || [];
+      const getAllusers = await UserSchemadata.find({
+        _id: { $ne: userId, $nin: blockedUsers },
+      });
+
+      return getAllusers;
+    } catch (error) {
+      console.log(error);
     }
   }
 

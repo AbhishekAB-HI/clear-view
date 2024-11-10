@@ -7,10 +7,7 @@ import { ACCESS_TOKEN } from "../Config/Jwt";
 
 dotenv.config();
 
-const AuthenticationMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-  console.log("Auth Middleware");
-  console.log('3333333333333333333');
-  
+const AuthenticationMiddleware = async (req: Request, res: Response, next: NextFunction) => { 
   const token = req.header("Authorization")?.split(" ")[1];
   if (!token) {
     return res.status(401).json({ message: "Unauthorized: Token is missing" });

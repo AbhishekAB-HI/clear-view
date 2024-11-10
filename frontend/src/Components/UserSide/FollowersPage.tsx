@@ -10,6 +10,7 @@ import SideBar2 from "./Sidebar2";
 import { API_CHAT_URL, API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 import axios from "axios";
 import { IUser } from "../Interfaces/Interface";
+import SideNavBar from "./SideNavbar";
 
 const FollowersPage = () => {
   const [Loading, setLoading] = useState(false);
@@ -228,12 +229,10 @@ const FollowersPage = () => {
   return (
     <div className="bg-black text-white min-h-screen">
       <Navbar2 />
-      <div className="flex mt-20">
-        <SideBar2 />
-        {/* Main Content */}
-        <main className="w-4/5 ml-auto p-0">
-          {/* Messages Section */}
-          <div className="fixed  bg-black w-full pt-10  pb-5">
+      <SideNavBar />
+      <div className="flex mt-12 ">
+        <main className="w-4/5 ml-auto ">
+          <div className="fixed  bg-black w-full pl-5     pt-5  pb-5">
             <h1
               style={{ fontSize: "25px" }}
               className=" flex text-xl font-bold ml-0"

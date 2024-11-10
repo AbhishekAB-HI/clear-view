@@ -10,4 +10,6 @@ export interface Message extends Document {
   videos: string;
   chat: mongoose.Types.ObjectId;
   readBy: mongoose.Types.ObjectId[];
+  createdAt: Date; 
+  updatedAt: Date; 
 }

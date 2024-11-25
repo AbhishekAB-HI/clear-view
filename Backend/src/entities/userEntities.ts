@@ -16,17 +16,20 @@ export interface tockens {
   refreshToken: string;
 }
 
-
 export interface IReportUser {
   userId: Types.ObjectId;
   reportReason: string;
-}
 
+}
 
 export interface IReportpost {
   postId: Types.ObjectId;
   postreportReason: string;
   userinfo: Types.ObjectId;
+  postcontent: string | undefined;
+  postimage: [String] | string;
+  postedBy: string | undefined;
+  reportedBy:string | undefined
 }
 
 export interface ReportedPost {
@@ -44,12 +47,13 @@ export interface IUser extends Document {
   isAdmin: boolean;
   isVerified?: boolean;
   createdAt?: Date;
-  // birthdate:Date
   updatedAt?: Date;
+  lastSeen: Date;
   image?: string;
   followers: IUser[];
   following: IUser[];
   blockedUser: IUser[];
+  blocked: IUser[];
   ReportUser: IReportUser[];
   ReportPost?: IReportpost[];
 }
@@ -63,21 +67,12 @@ export interface IUserReturn extends Document {
   isAdmin: boolean;
   createdAt?: Date;
   updatedAt?: Date;
-  // birthdate: Date;
+  lastSeen: Date;
   otp?: number;
   followers: IUser[];
   following: IUser[];
   blockedUser: IUser[];
+  blocked: IUser[];
   ReportUser: IReportUser[];
   ReportPost?: IReportpost[];
 }
-
-
-
-
-
-
-
-
-
-

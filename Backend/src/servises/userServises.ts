@@ -6,7 +6,10 @@ import {
   tockens,
 } from "../Entities/Userentities";
 import { Posts, Postsget } from "../Entities/Postentities";
-import { TokenResponce } from "../Interface/userInterface/Userdetail";
+import {
+  IAllNotification,
+  TokenResponce,
+} from "../Interface/userInterface/Userdetail";
 import { userPayload } from "../Interface/userInterface/Userpayload";
 import userRepository from "../Repository/Userrepository";
 import { generateAccessToken, generateRefreshToken } from "../Utils/Jwt";
@@ -42,6 +45,19 @@ class userServises {
     }
   }
 
+  async updateLastseen(userId: unknown): Promise<IUser | unknown> {
+    try {
+      const getUser = await this.userRepository.findlastseenupdate(userId);
+
+      if (!getUser) {
+        throw new Error("No user found for last seen");
+      }
+      return getUser;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async verifyUser(userdata: Partial<Checkuser>): Promise<tockens | undefined> {
     if (!userdata.email) {
       throw new Error("Email is required");
@@ -56,12 +72,14 @@ class userServises {
     const checkisActive = await this.userRepository.checkByisActive(
       userdata.email
     );
+
+    const updatetime = await this.userRepository.updateTime(userdata.email);
+
     if (verifyuser?.isActive) {
       throw new Error("This User is blocked");
     }
 
     if (verifyuser?.password) {
-      console.log(verifyuser?.password, "password,,,,,,,,,,,,,,");
       console.log("reached");
       console.log(userdata.password);
 
@@ -69,8 +87,6 @@ class userServises {
         userdata.password,
         verifyuser.password
       );
-
-      console.log(isPasswordValid, "password,gethetr,,,,,,,,,,,,,");
       if (!isPasswordValid) {
         throw new Error("Wrong password");
       }
@@ -105,8 +121,6 @@ class userServises {
     const getUser = await this.userRepository.checkingforgetotp(otp, email);
 
     return getUser;
-
-    //  const getUser = await this.userRepository.checkingmail(getData);
   }
 
   async replyComments(
@@ -176,12 +190,7 @@ class userServises {
         page,
         limit
       );
-      if (
-        !profileData ||
-        !profileData.userinfo ||
-        !profileData.postinfo ||
-        !profileData.totalpost
-      ) {
+      if (!profileData || !profileData.userinfo) {
         throw new Error("No user details found");
       }
 
@@ -196,17 +205,40 @@ class userServises {
     }
   }
 
- 
+  async findBlockedUsers(
+    userId: unknown,
+    page:number,
+    limit:number
+  ): Promise<{ Allusers: IUser[]; totalblockuser: number } | undefined> {
 
-  async  findBlockedUsers(userId: unknown):Promise<IUser[]|undefined> {
-    const blockedUsers = await this.userRepository.findBlockedUserinRepo(userId);
-    if (!blockedUsers) {
-      throw new Error("No post found");
+    const blockedUsers = await this.userRepository.findBlockedUserinRepo(
+      userId,
+      page,
+      limit
+    );
+
+    if (!blockedUsers?.Allusers || !blockedUsers?.totalblockuser) {
+      return{
+        Allusers:[],
+        totalblockuser:0
+      }
+          
     }
-    return blockedUsers;
+
+    const { Allusers, totalblockuser } = blockedUsers;
+
+    return {
+      Allusers,
+      totalblockuser,
+    };
+
+
   }
 
-  async passLikePostID(postId: string, userId: mongoose.Types.ObjectId) {
+  async passLikePostID(
+    postId: string,
+    userId: mongoose.Types.ObjectId
+  ): Promise<IAllNotification | unknown> {
     const LikedPost = await this.userRepository.LikethePost(postId, userId);
     if (!LikedPost) {
       throw new Error("No post found");
@@ -239,8 +271,6 @@ class userServises {
   }
 
   async Changepassword(email: string, password: string): Promise<IUser> {
-    console.log("reached servisessssssssssssssssss");
-
     const getUser = await this.userRepository.changingpassword(email, password);
 
     if (!getUser) {
@@ -265,10 +295,6 @@ class userServises {
       };
       const accessToken = await generateAccessToken(userPayload);
       const refreshToken = await generateRefreshToken(userPayload);
-
-      console.log(accessToken, "access tocken ");
-      console.log(refreshToken, "access tocken ");
-
       return { accessToken, refreshToken };
     } catch (error) {
       console.log(error);
@@ -317,31 +343,22 @@ class userServises {
     }
   }
 
-  async getBreakingNewsDetails(
-    page: number,
-    limit: number,
-    search: string | any | string[] | any[] = ""
-  ): Promise<{ total: number; posts: Posts[] | undefined }> {
-    const { total, posts } = await this.userRepository.getAllbeeakingnews(
-      page,
-      limit,
-      search
-    );
-
-    return {
-      total,
-      posts,
-    };
-  }
-
-  async getpostdetails(search: string | any | string[] | any[] = "",category: string): Promise<{ posts: Posts[] | undefined }> {
-    const {  posts } = await this.userRepository.getAllthedata(
-      search,
-      category
-    );
+  async getpostdetails(
+    search: string | any | string[] | any[] = "",
+    category: string | any | string[] | any[] = "",
+    page: string | number
+  ): Promise<{
+    posts: Posts[];
+    currentPage: string | number;
+    totalPages: number;
+  }> {
+    const { posts, currentPage, totalPages } =
+      await this.userRepository.getAllthedata(search, category, page);
 
     return {
       posts,
+      currentPage,
+      totalPages,
     };
   }
 
@@ -415,28 +432,37 @@ class userServises {
       return userProfile;
     } catch (error) {}
   }
-
   async postDetailsdata(
     userId: string,
     content: string,
     Category: string,
     imageFiles: string[],
     videoFiles: string[]
-  ): Promise<Posts | undefined> {
+  ): Promise<{
+    savePosts: Posts | undefined;
+    postNotify: IAllNotification | undefined;
+  }> {
     try {
-      let userProfile = await this.userRepository.findUserdetails(
+      const userProfile = await this.userRepository.findUserdetails(
         userId,
         content,
         Category,
         imageFiles,
         videoFiles
       );
-      if (!userProfile) {
-        throw new Error("No user details get here");
+
+      const { savePosts, postNotify } = userProfile;
+
+      if (savePosts && postNotify) {
+        return { savePosts, postNotify };
       }
 
-      return userProfile;
-    } catch (error) {}
+      return { savePosts: undefined, postNotify: undefined };
+    } catch (error) {
+      console.error("Error in postDetailsdata:", error);
+
+      return { savePosts: undefined, postNotify: undefined };
+    }
   }
 
   async PassUserDetails(userId: string, password: string, newpassword: string) {

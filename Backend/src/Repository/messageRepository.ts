@@ -1,12 +1,19 @@
-import {  IUser } from "../Entities/Userentities";
-import { Chats,Message } from "../Entities/Chatentities";
+import { IUser } from "../Entities/Userentities";
+import { Chats, Message } from "../Entities/Chatentities";
 import ChatSchemamodel from "../Model/Chatmodel";
 import messageSchemaModel from "../Model/Messagemodel";
 import UserSchemadata from "../Model/Usermodel";
 import NotifiactSchemaModal from "../Model/NotificationSchema";
+import FollowingSchemaData from "../Model/followSchema";
 
 class messageRepository {
-  async sendAllDataToRepo(userId: string,content: string,chatId: string,imageUrls: string[],videoUrls: string[]): Promise<Message | undefined> {
+  async sendAllDataToRepo(
+    userId: string,
+    content: string,
+    chatId: string,
+    imageUrls: string[],
+    videoUrls: string[]
+  ): Promise<Message | undefined> {
     const newMessage = {
       sender: userId,
       content: content,
@@ -15,19 +22,18 @@ class messageRepository {
       videos: videoUrls,
     };
 
-    const userinfo =   await UserSchemadata.findById(userId)
+    const userinfo = await UserSchemadata.findById(userId);
     if (!userinfo) {
       throw new Error("User not found");
     }
-        const newMessage2 = {
-          sender: userId,
-          content: content,
-          sendername:userinfo.name,
-          chat: chatId,
-          image: imageUrls,
-          videos: videoUrls,
-        };
-
+    const newMessage2 = {
+      sender: userId,
+      content: content,
+      sendername: userinfo.name,
+      chat: chatId,
+      image: imageUrls,
+      videos: videoUrls,
+    };
 
     let message = await messageSchemaModel.create(newMessage);
     let Notifications = await NotifiactSchemaModal.create(newMessage2);
@@ -41,39 +47,44 @@ class messageRepository {
 
   async getalluserinfo(userid: string): Promise<IUser | null> {
     const userinfo = await UserSchemadata.findById(userid);
-
-    console.log(userinfo,'!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    
     return userinfo;
   }
-
-
-
-
-
 
   async findUserBlock(
     userId: string,
     logedUserId: string
   ): Promise<boolean | undefined> {
     const UserFounded = await UserSchemadata.findById(logedUserId);
-
-    console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    
-
+    const otherUserFounded = await UserSchemadata.findById(userId);
+    const userBlocked = otherUserFounded?.blocked.some(
+      (blockedUser) => blockedUser.toString() === logedUserId
+    );
     const Blocked = UserFounded?.blockedUser.some(
       (blockedUser) => blockedUser.toString() === userId
     );
 
-
-    console.log(Blocked,'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
-    
     let updateBlock;
+    let updateBlocked;
+
+    if (userBlocked) {
+      updateBlocked = await UserSchemadata.findByIdAndUpdate(
+        userId,
+        {
+          $pull: { blocked: logedUserId },
+        },
+        { new: true }
+      );
+    } else {
+      updateBlocked = await UserSchemadata.findByIdAndUpdate(
+        userId,
+        {
+          $addToSet: { blocked: logedUserId },
+        },
+        { new: true }
+      );
+    }
+
     if (Blocked) {
-       console.log(
-         Blocked,
-         "111111111111111111111111111111111111111111111111111111111111"
-       );
       updateBlock = await UserSchemadata.findByIdAndUpdate(
         logedUserId,
         {
@@ -82,8 +93,6 @@ class messageRepository {
         { new: true }
       );
     } else {
-
-
       updateBlock = await UserSchemadata.findByIdAndUpdate(
         logedUserId,
         {
@@ -91,35 +100,30 @@ class messageRepository {
         },
         { new: true }
       );
-
-      console.log(
-        updateBlock,
-        "111111111111111111111111111111111111111111111111111111111111"
-      );
     }
 
     return Blocked;
   }
 
-
-
-
-
-  async getAllmessages(chatid: string): Promise<Message[] | undefined> {
-    
-    const messages = await messageSchemaModel.find({ chat: chatid }).populate("sender", "name image email").populate("chat");
-    return messages;
-
-
+  async findUserProfilepage(
+    userid: string | unknown
+  ): Promise<IUser | undefined> {
+    const findUserId = await FollowingSchemaData.findById(userid);
+    const getemail = findUserId?.email;
+    const foundUser = await UserSchemadata.findOne({ email: getemail });
+    if (!foundUser) {
+      throw new Error("No user data get");
+    }
+    return foundUser;
   }
 
-
-
-
-
-
-
-
+  async getAllmessages(chatid: string): Promise<Message[] | undefined> {
+    const messages = await messageSchemaModel
+      .find({ chat: chatid })
+      .populate("sender", "name image email")
+      .populate("chat");
+    return messages;
+  }
 }
 
 export default messageRepository;

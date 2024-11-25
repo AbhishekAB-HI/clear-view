@@ -6,7 +6,6 @@ import CryptoJS from "crypto-js";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Toaster, toast } from "react-hot-toast";
-
 import "react-toastify/dist/ReactToastify.css";
 import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 
@@ -79,15 +78,7 @@ const forgetOtppage: React.FC = () => {
     e.preventDefault();
 
     try {
-      const { data } = await axios.post(
-        `${API_USER_URL}/verifyforgetotp`,
-        { otp, email },
-        {
-          headers: {
-            "Content-Type":CONTENT_TYPE_JSON,
-          },
-        }
-      );
+      const { data } = await axios.post(`${API_USER_URL}/verifyforgetotp`,{ otp, email });
       if (data.message === "confirm user") {
         const secretKey = "your-secret-key-crypto";
         const emailget = data.email;
@@ -140,15 +131,7 @@ const forgetOtppage: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      let { data } = await axios.patch(
-        `${API_USER_URL}/resend-otp`,
-        { email },
-        {
-          headers: {
-            "Content-Type":CONTENT_TYPE_JSON,
-          },
-        }
-      );
+      let { data } = await axios.patch(`${API_USER_URL}/resend-otp`,{ email });
       if (data.message === "resend otp successfully") {
         toast.success("OTP resent successfully");
       }else{

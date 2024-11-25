@@ -1,17 +1,26 @@
-import { useFetcher, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
-import ClientNew from "../../Redux-store/Axiosinterceptor";
 import { useDispatch, useSelector } from "react-redux";
 import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
 import { store } from "../../Redux-store/Reduxstore";
 import Navbar2 from "./Navbar2";
-import { API_CHAT_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
+import { API_CHAT_URL } from "../Constants/Constants";
 import axios from "axios";
-import { Chats, FormattedChat, IUser } from "../Interfaces/Interface";
+import {
+  ActiveUsersType,
+  Chats,
+  FormattedChat,
+  IUser,
+} from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
 import { MessageCircle, PlusCircle, Search, Users, X } from "lucide-react";
-import SideBar2 from "./Sidebar2";
+// import { ActiveUsershere, initilizeSocket } from "./GlobalSocket/CreateSocket";
+import io, { Socket } from "socket.io-client";
+import axiosClient from "../../Services/Axiosinterseptor";
+const ENDPOINT = "http://localhost:3000";
+let socket: Socket;
+let selectedChatCompare: any;
 const MessagePage = () => {
   const [Loading, setLoading] = useState(false);
   const [searchResult, setSearchResult] = useState<IUser[]>([]);
@@ -27,17 +36,25 @@ const MessagePage = () => {
   const [searchusers, setsearchusers] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [findtheUsers, setfindtheUsers] = useState([]);
-  const [saveTheUser, setsaveTheUser] = useState([]);
+  const [saveTheUser, setsaveTheUser] = useState<FormattedChat[]>([]);
   const [saveGroupinfo, setsaveGroupinfo] = useState<Chats>();
+  const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
   const [findAllUsers, setfindAllUsers] = useState<IUser[]>([]);
+  const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
+  const [postsPerPage] = useState(2);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [currentgroupPage, setCurrentgroupPage] = useState(1);
+  const [totalGroupPosts, setTotalGroupPosts] = useState(0);
+
   const dispatch = useDispatch();
   const navigate = useNavigate();
   type RootState = ReturnType<typeof store.getState>;
   const [isFormVisible, setIsFormVisible] = useState(false);
 
-   const notifications = useSelector(
-     (state: RootState) => state.accessTocken.Notification
-   );
+  const notifications = useSelector(
+    (state: RootState) => state.accessTocken.Notification
+  );
 
   // Function to toggle form visibility
   const toggleForm = () => {
@@ -49,21 +66,113 @@ const MessagePage = () => {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  const userDetails = useSelector(
+    (state: RootState) => state.accessTocken.userTocken
+  );
 
+  const selectedChat = useSelector(
+    (state: RootState) => state.accessTocken.SelectedChat
+  );
 
-  
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    if (userDetails) {
+      socket.emit("setup", userDetails);
+    }
+    return () => {
+      socket.disconnect();
+    };
+  }, [userDetails]);
+
+  useEffect(() => {
+    socket.on("get-users", (users: ActiveUsersType[]) => {
+      setActiveUsers(users);
+    });
+  }, []);
+
+  const getNotifications = async () => {
+    try {
+      const { data } = await axiosClient.get(
+        `${API_CHAT_URL}/getnotifications`
+      );
+      if (data.message === "get all notifications") {
+        setSaveAllNotifications(data.notifications);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getAllPost = async () => {
+    try {
+      const { data } = await axiosClient.get(
+        `${API_CHAT_URL}/allmessages?page=${currentPage}&limit=${postsPerPage}`
+      );
+      if (data.message === "other message get here") {
+        setgetAlluser(data.foundUsers);
+        setsaveAllmessage(data.formattedChats);
+        setTotalPosts(data.totalDirectChats);
+      } else {
+        toast.error("other message is not get here");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (!error.response) {
+          toast.error("Network error. Please check your internet connection.");
+        } else {
+          const status = error.response.status;
+          if (status === 404) {
+            toast.error("Posts not found.");
+          } else if (status === 500) {
+            toast.error("Server error. Please try again later.");
+          } else {
+            toast.error("Something went wrong.");
+          }
+        }
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+      console.log("Error fetching posts:", error);
+    }
+  };
+
+  useEffect(() => {
+    getAllPost();
+  }, [currentPage]);
+
+  useEffect(() => {
+    socket.on("hello", (data: string) => {
+      toast.success("hello");
+    });
+  }, []);
+  useEffect(() => {
+    socket.on("notification received", (newMessageReceived: any) => {
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare._id !== newMessageReceived.chat._id
+      ) {
+        getNotifications();
+        getAllPost();
+      } else {
+      }
+    });
+  }, []);
+
   const getchat = useSelector((state: RootState) => state.accessTocken.chats);
 
   const getselectedchat = useSelector(
     (state: RootState) => state.accessTocken.SelectedChat
-  )
-
-
-
+  );
+  const userToken = useSelector(
+    (state: RootState) => state.accessTocken.userTocken
+  );
 
   useEffect(() => {
+    // const socketInstance = initilizeSocket(userToken);
     const FindAllUsers = async () => {
-      const { data } = await ClientNew.get(`${API_CHAT_URL}/getUsers`);
+      const { data } = await axiosClient.get(`${API_CHAT_URL}/getusers`);
       if (data.message === "Get all users") {
         setfindAllUsers(data.getTheuser);
       } else {
@@ -73,41 +182,31 @@ const MessagePage = () => {
     FindAllUsers();
   }, []);
 
-
-
-
   useEffect(() => {
-    const getAdminInfo = async () => {
+    const getGroupchats = async () => {
       try {
-        const { data } = await ClientNew.get(`${API_CHAT_URL}/getgroupchats`);
+        const { data } = await axiosClient.get(
+          `${API_CHAT_URL}/getgroupchats?page=${currentgroupPage}&limit=${postsPerPage}`
+        );
         if (data.message === "get all chats") {
-          setsaveTheUser(data.getAllChats);
+          setsaveTheUser(data.groupChats);
+          setTotalGroupPosts(data.totalGroupChats);
         }
       } catch (error) {
         console.log(error);
       }
     };
-    getAdminInfo();
+    getGroupchats();
   }, []);
-
-
-
 
   const accessgroupChat = async (chatId: String, groupname: String) => {
     try {
-      const { data } = await ClientNew.post(
-        `${API_CHAT_URL}/forgroup`,
-        { chatId },
-        {
-          headers: {
-            "Content-type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
-
+      const { data } = await axiosClient.post(`${API_CHAT_URL}/getgroup`, {
+        chatId,
+      });
       if (data.message === "Chat created succesfully") {
         if (!getchat.find((c) => c._id === data.fullChat._id))
-        dispatch(setChats([data.fullChat, ...getchat]));
+          dispatch(setChats([data.fullChat, ...getchat]));
         dispatch(setSelectedChat(data.fullChat));
         navigate(`/groupchatpage/${chatId}/${data.fullChat._id}/${groupname}`);
       } else {
@@ -136,23 +235,12 @@ const MessagePage = () => {
     }
   };
 
-
-
-
   const accessChat = async (chatId: String) => {
     try {
-      const { data } = await ClientNew.post(
-        `${API_CHAT_URL}`,
-        { chatId },
-        {
-          headers: {
-            "Content-type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
+      const { data } = await axiosClient.post(`${API_CHAT_URL}`, { chatId });
       if (data.message === "Chat created succesfully") {
         if (!getchat.find((c) => c._id === data.fullChat._id))
-        dispatch(setChats([data.fullChat, ...getchat]));
+          dispatch(setChats([data.fullChat, ...getchat]));
         dispatch(setSelectedChat(data.fullChat));
         navigate(`/chatpage/${chatId}/${data.fullChat._id}`);
       } else {
@@ -181,8 +269,6 @@ const MessagePage = () => {
     }
   };
 
-
-  
   useEffect(() => {
     if (searchusers) {
       const filtered = findAllUsers.filter((user) =>
@@ -193,8 +279,6 @@ const MessagePage = () => {
       setfindtheUsers([]);
     }
   }, [searchusers, findAllUsers]);
-
-
 
   useEffect(() => {
     if (searchTerm) {
@@ -207,16 +291,10 @@ const MessagePage = () => {
     }
   }, [searchTerm, saveAllUsers]);
 
-
-
   useEffect(() => {
     const getAllUsers = async () => {
       try {
-        const { data } = await ClientNew.get(`${API_CHAT_URL}/groupusers`, {
-          headers: {
-            "Content-type": CONTENT_TYPE_JSON,
-          },
-        });
+        const { data } = await axiosClient.get(`${API_CHAT_URL}/groupusers`);
         if (data.message === "Users found") {
           setsaveAllUsers(data.getusers);
         } else {
@@ -229,21 +307,18 @@ const MessagePage = () => {
     getAllUsers();
   }, []);
 
-
-
   useEffect(() => {
     const getAllPost = async () => {
       try {
-        const { data } = await ClientNew.get(`${API_CHAT_URL}/allmessages`, {
-          headers: {
-            "Content-type": CONTENT_TYPE_JSON,
-          },
-        });
-
+        const { data } = await axiosClient.get(
+          `${API_CHAT_URL}/allmessages?page=${currentPage}&limit=${postsPerPage}`
+        );
         if (data.message === "other message get here") {
           setgetAlluser(data.foundUsers);
           setsaveAllmessage(data.formattedChats);
           setsaveAllgroupmessage(data.formatgroupchats);
+          setTotalPosts(data.totalDirectChats);
+          setTotalGroupPosts(data.totalGroupChats);
         } else {
           toast.error("other message is not get here");
         }
@@ -256,7 +331,7 @@ const MessagePage = () => {
           } else {
             const status = error.response.status;
             if (status === 404) {
-              toast.error("Posts not found.");
+              // toast.error("Posts not found.");
             } else if (status === 500) {
               toast.error("Server error. Please try again later.");
             } else {
@@ -275,18 +350,23 @@ const MessagePage = () => {
     getAllPost();
   }, []);
 
-
-  
-  const getAdminInfo = async () => {
+  const getGroupchats = async () => {
     try {
-      const { data } = await ClientNew.get(`${API_CHAT_URL}/getgroupchats`);
+      const { data } = await axiosClient.get(
+        `${API_CHAT_URL}/getgroupchats?page=${currentgroupPage}&limit=${postsPerPage}`
+      );
       if (data.message === "get all chats") {
-        setsaveTheUser(data.getAllChats);
+        setsaveTheUser(data.groupChats);
+        setTotalGroupPosts(data.totalGroupChats);
       }
     } catch (error) {
       console.log(error);
     }
   };
+
+  useEffect(() => {
+    getGroupchats();
+  }, [currentgroupPage]);
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
@@ -296,15 +376,10 @@ const MessagePage = () => {
     }
 
     try {
-      const response = await ClientNew.post(
-        `${API_CHAT_URL}/createGroup`,
-        { groupName, users: selectedUsers },
-        {
-          headers: {
-            "Content-type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
+      const response = await axiosClient.post(`${API_CHAT_URL}/creategroup`, {
+        groupName,
+        users: selectedUsers,
+      });
 
       if (response.data.message === "created new Group") {
         toast.success("Group created successfully!");
@@ -313,7 +388,8 @@ const MessagePage = () => {
         setGroupName("");
         setSearchTerm("");
         setSelectedUsers([]);
-        getAdminInfo();
+        getGroupchats();
+        getAllPost();
       } else {
         toast.error("Failed to create group.");
       }
@@ -323,30 +399,22 @@ const MessagePage = () => {
     }
   };
 
-  
-
-
-   const FindUserSearch = (term) => {
-     setsearchusers(term);
-     // Implement user filtering logic here
-     const filtered = findAllUsers.filter((user) =>
-       user.name.toLowerCase().includes(term.toLowerCase())
-     );
-     setfindtheUsers(filtered);
-   };
-
-
+  const FindUserSearch = (term) => {
+    setsearchusers(term);
+    const filtered = findAllUsers.filter((user) =>
+      user.name.toLowerCase().includes(term.toLowerCase())
+    );
+    setfindtheUsers(filtered);
+  };
 
   const handleUserSearch = (term) => {
     setSearchTerm(term);
-    // Implement user filtering logic here
     const filtered = getAlluser.filter((user) =>
       user.name.toLowerCase().includes(term.toLowerCase())
     );
     setFilteredUsers(filtered);
   };
 
-  // Handle selecting a user to add to the group
   const handleUserSelect = (user: any) => {
     if (!selectedUsers.some((u: any) => u._id === user._id)) {
       setSelectedUsers([...selectedUsers, user]);
@@ -357,6 +425,10 @@ const MessagePage = () => {
     const updatedUsers = selectedUsers.filter((user) => user._id !== userId);
     setSelectedUsers(updatedUsers);
   };
+
+  const totalPages = Math.ceil(totalPosts / postsPerPage);
+
+  const totalGPages = Math.ceil(totalGroupPosts / postsPerPage);
 
   return (
     <div className="bg-black text-white min-h-screen">
@@ -408,39 +480,37 @@ const MessagePage = () => {
                 </div>
               </form>
             </div>
-
-            {findtheUsers.length > 0 && (
-              <ul className="absolute z-10 w-1/4 bg-white dark:bg-gray-800 rounded-xl mt-20 max-h-48 overflow-y-auto shadow-xl border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-                {findtheUsers.map((user) => (
-                  <li
-                    key={user._id}
-                    onClick={() => accessChat(user)}
-                    className="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-200"
-                  >
-                    {/* Add user avatar if available */}
-                    <div className="">
-                      <img
-                        src={user.image}
-                        className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-medium"
-                        alt=""
-                      />
-                      {/* {user.name.charAt(0)} */}
-                    </div>
-
-                    <div className="ml-3">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {user.name}
-                      </p>
-                      {/* Add additional user info if available */}
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {user.email.toLowerCase().replace(/\s+/g, "_")}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
+          {findtheUsers.length > 0 && (
+            <ul className=" z-10 w-1/4 ml-0 bg-white dark:bg-gray-800 rounded-xl mt-40 max-h-48 overflow-y-auto shadow-xl border border-gray-100 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
+              {findtheUsers.map((user) => (
+                <li
+                  key={user._id}
+                  onClick={() => accessChat(user._id)}
+                  className="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-200"
+                >
+                  <div className="">
+                    <img
+                      src={user.image}
+                      className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-medium"
+                      alt=""
+                    />
+                    {/* {user.name.charAt(0)} */}
+                  </div>
+
+                  <div className="ml-3 ">
+                    <p className="text-sm  font-medium text-gray-900 dark:text-gray-100">
+                      {user.name}
+                    </p>
+                    {/* Add additional user info if available */}
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {user.email.toLowerCase().replace(/\s+/g, "_")}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
           <div className="bg-black min-h-screen text-white">
             <div className="container  mt-40 mx-auto px-4 py-8">
               {isFormVisible && (
@@ -469,7 +539,7 @@ const MessagePage = () => {
                         className="block text-sm font-medium mb-2"
                         htmlFor="groupname"
                       >
-                       Add users
+                        Add users
                       </label>
                       <div className="">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -483,19 +553,32 @@ const MessagePage = () => {
                         />
                       </div>
 
-                      {filteredUsers.length > 0 && (
-                        <ul className="absolute z-10 w-full bg-gray-800 rounded-lg mt-2 max-h-48 overflow-y-auto shadow-lg">
-                          {filteredUsers.map((user) => (
-                            <li
-                              key={user._id}
-                              onClick={() => handleUserSelect(user)}
-                              className="px-4 py-2 hover:bg-blue-600 cursor-pointer"
-                            >
+                      {filteredUsers.map((user) => (
+                        <li
+                          key={user._id}
+                          onClick={() => handleUserSelect(user)}
+                          className="flex items-center px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors duration-200"
+                        >
+                          <div className="">
+                            <img
+                              src={user.image}
+                              className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 text-sm font-medium"
+                              alt=""
+                            />
+                            {/* {user.name.charAt(0)} */}
+                          </div>
+
+                          <div className="ml-3 ">
+                            <p className="text-sm  font-medium text-gray-900 dark:text-gray-100">
                               {user.name}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                            </p>
+                            {/* Add additional user info if available */}
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {user.email.toLowerCase().replace(/\s+/g, "_")}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
                     </div>
 
                     {selectedUsers.length > 0 && (
@@ -537,8 +620,6 @@ const MessagePage = () => {
                   </div>
                 ) : (
                   <>
-                    {/* Individual Users */}
-
                     {getAlluser.length > 0 && (
                       <div>
                         <h2 className="text-xl font-semibold mb-4 flex items-center">
@@ -546,97 +627,228 @@ const MessagePage = () => {
                           Users
                         </h2>
                         <div className="space-y-4">
-                          {saveAllmessage.map((message, index) => (
-                            <div key={index}>
-                              {getAlluser.map((user) => (
-                                <div
-                                  key={user._id}
-                                  onClick={() => accessChat(user._id)}
-                                  className="flex items-center bg-gray-900 hover:bg-gray-800 rounded-lg p-4 cursor-pointer transition-colors"
-                                >
-                                  <img
-                                    src={user.image}
-                                    alt={user.name}
-                                    className="w-12 h-12 rounded-full mr-4 object-cover"
-                                  />
-                                  <div className="flex flex-col space-y-1">
-                                    <p className="text-lg text-left font-medium">
-                                      {user.name}
-                                    </p>
-                                    <p className="text-gray-400 text-left text-md">
-                                      <span className="font-semibold">
-                                        {message.lastMessage}
-                                      </span>
-                                    </p>
-                                    <p className="text-gray-500 text-left  text-xs">
-                                      {formatTime(message.lastMessageTime)}{" "}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
+                          {getAlluser.map((user, index) => (
+                            <div
+                              key={index}
+                              onClick={() => accessChat(user._id)}
+                              className="flex items-center bg-gray-900 hover:bg-gray-800 rounded-lg p-4 cursor-pointer transition-colors"
+                            >
+                              {/* Online/Offline Dot Indicator */}
+                              <span
+                                className={`h-3 w-3 rounded-full mr-0 mt-10 ${
+                                  activeUsers.some(
+                                    (activeUser) =>
+                                      activeUser.userId === user._id
+                                  )
+                                    ? "bg-green-500" // Green dot for online
+                                    : "bg-gray-400" // Gray dot for offline
+                                }`}
+                              ></span>
+
+                              <img
+                                src={user.image}
+                                alt={user.name}
+                                className="w-12 h-12 rounded-full mr-4 object-cover"
+                              />
+                              <div className="flex flex-col space-y-1">
+                                <p className="text-lg text-left font-medium">
+                                  {user.name}
+                                </p>
+                                {saveAllmessage &&
+                                  saveAllmessage.map(
+                                    (message, index) =>
+                                      message.userId === user._id && (
+                                        <div key={index}>
+                                          <p className="text-left text-md">
+                                            {SaveAllNotifications.length > 0 &&
+                                            SaveAllNotifications[
+                                              SaveAllNotifications.length - 1
+                                            ].sender._id === message.userId ? (
+                                              <span className="text-white font-extrabold">
+                                                {
+                                                  SaveAllNotifications[
+                                                    SaveAllNotifications.length -
+                                                      1
+                                                  ].content
+                                                }
+                                                {SaveAllNotifications.length >
+                                                  2 && (
+                                                  <span className="ml-2 bg-blue-500 text-white rounded-full px-2 py-1 text-sm">
+                                                    +
+                                                    {SaveAllNotifications.length -
+                                                      1}
+                                                  </span>
+                                                )}
+                                              </span>
+                                            ) : (
+                                              <span className="text-gray-400 font-semibold">
+                                                {message.lastMessage}
+                                              </span>
+                                            )}
+                                          </p>
+
+                                          <p className="text-gray-500 text-left text-xs">
+                                            {formatTime(
+                                              message.lastMessageTime
+                                            )}
+                                          </p>
+                                        </div>
+                                      )
+                                  )}
+
+                                {activeUsers.some(
+                                  (activeUser) => activeUser.userId === user._id
+                                ) ? (
+                                  <></>
+                                ) : (
+                                  <p className="text-gray-500">
+                                    Last seen :{" "}
+                                    <small>{formatTime(user.lastSeen)}</small>{" "}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
+                    <div className="flex justify-center mt-8">
+                      <nav className="flex space-x-2">
+                        <button
+                          className={`text-lg text-blue-500 ${
+                            currentPage === 1 && "opacity-50 cursor-not-allowed"
+                          }`}
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                          disabled={currentPage === 1}
+                        >
+                          {"<"}
+                        </button>
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1
+                        ).map((page) => (
+                          <button
+                            key={page}
+                            className={`text-sm ${
+                              page === currentPage
+                                ? "bg-blue-500 text-white"
+                                : "bg-gray-700 text-blue-500"
+                            } px-3 py-1 rounded-md`}
+                            onClick={() => setCurrentPage(page)}
+                          >
+                            {page}
+                          </button>
+                        ))}
+                        <button
+                          className={`text-sm text-blue-500 ${
+                            currentPage === totalPages &&
+                            "opacity-50 cursor-not-allowed"
+                          }`}
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages)
+                            )
+                          }
+                          disabled={currentPage === totalPages}
+                        >
+                          {">"}
+                        </button>
+                      </nav>
+                    </div>
 
                     {/* Group Chats */}
                     {saveTheUser.length > 0 && (
-                      <div className="mt-8">
+                      <div className="mt-10">
                         <h2 className="text-xl font-semibold mb-4 flex items-center">
                           <MessageCircle className="mr-2 text-blue-500" />
                           Group Chats
                         </h2>
-                        <div className="space-y-4">
-                          {saveAllgroupmessage.map((groupchat, index) => (
-                            <div key={index}>
-                              {saveTheUser.map((group) => (
-                                <div
-                                  key={group._id}
-                                  onClick={() =>
-                                    accessgroupChat(group._id, group.chatName)
-                                  }
-                                  className="flex items-center bg-gray-900 hover:bg-gray-800 rounded-lg p-4 cursor-pointer transition-colors"
-                                >
-                                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mr-4">
-                                    <Users className="w-6 h-6 text-white" />
-                                  </div>
-                                  <div>
-                                    <p className="text-lg font-medium">
-                                      {group.chatName}
-                                    </p>
-                                    <p className="text-gray-400 text-left text-md">
-                                      <span className="font-semibold">
-                                        {groupchat.lastMessage}
-                                      </span>
-                                    </p>
-                                    <p className="text-gray-500 text-left  text-xs">
-                                      {formatTime(groupchat.lastMessageTime)}{" "}
-                                    </p>
-                                  </div>
+                        <div className="space-y-4 ">
+                          <div>
+                            {saveTheUser.map((group) => (
+                              <div
+                                key={group._id}
+                                onClick={() =>
+                                  accessgroupChat(group._id, group.chatName)
+                                }
+                                className="flex items-center mt-5 bg-gray-900 hover:bg-gray-800 rounded-lg p-4 cursor-pointer transition-colors"
+                              >
+                                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mr-4">
+                                  <Users className="w-6 h-6 text-white" />
                                 </div>
-                              ))}
-                            </div>
-                          ))}
+                                <div>
+                                  <p className="text-lg font-medium">
+                                    {group.chatName}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Empty State */}
-                    {getAlluser.length === 0 && saveTheUser.length === 0 && (
-                      <div className="flex flex-col items-center justify-center text-center bg-gray-900 rounded-lg p-10">
-                        <MessageCircle className="w-16 h-16 text-blue-500 mb-4" />
-                        <h2 className="text-2xl font-bold mb-2">
-                          No Chats Found
-                        </h2>
-                        <p className="text-gray-400">
-                          Start a conversation by creating a new group or
-                          finding users
-                        </p>
-                      </div>
-                    )}
+                    {getAlluser.length === 0 &&
+                      saveAllgroupmessage.length === 0 && (
+                        <div className="flex flex-col items-center justify-center text-center bg-gray-900 rounded-lg p-10">
+                          <MessageCircle className="w-16 h-16 text-blue-500 mb-4" />
+                          <h2 className="text-2xl font-bold mb-2">
+                            No Chats Found
+                          </h2>
+                          <p className="text-gray-400">
+                            Start a conversation by creating a new group or
+                            finding users
+                          </p>
+                        </div>
+                      )}
                   </>
                 )}
+              </div>
+              <div className="flex justify-center mt-8">
+                <nav className="flex space-x-2">
+                  <button
+                    className={`text-lg text-blue-500 ${
+                      currentgroupPage === 1 && "opacity-50 cursor-not-allowed"
+                    }`}
+                    onClick={() =>
+                      setCurrentgroupPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentgroupPage === 1}
+                  >
+                    {"<"}
+                  </button>
+                  {Array.from({ length: totalGPages }, (_, i) => i + 1).map(
+                    (page) => (
+                      <button
+                        key={page}
+                        className={`text-sm ${
+                          page === currentgroupPage
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-700 text-blue-500"
+                        } px-3 py-1 rounded-md`}
+                        onClick={() => setCurrentgroupPage(page)}
+                      >
+                        {page}
+                      </button>
+                    )
+                  )}
+                  <button
+                    className={`text-lg text-blue-500 ${
+                      currentgroupPage === totalGPages &&
+                      "opacity-50 cursor-not-allowed"
+                    }`}
+                    onClick={() =>
+                      setCurrentgroupPage((prev) =>
+                        Math.min(prev + 1, totalGPages)
+                      )
+                    }
+                    disabled={currentgroupPage === totalGPages}
+                  >
+                    {">"}
+                  </button>
+                </nav>
               </div>
             </div>
           </div>

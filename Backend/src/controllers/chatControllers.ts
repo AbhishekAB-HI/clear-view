@@ -2,12 +2,10 @@ import { Request, Response } from "express";
 import ChatSchemamodel from "../Model/Chatmodel";
 import ChatServices from "../Servises/Chatservises";
 import UserSchemadata from "../Model/Usermodel";
-import { ObjectId } from "mongoose";
 import { ACCESS_TOKEN } from "../Config/Jwt";
 import { userPayload } from "../Interface/userInterface/Userpayload";
 import jwt from "jsonwebtoken";
-// import { ACCESS_TOKEN } from "../Config/Jwt";
-// import { userPayload } from "../Interface/userInterface/Userpayload";
+
 class ChatController {
   constructor(private ChatServices: ChatServices) {}
 
@@ -28,27 +26,50 @@ class ChatController {
       if (!userId) {
         return res.status(400).json({ message: "User ID is missing" });
       }
-      const OtherFiledata = await this.ChatServices.getOthermessage(userId);
+
+      const page = parseInt(req.query.page as string, 5) || 1;
+      const limit = parseInt(req.query.limit as string, 4) || 20;
+
+      const OtherFiledata = await this.ChatServices.getOthermessage(
+        userId,
+        page,
+        limit
+      );
 
       if (
         !OtherFiledata?.formattedChats ||
         !OtherFiledata.foundUsers ||
-        !OtherFiledata.formatgroupchats
+        !OtherFiledata.formatgroupchats ||
+        !OtherFiledata.totalDirectChats ||
+        !OtherFiledata.totalGroupChats
       ) {
-        throw Error(" No users or message not found");
+        return (
+        res.status(200).json({
+          message: "other message get here",
+          formattedChats:[],
+          foundUsers:[],
+          formatgroupchats:[],
+          totalDirectChats:0,
+          totalGroupChats:0,
+        })
+      )
       }
 
-      const { formattedChats, foundUsers, formatgroupchats } = OtherFiledata;
+      const {
+        formattedChats,
+        foundUsers,
+        formatgroupchats,
+        totalDirectChats,
+        totalGroupChats,
+      } = OtherFiledata;
       res.status(200).json({
         message: "other message get here",
         formattedChats,
         foundUsers,
         formatgroupchats,
+        totalDirectChats,
+        totalGroupChats,
       });
-
-      // res
-      //   .status(200)
-      //   .json({ message: "other message get here", OtherFiledata });
     } catch (error) {
       console.log(error);
     }
@@ -67,9 +88,7 @@ class ChatController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-
       const getTheuser = await this.ChatServices.findAllUsers(userId);
-
       res.status(200).json({ message: "Get all users", getTheuser });
     } catch (error) {
       console.log(error);
@@ -90,8 +109,23 @@ class ChatController {
       ) as userPayload;
       const userId = decoded.id;
 
-      const getAllChats = await this.ChatServices.getAllChatsHere(userId);
-      res.status(200).json({ message: "get all chats", getAllChats });
+      const page = parseInt(req.query.page as string, 5) || 1;
+      const limit = parseInt(req.query.limit as string, 4) || 20;
+
+      const getAllChats = await this.ChatServices.getAllChatsHere(
+        userId,
+        page,
+        limit
+      );
+
+      if (!getAllChats) {
+        return  res.status(200).json({ message: "get all chats", groupChats:[], totalGroupChats :0});
+      }
+
+      const { groupChats, totalGroupChats } = getAllChats;
+
+      res.status(200).json({ message: "get all chats", groupChats, totalGroupChats });
+
     } catch (error) {
       console.log(error);
     }
@@ -110,9 +144,28 @@ class ChatController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-      const otherusers = await this.ChatServices.getOtherusers(userId);
+      const page = parseInt(req.query.page as string, 5) || 1;
+      const limit = parseInt(req.query.limit as string, 4) || 2;
 
-      res.status(200).json({ message: "Other users found", otherusers });
+      const otherusers = await this.ChatServices.getOtherusers(
+        userId,
+        page,
+        limit
+      );
+
+      if (!otherusers?.followusers || !otherusers?.totalfollow) {
+        
+    return  res
+        .status(200)
+        .json({ message: "Other users found", followusers:[], totalfollow:0 });
+      
+      }
+
+      const { followusers, totalfollow } = otherusers;
+
+      res
+        .status(200)
+        .json({ message: "Other users found", followusers, totalfollow });
     } catch (error) {
       console.log(error);
     }
@@ -127,12 +180,29 @@ class ChatController {
           .json({ message: "Unauthorized: Token is missing" });
       }
       const decoded = jwt.verify(
-        token,
+        token, 
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-      const Allusers = await this.ChatServices.findAllGetUsers(userId);
-      res.status(200).json({ message: "Get all users", Allusers });
+      const page = parseInt(req.query.page as string, 5) || 1;
+      const limit = parseInt(req.query.limit as string, 4) || 2;
+
+      const findallusers = await this.ChatServices.findAllGetUsers(userId,page,limit);
+
+
+         if (!findallusers) {
+           return res.status(200).json({
+             message: "Get all users",
+             Allusers: [],
+             totalusers: 0,
+           });
+         }
+
+         const { Allusers, totalusers } = findallusers;
+
+
+
+      res.status(200).json({ message: "Get all users", Allusers, totalusers });
     } catch (error) {
       console.log(error);
     }
@@ -183,8 +253,33 @@ class ChatController {
     }
   }
 
-  async gotomessagepage(req: Request, res: Response) {
+  async getallpostnotify(req: Request, res: Response) {
     try {
+      const userId = req.query.id;
+      const getnewpost = await this.ChatServices.getAllpostNotifications(
+        userId
+      );
+      res.status(200).json({ message: "get all newpost", getnewpost });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getFollownotifications(req: Request, res: Response) {
+    try {
+      const userId = req.query.id;
+      const boolvalue = req.query.followid;
+      const followid = req.query.followvalue;
+
+      const follownotifications =
+        await this.ChatServices.getAllfollowNotifications(
+          userId,
+          boolvalue,
+          followid
+        );
+      res
+        .status(200)
+        .json({ message: "get all notifications", follownotifications });
     } catch (error) {
       console.log(error);
     }
@@ -204,10 +299,38 @@ class ChatController {
       ) as userPayload;
       const userId = decoded.id;
       const notifications = await this.ChatServices.getAllNotifications(userId);
+
       res.status(200).json({ message: "get all notifications", notifications });
     } catch (error) {
       console.log(error);
     }
+  }
+
+  async findnotifications(req: Request, res: Response) {
+    const token = req.header("Authorization")?.split(" ")[1];
+    if (!token) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Token is missing" });
+    }
+    const decoded = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+    ) as userPayload;
+    const userId = decoded.id;
+    const Allnotifications = await this.ChatServices.findAllNotifications(
+      userId
+    );
+    const { followNotifications, postNotifications, likeNotifications } =
+      Allnotifications;
+
+    res.status(200).json({
+      message: "Allnotifications get",
+
+      followNotifications,
+      postNotifications,
+      likeNotifications,
+    });
   }
 
   async findAllFollowers(req: Request, res: Response) {
@@ -222,8 +345,30 @@ class ChatController {
       process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
     ) as userPayload;
     const userId = decoded.id;
-    const followers = await this.ChatServices.getAllFollowers(userId);
-    res.status(200).json({ message: "Get all followers", followers });
+
+    const page = parseInt(req.query.page as string, 5) || 1;
+    const limit = parseInt(req.query.limit as string, 4) || 2;
+
+    const followers = await this.ChatServices.getAllFollowers(
+      userId,
+      page,
+      limit
+    );
+
+
+         if (!followers) {
+           return res.status(200).json({
+             message: "Get all followers",
+             users: [],
+             totalfollowers: 0,
+           });
+         }
+
+    const { totalfollowers, users } = followers;
+
+    res
+      .status(200)
+      .json({ message: "Get all followers", totalfollowers, users });
   }
 
   async getUserDetails(req: Request, res: Response) {
@@ -239,7 +384,8 @@ class ChatController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-      res.status(200).json({ message: "userId get", userId });
+      const userdetail = await this.ChatServices.Findlogeduserdetails(userId);
+      res.status(200).json({ message: "userId get", userId, userdetail });
     } catch (error) {
       console.log(error);
     }
@@ -292,7 +438,14 @@ class ChatController {
         userId,
         LoguserId
       );
-      res.status(200).json({ message: "followed users", addFollower });
+
+      const { followingUser, isAlreadyFollowing, Userinfo } = addFollower;
+      res.status(200).json({
+        message: "followed users",
+        followingUser,
+        isAlreadyFollowing,
+        Userinfo,
+      });
     } catch (error) {
       console.log(error);
     }
@@ -331,9 +484,7 @@ class ChatController {
     if (!userId) {
       throw new Error("User is not authenticated");
     }
-
     const fullChat = await this.ChatServices.getAccessChat(userId, chatId);
-
     return res
       .status(200)
       .json({ message: "Chat created succesfully", fullChat });
@@ -436,9 +587,6 @@ class ChatController {
 
   async removeFromGroup(req: Request, res: Response) {
     const { chatId, userId } = req.body;
-
-    // check if the requester is admin
-
     const removed = await ChatSchemamodel.findByIdAndUpdate(
       chatId,
       {

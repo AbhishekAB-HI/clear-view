@@ -1,15 +1,15 @@
-
 import userServises from "../Servises/Userservises";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { userPayload } from "../Interface/userInterface/Userpayload";
 import dotenv from "dotenv";
-import { ACCESS_TOKEN } from "../Config/Jwt"; 
-import cloudinary from "../Utils/Cloudinary";
+import { ACCESS_TOKEN } from "../Config/Jwt";
+import cloudinary from "../Config/Cloudinaryconfig";
 import fs from "fs";
-
+import { generateAccessToken } from "../Utils/Jwt";
 
 dotenv.config();
+
 class UserController {
   constructor(private userService: userServises) {}
 
@@ -60,6 +60,30 @@ class UserController {
     }
   }
 
+  async userLastseen(req: Request, res: Response) {
+    try {
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const userId = decoded.id;
+      const userinfo = await this.userService.updateLastseen(userId);
+      if (userinfo) {
+        res.status(200).json({ message: "lastTime updated" });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        console.log(error);
+      }
+    }
+  }
+
   async userLogin(req: Request, res: Response): Promise<void> {
     try {
       const userData = req.body;
@@ -67,7 +91,6 @@ class UserController {
       if (userdata) {
         let refreshtok = userdata.refreshToken;
         let accesstok = userdata.accessToken;
-
         res
           .status(200)
           .json({ message: "user Login succesfully", accesstok, refreshtok });
@@ -107,8 +130,6 @@ class UserController {
     }
   }
 
- 
-
   async forgetotp(req: Request, res: Response): Promise<void> {
     try {
       const { otp, email } = req.body;
@@ -144,10 +165,23 @@ class UserController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-      const FindUsers = await this.userService.findBlockedUsers(userId);
 
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 2;
 
-      res.status(200).json({ message: "Get Blocked users", FindUsers });
+      const FindUsers = await this.userService.findBlockedUsers(userId,page,limit);
+
+      if (!FindUsers?.Allusers || !FindUsers.totalblockuser){
+        return res
+          .status(200)
+          .json({ message: "Get Blocked users", Allusers: [], totalblockuser:0 });
+
+      }
+
+      const { Allusers, totalblockuser } = FindUsers;
+        res
+          .status(200)
+          .json({ message: "Get Blocked users", Allusers, totalblockuser });
     } catch (error) {
       console.log(error);
     }
@@ -160,7 +194,7 @@ class UserController {
         res.status(400).json({ message: "PostId is required" });
       }
       const getupdate = await this.userService.passLikePostID(postId, userId);
-      res.status(200).json({ message: "Post liked succesfully" });
+      res.status(200).json({ message: "Post liked succesfully", getupdate });
     } catch (error) {
       console.log(error);
     }
@@ -176,12 +210,7 @@ class UserController {
         page,
         limit
       );
-      if (
-        !getUserProfile ||
-        !getUserProfile.userinfo ||
-        !getUserProfile.postinfo ||
-        !getUserProfile.totalpost
-      ) {
+      if (!getUserProfile || !getUserProfile.userinfo) {
         throw new Error("No user details found");
       }
 
@@ -211,8 +240,6 @@ class UserController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const logeduserId = decoded.id;
-
-      // const logeduserId = (req as any).userdata.id;
       const { userID, text } = req.body;
       const getUsers = await this.userService.sendReportReason(
         userID,
@@ -275,9 +302,19 @@ class UserController {
 
   async getIduser(req: Request, res: Response) {
     try {
-      const id = req.params.id;
-      const decoded = jwt.verify(id, ACCESS_TOKEN) as userPayload;
-      res.status(200).json({ message: "user id get", userId: decoded.id });
+      const token = req.header("Authorization")?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Token is missing" });
+      }
+      const decoded = jwt.verify(
+        token,
+        process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+      ) as userPayload;
+      const logeduserId = decoded.id;
+
+      res.status(200).json({ message: "user id get", userId: logeduserId });
     } catch (error) {}
   }
 
@@ -289,6 +326,7 @@ class UserController {
         res.status(400).json({ message: "PostId is required" });
       }
       const getupdate = this.userService.passPostID(postId, text, userId);
+  
       res.status(200).json({ message: "Post Reported succesfully" });
     } catch (error) {
       console.log(error);
@@ -296,12 +334,8 @@ class UserController {
   }
 
   async setforgetpass(req: Request, res: Response): Promise<void> {
-    console.log("reched here.........................");
-
     const { email, password } = req.body;
-
     console.log(email, password);
-
     if (!password || !email) {
       res.status(400).json({ message: "Password required" });
       return;
@@ -321,8 +355,6 @@ class UserController {
       let otpbody = parseInt(otp);
       let userOtpverified = await this.userService.CheckOtp(otpbody, email);
       if (userOtpverified) {
-        console.log(userOtpverified.accessToken, "bakcend tock");
-        console.log(userOtpverified.refreshToken, "refresh tock");
         res.status(200).json({
           message: "OTP verified successfully",
           accessToken: userOtpverified.accessToken,
@@ -366,7 +398,6 @@ class UserController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-      console.log(userId, "user id get her");
       let getdetails = await this.userService.userIDget(userId);
       if (getdetails) {
         res.status(200).json({ message: "User Profile found", getdetails });
@@ -383,7 +414,6 @@ class UserController {
         res.status(400).json({ message: "Invalid post ID" });
         return;
       }
-
       const deletedPost = await this.userService.sendPostid(postId);
       res
         .status(200)
@@ -393,46 +423,19 @@ class UserController {
     }
   }
 
-  async getBreakingNews(req: Request, res: Response) {
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 2;
-
-      const { search } = req.query as {
-        search: string;
-      };
-
-      const { total, posts } = await this.userService.getBreakingNewsDetails(
-        page,
-        limit,
-        search
-      );
-
-      res.status(200).json({
-        message: "getAllpostdetails",
-        data: {
-          posts,
-          total,
-          currentPage: page,
-          totalPages: Math.ceil(total / limit),
-        },
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   async getAllPost(req: Request, res: Response) {
     try {
-      const { search, category } = req.query as {
-        search: string;
-        category: string;
+      const { search, category, page } = req.query as unknown as {
+        search?: string;
+        category?: string;
+        page: string | number;
       };
 
-      const { posts } = await this.userService.getpostdetails(search,category);
+      const { posts, currentPage, totalPages } =
+        await this.userService.getpostdetails(search, category, page);
       res.status(200).json({
         message: "getAllpostdetails",
-        data: { posts},
+        data: { posts, currentPage, totalPages },
       });
     } catch (error) {
       console.log(error);
@@ -452,7 +455,6 @@ class UserController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-      console.log(userId, "user id get her");
       const searchUser = req.query.search;
       if (!searchUser) {
         throw new Error("No search ID");
@@ -502,6 +504,25 @@ class UserController {
     } catch (error) {
       console.log(error);
     }
+  }
+
+  async refreshTocken(req: Request, res: Response) {
+    const REFRESH_TOKEN_PRIVATE_KEY = "key_for_refresht";
+    const { refreshToken } = req.body;
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh Token required" });
+    }
+    jwt.verify(
+      refreshToken,
+      process.env.REFRESH_TOKEN_PRIVATE_KEY || REFRESH_TOKEN_PRIVATE_KEY,
+      (err: any, user: any) => {
+        if (err) {
+          return res.status(403).json({ message: "Token expired or invalid" });
+        }
+        const newAccessToken = generateAccessToken({ id: user.id });
+        res.json({ accessToken: newAccessToken });
+      }
+    );
   }
 
   async updatePassword(req: Request, res: Response) {
@@ -572,16 +593,33 @@ class UserController {
       };
 
       const { content, postId } = req.body;
-      console.log(postId, "post id");
       if (!content || !postId) {
         res.status(400).json({ message: "Content or user ID is missing" });
       }
-
-      // Files uploaded (images and videos)
       const files = req.files as {
         images?: Express.Multer.File[];
         videos?: Express.Multer.File[];
       };
+
+      // if (files?.images) {
+      //   files.images.forEach((file) => {
+      //     console.log("Uploaded image file:", file);
+      //   });
+      // } else {
+      //   console.log("No images received");
+      // }
+      // if (files?.videos) {
+      //   files.videos.forEach((file) => {
+      //     console.log("Uploaded video file:", file);
+      //   });
+      // } else {
+      //   console.log("No videos received");
+      // }
+
+      if (files?.images && files.images.length > 4) {
+        res.status(400).json({ message: "Max image count is 4" });
+        return;
+      }
 
       const imageUploadPromises = files?.images
         ? files.images.map((file) =>
@@ -633,6 +671,23 @@ class UserController {
 
   async createPost(req: Request, res: Response): Promise<void> {
     try {
+      const { content, userId, Category } = req.body;
+
+      if (!content || !userId) {
+        res.status(400).json({ message: "Content or user ID is missing" });
+        return;
+      }
+
+      const files = req.files as {
+        images?: Express.Multer.File[];
+        videos?: Express.Multer.File[];
+      };
+
+      if (files?.images && files.images.length > 4) {
+        res.status(400).json({ message: "Max image count is 4" });
+        return;
+      }
+
       const unlinkFiles = (files: Express.Multer.File[]): void => {
         files.forEach((file) => {
           fs.unlink(file.path, (err) => {
@@ -643,20 +698,6 @@ class UserController {
             }
           });
         });
-      };
-
-      const { content, userId, Category } = req.body;
-
-      console.log(Category, "Category");
-
-      if (!content || !userId) {
-        res.status(400).json({ message: "Content or user ID is missing" });
-        return;
-      }
-
-      const files = req.files as {
-        images?: Express.Multer.File[];
-        videos?: Express.Multer.File[];
       };
 
       const imageUploadPromises = files?.images
@@ -673,12 +714,8 @@ class UserController {
       const uploadedImages = await Promise.all(imageUploadPromises);
       const uploadedVideos = await Promise.all(videoUploadPromises);
 
-      const imageUrls: string[] = uploadedImages.map(
-        (upload) => upload.secure_url
-      );
-      const videoUrls: string[] = uploadedVideos.map(
-        (upload) => upload.secure_url
-      );
+      const imageUrls = uploadedImages.map((upload) => upload.secure_url);
+      const videoUrls = uploadedVideos.map((upload) => upload.secure_url);
 
       const userData = await this.userService.postDetailsdata(
         userId,
@@ -688,20 +725,26 @@ class UserController {
         videoUrls
       );
 
+      const { savePosts, postNotify } = userData;
+
       if (userData) {
-        res
-          .status(200)
-          .json({ message: "Post uploaded successfully", data: userData });
+        res.status(200).json({
+          message: "Post uploaded successfully",
+          userinfo: savePosts,
+          postdetail: postNotify,
+        });
       } else {
         res.status(500).json({ message: "Failed to save post" });
       }
+
       if (files?.images) unlinkFiles(files.images);
       if (files?.videos) unlinkFiles(files.videos);
     } catch (error) {
       console.error("Error during post creation:", error);
-      res
-        .status(500)
-        .json({ message: "Server error during post creation", error });
+      res.status(500).json({
+        message: "Server error during post creation",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
     }
   }
 }

@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { Posts } from "../Entities/Postentities";
 
-const postSchema: Schema = new Schema(
+const postSchemaNotifications: Schema = new Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
@@ -79,6 +79,9 @@ const postSchema: Schema = new Schema(
   }
 );
 
-const newspostSchemadata = mongoose.model<Posts>("post", postSchema);
+const newspostSchemadataNotifications = mongoose.model<Posts>(
+  "postnotify",
+  postSchemaNotifications
+);
 
-export default newspostSchemadata;
+export default newspostSchemadataNotifications;

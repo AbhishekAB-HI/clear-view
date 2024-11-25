@@ -16,7 +16,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Postpage from "./Addpost";
 import { IPost } from "../Interfaces/Interface";
-import ClientNew from "../../Redux-store/Axiosinterceptor";
+import axiosClient from "../../Services/Axiosinterseptor";
 const SideNavBar2 = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [saveid, setsaveid] = useState<string | any>(null);
@@ -30,9 +30,7 @@ const SideNavBar2 = () => {
   useEffect(() => {
     const getUserId = async () => {
       try {
-        const { data } = await axios.get(
-          `${API_USER_URL}/userdget/${userDetails}`
-        );
+        const { data } = await axiosClient.get(`${API_USER_URL}/getuserid`);
         if (data.message === "user id get") {
           setsaveid(data.userId);
         } else {

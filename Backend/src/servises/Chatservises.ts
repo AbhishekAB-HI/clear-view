@@ -4,6 +4,12 @@ import { Chats, FormattedChat } from "../Entities/Chatentities";
 import chatRepository from "../Repository/Chatrepository";
 import { Notification } from "../Entities/Notification";
 import { error } from "console";
+import { Types } from "mongoose";
+import { Posts } from "../Entities/Postentities";
+import {
+  IAllNotification,
+  IFollowNotification,
+} from "../Interface/userInterface/Userdetail";
 
 class ChatServices {
   constructor(private chatRepository: chatRepository) {}
@@ -58,11 +64,25 @@ class ChatServices {
     }
   }
 
+  async Findlogeduserdetails(
+    userId: string | unknown
+  ): Promise<IUser | unknown> {
+    try {
+      const getuserinfo = await this.chatRepository.getUserdetails(userId);
+      if (!getuserinfo) {
+        throw new Error("No user found");
+      }
+      return getuserinfo;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async getUserStatus(userId: string | unknown) {
     try {
       const getStatus = await this.chatRepository.getUserIdstatus(userId);
     } catch (error) {
-       console.log(error);
+      console.log(error);
     }
   }
 
@@ -73,19 +93,27 @@ class ChatServices {
       const getStatus = await this.chatRepository.getUserIdHere(userId);
 
       return getStatus;
-    } catch (error) {}
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async AddToFollowers(
     userId: string,
     LoguserId: string
-  ): Promise<boolean | unknown> {
+  ): Promise<{
+    followingUser: IAllNotification | unknown;
+    isAlreadyFollowing: boolean | unknown;
+    Userinfo: IUser | unknown;
+  }> {
     const addedFollower = await this.chatRepository.addrepFollowers(
       userId,
       LoguserId
     );
 
-    return addedFollower;
+    const { followingUser, isAlreadyFollowing, Userinfo } = addedFollower;
+
+    return { followingUser, isAlreadyFollowing, Userinfo };
   }
   async getAllChats(userId: string | unknown): Promise<IUser[] | undefined> {
     const chatrecivefromRepo = await this.chatRepository.findAllchats(userId);
@@ -116,12 +144,45 @@ class ChatServices {
     }
   }
 
+  async getAllpostNotifications(postid: unknown): Promise<Posts | unknown> {
+    try {
+      const data = await this.chatRepository.findAllPostNotifications(postid);
+      if (!data) {
+        throw new Error("No post get");
+      }
+
+      return data;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getAllfollowNotifications(
+    userId: unknown,
+    Value: boolean | unknown,
+    followid: unknown
+  ): Promise<IFollowNotification | unknown> {
+    try {
+      const data = await this.chatRepository.findAllfollowNotifications(
+        userId,
+        Value,
+        followid
+      );
+      if (!data) {
+        throw new Error("No users get");
+      }
+
+      return data;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async getAllNotifications(
     userId: unknown
   ): Promise<Notification[] | undefined> {
     try {
       const data = await this.chatRepository.findAllNotifications(userId);
-
       if (!data) {
         throw new Error("No notifications get");
       }
@@ -143,56 +204,121 @@ class ChatServices {
     }
   }
 
+  async findAllNotifications(userId: unknown): Promise<{
+    followNotifications: any[];
+    postNotifications: any[];
+    likeNotifications: any[];
+  }> {
+    const foundUser = await this.chatRepository.getAllNotifications(userId);
+
+    const { followNotifications, postNotifications, likeNotifications } =
+      foundUser;
+
+    return { followNotifications, postNotifications, likeNotifications };
+  }
+
   async getAllFollowers(
-    userId: string | unknown
-  ): Promise<IUser[] | undefined> {
-    const foundUser = await this.chatRepository.findAllFollowers(userId);
-    return foundUser;
+    userId: string | unknown,
+    page: number,
+    limit: number
+  ): Promise<{ users: IUser[]; totalfollowers: number } | undefined> {
+
+    const foundUser = await this.chatRepository.findAllFollowers(userId,page,limit)
+
+    if (!foundUser?.totalfollowers || !foundUser?.users) {
+      return {
+        users: [],
+        totalfollowers: 0,
+      };
+    }
+
+    const { totalfollowers, users } = foundUser 
+
+    return { totalfollowers, users };
   }
 
   async findAllGetUsers(
-    userId: string | unknown
-  ): Promise<IUser[] | undefined> {
+    userId: string | unknown,
+    page: number,
+    limit: number
+  ): Promise<
+    { Allusers: IUser[] | undefined; totalusers: number } | undefined
+  > {
     try {
       const getAllusershere = await this.chatRepository.findAllOtherusers(
-        userId
+        userId,
+        page,
+        limit
       );
 
-      if (getAllusershere) {
-        return getAllusershere;
+      if (!getAllusershere?.Allusers || !getAllusershere.totalusers) {
+        return {
+          Allusers: [],
+          totalusers: 0,
+        };
       }
+      const { Allusers, totalusers } = getAllusershere;
+
+      return {
+        Allusers,
+        totalusers,
+      };
     } catch (error) {
       console.log(error);
     }
   }
 
-  async getOthermessage(userId: string | unknown): Promise<
+  async getOthermessage(
+    userId: string | unknown,
+    page: number,
+    limit: number
+  ): Promise<
     | {
         foundUsers: IUser[];
         formattedChats: FormattedChat[];
         formatgroupchats: FormattedChat[];
+        totalDirectChats: number;
+        totalGroupChats: number;
       }
     | undefined
   > {
     try {
       const getAllusershere = await this.chatRepository.findOtherMessages(
-        userId
+        userId,
+        page,
+        limit
       );
 
       if (
         !getAllusershere?.formattedChats ||
         !getAllusershere.foundUsers ||
-        !getAllusershere.formatgroupchats
+        !getAllusershere.formatgroupchats ||
+        !getAllusershere.totalDirectChats ||
+        !getAllusershere.totalGroupChats
       ) {
-        throw Error(" No users or message not found");
+       return {
+         foundUsers: [],
+         formattedChats: [],
+         formatgroupchats: [],
+         totalDirectChats: 0,
+         totalGroupChats:0
+       };
       }
 
-      const { formattedChats, foundUsers, formatgroupchats } = getAllusershere;
+      const {
+        formattedChats,
+        foundUsers,
+        formatgroupchats,
+        totalGroupChats,
+        totalDirectChats,
+      } = getAllusershere;
 
       return {
         formattedChats,
         foundUsers,
         formatgroupchats,
+        totalGroupChats,
+        totalDirectChats,
       };
     } catch (error) {
       console.log(error);
@@ -202,7 +328,6 @@ class ChatServices {
   async findAllUsers(userId: unknown): Promise<IUser[] | undefined> {
     try {
       const getUsers = await this.chatRepository.findAllUsersFound(userId);
-
       if (!getUsers) {
         throw new Error("No users found");
       }
@@ -212,27 +337,60 @@ class ChatServices {
     }
   }
 
-  async getAllChatsHere(userId: unknown): Promise<Chats[] | undefined> {
+  async getAllChatsHere(
+    userId: unknown,
+    page: number,
+    limit: number
+  ): Promise<{ groupChats: Chats[]; totalGroupChats: number } | undefined> {
     try {
-      const getAllgroupChat = await this.chatRepository.findgroupChats(userId);
-
-      if (!getAllgroupChat) {
-        throw new Error("No chat found");
+      const getAllgroupChat = await this.chatRepository.findgroupChats(
+        userId,
+        page,
+        limit
+      );
+      if (!getAllgroupChat?.groupChats || !getAllgroupChat?.totalGroupChats) {
+        return {
+          groupChats:[],
+          totalGroupChats:0,
+        };
       }
+      const { groupChats, totalGroupChats } = getAllgroupChat;
 
-      return getAllgroupChat;
+      return {
+        groupChats,
+        totalGroupChats,
+      };
     } catch (error) {
       console.log(error);
     }
   }
 
-  async getOtherusers(userId: string | unknown): Promise<IUser[] | undefined> {
+  async getOtherusers(
+    userId: string | unknown,
+    page: number,
+    limit: number
+  ): Promise<{ followusers: IUser[]; totalfollow: number } | undefined> {
     try {
-      const getAllusershere = await this.chatRepository.findOtherusers(userId);
+      const getAllusershere = await this.chatRepository.findOtherusers(
+        userId,
+        page,
+        limit
+      );
 
-      if (getAllusershere) {
-        return getAllusershere;
+      if (!getAllusershere?.followusers || !getAllusershere?.totalfollow) {
+       
+           return {
+             followusers:[],
+             totalfollow:0,
+           };
       }
+
+      const { followusers, totalfollow } = getAllusershere;
+
+      return {
+        followusers,
+        totalfollow,
+      };
     } catch (error) {
       console.log(error);
     }

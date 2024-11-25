@@ -26,6 +26,7 @@ import {
 import axios from "axios";
 import { API_ADMIN_URL } from "../Constants/Constants";
 import Adminsidebar from "./Adminsidebar";
+import { ICounts } from "../Interfaces/Interface";
 
 ChartJS.register(
   ArcElement,
@@ -41,7 +42,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [userCount, setuserCount] = useState(Number);
   const [postCount, setpostCount] = useState(Number);
-
+ const [recentPosts, setRecentPosts] = useState<ICounts[]>([]);
   const handleLogout = () => {
     try {
       dispatch(clearAdminAccessTocken());
@@ -55,10 +56,13 @@ const AdminDashboard = () => {
   useEffect(() => {
     const findUserDetails = async () => {
       try {
-        const { data } = await axios.get(`${API_ADMIN_URL}/getalldetails`);
+        const { data } = await axios.get(`${API_ADMIN_URL}/userscounts`);
         if (data.message === "user and post data get succesfull") {
             setuserCount(data.userdata.totalUsers);
             setpostCount(data.userdata.totalPosts);
+            setRecentPosts(data.recentPosts);
+          
+
         }
       } catch (error) {
         console.log(error);
@@ -109,45 +113,11 @@ const AdminDashboard = () => {
   return (
     <div>
       <Navbar />
-      <div className="flex">
-        {/* Sidebar */}
-        {/* <aside className="w-64 bg-black text-white p-4 h-screen fixed left-20 top-20">
-          <div className="flex flex-col space-y-4">
-            <div className="flex items-center space-x-2">
-              <FaHome style={{ fontSize: "20px" }} />
-              <Link to="/Admindashboard">Dashboard</Link>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaUsers style={{ fontSize: "20px" }} />
-              <Link to="/Adminhome">User Management</Link>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaUserFriends style={{ fontSize: "20px" }} />
-              <span>
-                <Link to="/news">News Management</Link>
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <Link to="/reportpage">Report Management</Link>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <span>User Report Management</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaSignOutAlt style={{ fontSize: "20px" }} />
-              <span>
-                <button onClick={handleLogout}>Log out</button>
-              </span>
-            </div>
-          </div>
-        </aside> */}
-
-        <Adminsidebar/>
+      <div className="flex ">
+        <Adminsidebar />
 
         {/* Main Content */}
-        <main className="ml-64 flex-1 p-4">
+        <main className="ml-60 w-3/5 flex-1">
           <div className="grid mt-20 grid-cols-2 gap-4">
             {/* Stats Cards */}
             <Card className="p-4">
@@ -178,6 +148,31 @@ const AdminDashboard = () => {
             </div>
             <div className="chart-container">
               <Bar data={barData} options={barOptions} />
+            </div>
+          </div>
+
+          {/* Recent Posts Section */}
+          <div className="mt-10 grid grid-cols-2 gap-4">
+            <div>
+              <h3 className="text-xl font-bold">Recent Posts</h3>
+              <ul>
+                {recentPosts?.map((post, index) => (
+                  <li key={index} className="mb-4">
+                    <Card className="p-4">
+                      <CardContent>
+                        <Typography variant="h6">{`Post ${
+                          index + 1
+                        }`}</Typography>
+                        <Typography variant="body1">
+                          {post.description}
+                        </Typography>
+                        <Typography variant="body2">{`Likes: ${post.totalLikes}`}</Typography>
+                        <Typography variant="body2">{`Comments: ${post.totalComments}`}</Typography>
+                      </CardContent>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </main>

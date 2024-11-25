@@ -84,7 +84,7 @@ const Otppage: React.FC = () => {
 
     try {
       const { data } = await axios.post(
-        `${API_USER_URL}/verify-otp`,
+        `${API_USER_URL}/verifyotp`,
         { email, otp },
         {
           headers: {
@@ -139,7 +139,7 @@ const Otppage: React.FC = () => {
   const handleResendOtp = async () => {
     try {
       let { data } = await axios.patch(
-        `${API_USER_URL}/resend-otp`,
+        `${API_USER_URL}/resendotp`,
         { email },
         {
           headers: {

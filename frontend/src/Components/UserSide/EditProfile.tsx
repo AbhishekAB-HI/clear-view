@@ -4,10 +4,10 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import * as Yup from "yup";
 import { useFormik } from "formik";
-import Clintnew from "../../Redux-store/Axiosinterceptor";
 import { FaSpinner, FaUpload, FaTrashAlt } from "react-icons/fa";
 import { EditProfileModalProps } from "../Interfaces/Interface";
 import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
+import axiosClient from "../../Services/Axiosinterseptor";
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({
   toggleModal,
@@ -41,8 +41,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       }
       setLoading(true);
       try {
-        const { data } = await Clintnew.post(
-          `${API_USER_URL}/updateProfile`,
+        const { data } = await axiosClient.post(
+          `${API_USER_URL}/updateprofile`,
           formData,
           {
             headers: {

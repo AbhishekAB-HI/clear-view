@@ -4,8 +4,8 @@ import {
   VerifyCallback,
 } from "passport-google-oauth2";
 import dotenv from "dotenv";
-import { Profile } from "passport"; // Import Profile from passport
-import { Request } from "express"; // Import Request from express for typing the request
+import { Profile } from "passport";
+import { Request } from "express";
 
 dotenv.config();
 
@@ -15,7 +15,6 @@ interface User {
   displayName?: string;
 }
 
-// Define a custom profile type if needed, extending the basic Google OAuth profile
 interface GoogleProfile extends Profile {
   email?: string; // Add other fields if required
 }

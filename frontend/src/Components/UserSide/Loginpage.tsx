@@ -15,11 +15,13 @@ import {
 } from "../../Redux-store/Redux-slice";
 import Lottie from "lottie-react";
 import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
+import { FaSpinner } from "react-icons/fa";
 
 const Loginpage: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const dispatch = useDispatch();
+    const [loading, setLoading] = useState(false);
 
   const validationSchema = Yup.object().shape({
     email: Yup.string()
@@ -43,6 +45,7 @@ const Loginpage: React.FC = () => {
 
   const handlesubmit = async (values: { email: string; password: string }) => {
     try {
+      setLoading(true)
       const { data } = await axios.post(
         `${API_USER_URL}/login`,
         values,
@@ -70,6 +73,8 @@ const Loginpage: React.FC = () => {
         toast.error("Unknown error occurred");
       }
       console.error("Error verifying OTP:", error);
+    }finally{
+       setLoading(false);
     }
   };
 
@@ -172,7 +177,13 @@ const Loginpage: React.FC = () => {
                     style={{ fontFamily: "Roboto, sans-serif", width: "100%" }}
                     disabled={isSubmitting}
                   >
-                    Log in
+                    {loading ? (
+                    <div className="flex justify-center items-center ">
+                        <FaSpinner className="animate-spin text-xl m-1" />
+                      </div>
+                    ) : (
+                    "Log in"
+                    )}
                   </button>
                 </Form>
               )}

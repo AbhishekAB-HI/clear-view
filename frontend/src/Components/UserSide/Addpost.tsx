@@ -3,7 +3,6 @@ import { FaImage, FaVideo, FaSmile, FaSpinner } from "react-icons/fa";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import toast from "react-hot-toast";
-import Clintnew from "../../Redux-store/Axiosinterceptor";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import {  CreatePostModalProps } from "../Interfaces/Interface";
@@ -11,6 +10,7 @@ import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
 import axios from "axios";
 import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css";
+import axiosClient from "../../Services/Axiosinterseptor";
 
 const CreatePostModal = ({
   togglepostModal,
@@ -120,7 +120,6 @@ const CreatePostModal = ({
     const formData = new FormData();
     formData.append("content", values.content);
     formData.append("Category", values.Category);
-
     const imagesToUpload = enableCrop ? croppedImages : postImages;
     imagesToUpload.forEach((image) => {
       formData.append("images", image);
@@ -132,7 +131,7 @@ const CreatePostModal = ({
     formData.append("userId", userid || "");
 
     try {
-      const response = await Clintnew.post(
+      const response = await axiosClient.post(
         `${API_USER_URL}/createpost`,
         formData,
         {
@@ -221,7 +220,6 @@ const CreatePostModal = ({
                   <option value="" disabled>
                     Select a category
                   </option>
-                  <option value="Latest news">Latest news</option>
                   <option value="Breaking news">Breaking news</option>
                   <option value="Sports news">Sports news</option>
                 </Field>

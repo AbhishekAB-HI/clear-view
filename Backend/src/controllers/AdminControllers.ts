@@ -26,16 +26,13 @@ class AdminController {
       }
     }
   }
- 
 
-  async  getalldetails(req: Request, res: Response) {
+  async getalldetails(req: Request, res: Response) {
     try {
       let userdata = await this.adminservises.getpostAnduserdetails();
-
-      console.log(userdata,'1111111111111111111111111111111111111111111');
-      
-    
-        res.status(200).json({ message: "user and post data get succesfull", userdata });
+      res
+        .status(200)
+        .json({ message: "user and post data get succesfull", userdata });
     } catch (error) {
       console.log(error);
       if (error instanceof Error) {
@@ -51,10 +48,28 @@ class AdminController {
 
   async adminHomePage(req: Request, res: Response) {
     try {
-      let userdata = await this.adminservises.getUserdetails();
-      if (userdata) {
-        res.status(200).json({ message: "user data get succesfull", userdata });
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 2;
+      const search = req.query.search 
+      let userdata = await this.adminservises.getUserdetails(
+        page,
+        limit,
+        search
+      );
+
+      if (!userdata) {
+        return res.status(200).json({
+            message: "user data get succesfull",
+            userinfo: [],
+            userscount: 0,
+          });
       }
+
+      const { userinfo, userscount } = userdata;
+
+      res
+        .status(200)
+        .json({ message: "user data get succesfull", userinfo, userscount });
     } catch (error) {
       console.log(error);
       if (error instanceof Error) {
@@ -92,16 +107,38 @@ class AdminController {
 
   async getAllReportUsers(req: Request, res: Response) {
     try {
-      const foundusers = await this.adminservises.getAllReportUsers();
-      res.status(200).json({ message: "All user found", foundusers });
+        const page = parseInt(req.query.page as string, 5) || 1;
+        const limit = parseInt(req.query.limit as string, 4) || 4;
+      const { search } = req.query;
+      const foundusers = await this.adminservises.getAllReportUsers(
+        page,
+        limit,
+        search
+      );
+
+      
+      if (!foundusers?.Reports || !foundusers.totalcount) {
+        return res
+          .status(200)
+          .json({ message: "All user found", Reports: [], totalcount:0 });
+      }
+
+           const { Reports, totalcount } = foundusers;
+
+
+
+      res
+        .status(200)
+        .json({ message: "All user found", Reports, totalcount });
     } catch (error) {
       console.log(error);
     }
   }
+
   async getAllReportPost(req: Request, res: Response) {
     try {
       const page = parseInt(req.query.page as string, 5) || 1;
-      const limit = parseInt(req.query.limit as string, 4) || 4;
+      const limit = parseInt(req.query.limit as string, 2) || 2;
       const { posts, total } = await this.adminservises.getAllReportedpost(
         page,
         limit
@@ -111,8 +148,7 @@ class AdminController {
         data: {
           posts,
           total,
-          currentPage: page,
-          totalPages: Math.ceil(total / limit),
+        
         },
       });
     } catch (error) {
@@ -124,8 +160,13 @@ class AdminController {
   async getAllpost(req: Request, res: Response) {
     try {
       const page = parseInt(req.query.page as string, 5) || 1;
-      const limit = parseInt(req.query.limit as string, 4) || 4;
-      const { posts, total } = await this.adminservises.getAllpost(page, limit);
+      const limit = parseInt(req.query.limit as string, 4) || 20;
+      const { search } = req.query;
+      const { posts, total } = await this.adminservises.getAllpost(
+        page,
+        limit,
+        search
+      );
       res.status(200).json({
         message: "All posts found",
         data: {

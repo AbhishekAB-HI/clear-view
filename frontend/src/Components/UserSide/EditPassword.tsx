@@ -4,10 +4,10 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import * as Yup from "yup";
 import { useFormik } from "formik";
-import Clintnew from "../../Redux-store/Axiosinterceptor";
 import { FaSpinner, FaUpload, FaTrashAlt } from "react-icons/fa";
 import { EditProfileModalProps } from "../Interfaces/Interface";
 import { API_USER_URL, CONTENT_TYPE_JSON, CONTENT_TYPE_MULTER } from "../Constants/Constants";
+import axiosClient from "../../Services/Axiosinterseptor";
 
 const EditPasswordModal: React.FC<EditProfileModalProps> = ({
   toggleModal,
@@ -16,7 +16,6 @@ const EditPasswordModal: React.FC<EditProfileModalProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
  
-
   const validationSchema = Yup.object().shape({
     password: Yup.string()
       .min(8, "Password must be at least 8 characters long")
@@ -47,14 +46,9 @@ const EditPasswordModal: React.FC<EditProfileModalProps> = ({
       }
       setLoading(true);
       try {
-        const { data } = await Clintnew.patch(
+        const { data } = await axiosClient.patch(
           `${API_USER_URL}/updatePassword`,
-          formData,
-          {
-            headers: {
-              "Content-Type": CONTENT_TYPE_JSON,
-            },
-          }
+          formData
         );
         if (data.message === "Update password") {
           toast.success("Profile updated");

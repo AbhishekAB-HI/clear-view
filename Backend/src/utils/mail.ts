@@ -12,22 +12,15 @@ export const generateOtp = (): string => {
 
 
 
-export const sendVerifyMail = async (
-  email: string,
-  name:string,
-  otpnew :string
- 
-): Promise<void> => {
-  console.log("verify mail here");
-
+export const sendVerifyMail = async (email: string,name:string | undefined,otpnew :string): Promise<void> => {
   const mailTransporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
     secure: false,
     service: "gmail",
     auth: {
-      user: process.env.USEREMAIL as string,
-      pass: process.env.USERPASSWORD as string,
+      user: process.env.USEREMAIL as string  || "4270abhishek@gmail.com"  ,
+      pass: process.env.USERPASSWORD as string  || "wlls weyc lrvp upei" ,
     },
   });
   const mailDetails = {

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import ClientNew from "../../Redux-store/Axiosinterceptor";
+import axiosClient from "../../Services/Axiosinterseptor";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 interface ReplyingToState {
   postId: string;
@@ -181,7 +182,7 @@ const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepo
 
 
     try {
-      const { data } = await ClientNew.post(
+      const { data } = await axiosClient.post(
         "http://localhost:3000/api/user/replycomment",
         {
           postId,
@@ -190,20 +191,38 @@ const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepo
           userId,
           username,
         },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+      
       );
 
       if (data.message === "updated succefully") {
         UpdateLikepost();
         setReplyContent("");
         setReplyingTo(null);
+      }else{
+        toast.error("updated failed");
       }
     } catch (error) {
-      console.error("Error submitting reply:", error);
+        if (axios.isAxiosError(error)) {
+          if (!error.response) {
+            toast.error(
+              "Network error. Please check your internet connection."
+            );
+          } else {
+            const status = error.response.status;
+            if (status === 404) {
+              toast.error("Posts not found.");
+            } else if (status === 500) {
+              toast.error("Server error. Please try again later.");
+            } else {
+              toast.error("Something went wrong.");
+            }
+          }
+        } else if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("An unexpected error occurred.");
+        }
+        console.log("Error fetching posts:", error);
     }
   };
 

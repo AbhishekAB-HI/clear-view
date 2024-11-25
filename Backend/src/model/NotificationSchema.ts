@@ -8,14 +8,14 @@ const NotifiactSchema: Schema = new Schema(
       ref: "userdetail",
     },
     content: { type: String, trim: true },
-    sendername:{type:String},
+    sendername: { type: String },
     image: {
       type: [String],
       default: [],
     },
-    isRead:{
-        type:Boolean,
-        default:false
+    isRead: {
+      type: Boolean,
+      default: false,
     },
     videos: {
       type: [String],

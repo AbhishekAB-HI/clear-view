@@ -30,7 +30,7 @@ export interface ReplyingToState {
 
 export interface CreatePostHomeModalProps {
   togglepostModal: () => void;
-  updatehomeState: () => void;
+  updatehomeState: (page:number) => void;
   userid: string | null;
 }
 
@@ -105,6 +105,7 @@ export interface FormattedChat {
   chatName: string;
   lastMessage: string;
   lastMessageTime: Date;
+  userId:string
 }
 
 
@@ -139,3 +140,52 @@ export interface Notification extends Document {
 
 
 
+export interface IFollowNotification {
+  userId: ObjectId;
+  userName: string;
+  image: string;
+  email: string;
+}
+
+export interface IPostNotification {
+  userId: ObjectId;
+  postusername: string;
+  image: ObjectId;
+  content: string;
+  email: string;
+}
+
+export interface IAllNotification {
+  Follownotifications: IFollowNotification[];
+  PostNotifications: IPostNotification[];
+  LikeNotifications: ILikeNotifications[];
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface ILikeNotifications {
+  postId: unknown;
+  postuserId: unknown;
+  likedusername: string;
+  postcontent: string;
+  userimage: string;
+  postimage: string;
+  email: string;
+  likeduserId: unknown;
+  likedstatus: unknown;
+}
+
+
+
+export interface ICounts {
+  totalUsers: number;
+  totalPosts: number;
+  recentPosts: Ipostcount[];
+}
+
+export interface Ipostcount {
+  description: string;
+  likeCount: number;
+  totalLikes: number;
+  totalComments: number;
+}

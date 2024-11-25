@@ -18,6 +18,18 @@ export interface IReportPost {
   };
 }
 
+
+export interface IReportpost {
+  postId: Types.ObjectId;
+  postreportReason: string;
+  userinfo: Types.ObjectId;
+  postcontent: string | undefined;
+  postimage: [String] | string;
+  postedBy: string | undefined;
+  reportedBy: string | undefined;
+}
+
+
 export interface IPost {
   _id: Types.ObjectId; // Unique identifier for the post
   user: Types.ObjectId; // ID of the user who created the post
@@ -33,3 +45,5 @@ export interface IPost {
   createdAt: Date; // Creation date of the post
   updatedAt: Date; // Last updated date of the post
 }
+
+

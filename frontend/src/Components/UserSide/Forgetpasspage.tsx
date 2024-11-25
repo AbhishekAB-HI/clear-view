@@ -41,16 +41,7 @@ const ForgetPassPage: React.FC = () => {
     const dataget = { password, email };
 
     try {
-      const { data } = await axios.patch(
-        `${API_USER_URL}/setforgetpass`,
-        dataget,
-        {
-          headers: {
-            "Content-Type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
-
+      const { data } = await axios.patch( `${API_USER_URL}/forgetpassword`,dataget);
       if (data.message === "Password Changed successfully") {
         navigate("/login");
       }else{

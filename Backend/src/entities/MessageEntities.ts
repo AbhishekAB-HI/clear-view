@@ -1,7 +1,4 @@
-
-
 import mongoose from "mongoose";
-
 
 export interface Message extends Document {
   sender: mongoose.Types.ObjectId;
@@ -10,6 +7,6 @@ export interface Message extends Document {
   videos: string;
   chat: mongoose.Types.ObjectId;
   readBy: mongoose.Types.ObjectId[];
-  createdAt: Date; 
-  updatedAt: Date; 
+  createdAt: Date;
+  updatedAt: Date;
 }

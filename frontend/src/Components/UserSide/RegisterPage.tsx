@@ -12,11 +12,12 @@ import toast from "react-hot-toast";
 import Lottie from "lottie-react";
 import logoWeb from "../animations/Animation - 1724244656671.json";
 import { API_USER_URL } from "../Constants/Constants";
+import { FaSpinner } from "react-icons/fa";
 const Registerpage: React.FC = () => {
   
   const navigate = useNavigate();
   const [Emailerror, setEmailerror] = useState("");
-
+  const [loading, setLoading] = useState(false);
 
   const validationSchema = Yup.object().shape({
     name: Yup.string()
@@ -51,7 +52,7 @@ const Registerpage: React.FC = () => {
     password: string;
   }) => {
     const { name, email, password } = values;
-
+      setLoading(true)
     try {
       const response = await axios.post(
         `${API_USER_URL}/register`,
@@ -86,8 +87,10 @@ const Registerpage: React.FC = () => {
       console.error("Error verifying OTP:", error);
 
 
+    }finally{
+     setLoading(false);
     }
-  };
+  }
 
   return (
     <div>
@@ -222,7 +225,13 @@ const Registerpage: React.FC = () => {
                     }}
                     disabled={isSubmitting}
                   >
-                    Sign up
+                    {loading ? (
+                      <div className="flex justify-center items-center ">
+                        <FaSpinner className="animate-spin text-xl m-1" />
+                      </div>
+                    ) : (
+                      "Sign up"
+                    )}
                   </button>
                   <div className="text-center text-sm mt-5 ">
                     <p

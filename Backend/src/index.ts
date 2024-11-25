@@ -12,7 +12,13 @@ import jwt from "jsonwebtoken";
 import logger from "./logger";
 import morgan from "morgan";
 import { Socket } from "socket.io";
-import { ActiveUsersType } from "./Interface/userInterface/Userdetail";
+import {
+  ActiveUsersType,
+  IAllNotification,
+  NewMessage,
+} from "./Interface/userInterface/Userdetail";
+import { IUser } from "./Entities/Userentities";
+import { Posts } from "./Entities/Postentities";
 
 const morganFormat = ":method :url :status :response-time ms";
 const app = express();
@@ -21,7 +27,7 @@ connectDB();
 app.use(
   morgan(morganFormat, {
     stream: {
-      write: (message:string) => {
+      write: (message: string) => {
         const logObject = {
           method: message.split(" ")[0],
           url: message.split(" ")[1],
@@ -84,13 +90,11 @@ const server = app.listen(port, () => {
 
 const io = require("socket.io")(server, {
   pingTimeout: 60000,
-  //  The server is waiting for the connection 60 sec in not connectc it will be disconnect                       
+  //  The server is waiting for the connection 60 sec in not connectc it will be disconnect
   cors: {
     origin: "http://localhost:5173",
   },
 });
-
-
 
 let activeUsers = [] as ActiveUsersType[];
 
@@ -103,16 +107,20 @@ io.on("connection", (socket: Socket) => {
     let userId = decoded.id;
     socket.join(userId);
     socket.emit("connected");
-     if (!activeUsers.some((user) => user.userId === userId)) {
-       activeUsers.push({ userId: userId, socketId: socket.id });
-     }
-     socket.emit("get-users", activeUsers);
+    
+    if (!activeUsers.some((user) => user.userId === userId)) {
+      activeUsers.push({ userId: userId, socketId: socket.id });
+    }
+    console.log("11111111111111111111111111111111111111111")
+    io.emit("get-users", activeUsers);
+    
+
   });
 
-   socket.on("logout", (userId) => {
-     activeUsers = activeUsers.filter((user) => user.userId !== userId);
-     socket.emit("get-users", activeUsers);
-   });
+  socket.on("logout", (userId) => {
+    activeUsers = activeUsers.filter((user) => user.userId !== userId);
+    io.emit("get-users", activeUsers);
+  });
 
   socket.on("join chat", (room: string) => {
     socket.join(room);
@@ -120,26 +128,14 @@ io.on("connection", (socket: Socket) => {
   });
 
   socket.on("sendNotification", (data) => {
-      const { userId, notification } = data;
-      io.to(userId).emit("receiveNotification", notification);
-    });
-
+    const { userId, notification } = data;
+    io.to(userId).emit("receiveNotification", notification);
+  });
 
   socket.on("typing", (room: string) => socket.in(room).emit("typing"));
   socket.on("stop typing", (room: string) =>
     socket.in(room).emit("stop typing")
   );
-
-
-  interface NewMessage {
-    chat: {
-      users: string[];
-    };
-    sender: {
-      _id: string;
-    };
-  }
-
 
   socket.on("new message", (newMessageReceived: NewMessage) => {
     var chat = newMessageReceived.chat;
@@ -148,11 +144,59 @@ io.on("connection", (socket: Socket) => {
     }
     chat.users.forEach((user: string) => {
       if (user === newMessageReceived.sender._id) return;
+  io.emit("hello", "hai");
+
       socket.in(user).emit("message received", newMessageReceived);
       socket.in(user).emit("notification received", newMessageReceived);
     });
   });
 
+  socket.on(
+    "following",
+    (
+      followuserId: string,
+      logeduserinfo: IUser,
+      followingUser: IAllNotification
+    ) => {
+      logeduserinfo.following.map((user: any) => {
+        if (user === followuserId) {
+          socket
+            .in(user)
+            .emit(
+              "follow received",
+              logeduserinfo,
+              followingUser,
+              followuserId
+            );
+        }
+      });
+    }
+  );
+
+  socket.on("likepost", (postDetails: IAllNotification) => {
+    postDetails?.LikeNotifications?.forEach((like) => {
+      const targetUserId = like.postuserId; 
+      if (targetUserId) {
+        io.to(targetUserId).emit("Likenotification", postDetails);
+        console.log(`Notification sent to user ${targetUserId}`);
+      } else {
+        console.log(`User ${targetUserId} is not online`);
+      }
+    });
+  });
+
+  socket.on("newpost", (postedUserInfo: Posts, postdetails:IAllNotification) => {
+    console.log("New post received from:", postedUserInfo);
+    const followers = postedUserInfo.user.followers || [];
+    followers.forEach((followerId: any) => {
+      io.to(followerId).emit("post update", postedUserInfo, postdetails);
+    });
+
+    socket.emit("post received", {
+      status: "success",
+      message: "Post has been received and processed.",
+    });
+  });
 
   socket.off("setup", (userdata: string) => {
     const decoded = jwt.verify(userdata, "key_for_accesst") as {
@@ -162,6 +206,6 @@ io.on("connection", (socket: Socket) => {
     console.log("USER DISCONNECTED");
     socket.leave(userId);
   });
+
+
 });
-
-

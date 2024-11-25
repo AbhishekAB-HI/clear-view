@@ -13,6 +13,7 @@ import { API_CHAT_URL, API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Cons
 import toast from "react-hot-toast";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
 import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
+import axiosClient from "../../Services/Axiosinterseptor";
 
 type RootState = ReturnType<typeof store.getState>;
 const Navbar = () => {
@@ -38,9 +39,11 @@ const Navbar = () => {
   useEffect(() => {
     const getNotifications = async () => {
       try {
-        const { data } = await ClientNew.get(`${API_CHAT_URL}/getnotifications`);
+        const { data } = await axiosClient.get(`${API_CHAT_URL}/getnotifications`);
         if (data.message === "get all notifications") {
           setSaveAllNotifications(data.notifications);
+        }else{
+          toast.error("Notifications not get")
         }
       } catch (error) {
         console.error("Failed to fetch notifications:", error);
@@ -97,15 +100,14 @@ const Navbar = () => {
     }
   };
 
+  
+
+  
+
   // Handle message page navigation
   const movetomessagepage = async (chatId: String) => {
     try {
-      const { data } = await ClientNew.post(
-        API_CHAT_URL,
-        { chatId },
-        { headers: { "Content-type": CONTENT_TYPE_JSON } }
-      );
-
+      const { data } = await axiosClient.post(API_CHAT_URL,{ chatId });
       if (data.message === "Chat created succesfully") {
         if (!getchat.find((c) => c._id === data.fullChat._id)) {
           dispatch(setChats([data.fullChat, ...getchat]));

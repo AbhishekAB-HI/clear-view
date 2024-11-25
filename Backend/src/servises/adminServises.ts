@@ -6,7 +6,7 @@ import adminRepository from "../Repository/Adminrepository";
 import HashPassword from "../Utils/Hashpassword";
 import { generateAdminAccessToken } from "../Utils/Jwt";
 import { ICounts } from "../Interface/userInterface/Userdetail";
-
+import { ParsedQs } from "qs";
 class AdminServices {
   constructor(private adminRepository: adminRepository) {}
 
@@ -35,7 +35,6 @@ class AdminServices {
         let admintocken = generateAdminAccessToken(userPayload);
         return { admintocken: admintocken };
       }
-      console.log(isPasswordValid, "p0000000000000");
       if (!isPasswordValid) {
         throw new Error("Wrong password");
       }
@@ -64,15 +63,32 @@ class AdminServices {
     }
   }
 
-  async getAllReportUsers(): Promise<IUser[] | undefined> {
+  async getAllReportUsers(
+    page: number,
+    limit: number,
+    search: string | unknown
+  ): Promise<{ Reports: any[]; totalcount: number } | undefined> {
     try {
-      const foundedusers = await this.adminRepository.findAllReportUsers();
+      const foundedusers = await this.adminRepository.findAllReportUsers(
+        page,
+        limit,
+        search
+      );
 
-      if (!foundedusers) {
-        throw new Error("no user get");
+
+      if (!foundedusers?.Reports || !foundedusers.totalcount) {
+       return {
+         Reports:[],
+         totalcount:0
+       };
       }
 
-      return foundedusers;
+      const { Reports, totalcount } = foundedusers;
+
+      return {
+        Reports,
+        totalcount
+      };
     } catch (error) {
       console.log(error);
     }
@@ -93,16 +109,21 @@ class AdminServices {
       };
     }
     return {
-      posts: undefined,
+      posts: [],
       total: 0,
     };
   }
 
   async getAllpost(
     page: number,
-    limit: number
+    limit: number,
+    search: string | unknown
   ): Promise<{ posts: Posts[]; total: number }> {
-    const getAllposts = await this.adminRepository.findPost(page, limit);
+    const getAllposts = await this.adminRepository.findPost(
+      page,
+      limit,
+      search
+    );
 
     if (getAllposts) {
       return getAllposts;
@@ -114,21 +135,39 @@ class AdminServices {
   async getpostAnduserdetails(): Promise<ICounts | undefined> {
     try {
       const verifyuser = await this.adminRepository.findallpostanduser();
-       if (!verifyuser) {
-         throw new Error("No users found");
-       }
+      if (!verifyuser) {
+        throw new Error("No users found");
+      }
       return verifyuser;
     } catch (error) {
       console.log(error);
     }
   }
 
-  async getUserdetails(): Promise<IUser[] | undefined> {
+  async getUserdetails(
+    page: number,
+    limit: number,
+    search: string | string[] | ParsedQs | ParsedQs[] | undefined
+  ): Promise<{ userinfo: IUser[]; userscount: number } | undefined> {
     try {
-      const verifyuser = await this.adminRepository.findUsers();
-      if (verifyuser) {
-        return verifyuser;
+      const verifyuser = await this.adminRepository.findUsers(
+        page,
+        limit,
+        search
+      );
+      if (!verifyuser.userinfo || !verifyuser.userscount) {
+        return {
+          userinfo: [],
+          userscount: 0,
+        };
       }
+
+      const { userinfo, userscount } = verifyuser;
+
+      return {
+        userinfo,
+        userscount,
+      };
     } catch (error) {
       console.log(error);
     }

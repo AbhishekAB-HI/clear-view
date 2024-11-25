@@ -1,7 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import { IUser } from "../Entities/Userentities";
 
-const UserSchema: Schema = new Schema(
+const FollowingSchema: Schema = new Schema(
   {
     name: {
       type: String,
@@ -50,21 +50,9 @@ const UserSchema: Schema = new Schema(
         postreportReason: {
           type: String,
         },
-        postcontent: {
-          type: String,
-        },
-        postimage: {
-          type: String,
-        },
         userinfo: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "userdetail",
-        },
-        postedBy: {
-          type: String,
-        },
-        reportedBy: {
-          type: String,
         },
       },
     ],
@@ -98,6 +86,9 @@ const UserSchema: Schema = new Schema(
   }
 );
 
-const UserSchemadata = mongoose.model<IUser>("userdetail", UserSchema);
+const FollowingSchemaData = mongoose.model<IUser>(
+  "followSchema",
+  FollowingSchema
+);
 
-export default UserSchemadata;
+export default FollowingSchemaData;

@@ -3,20 +3,27 @@ import { FaImage, FaVideo, FaSmile, FaSpinner } from "react-icons/fa";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import toast from "react-hot-toast";
-import Clintnew from "../../Redux-store/Axiosinterceptor";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { CreatePostHomeModalProps } from "../Interfaces/Interface";
+import { CreatePostHomeModalProps, IAllNotification, IUser } from "../Interfaces/Interface";
 import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
 import axios from "axios";
 import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css";
-
+import io, { Socket } from "socket.io-client";
+import { useSelector } from "react-redux";
+import { store } from "../../Redux-store/Reduxstore";
+import axiosClient from "../../Services/Axiosinterseptor";
+const ENDPOINT = "http://localhost:3000";
+let socket: Socket;
+let selectedChatCompare: any;
 const CreateHomePostModal = ({
   togglepostModal,
   updatehomeState,
   userid,
 }: CreatePostHomeModalProps) => {
+  type RootState = ReturnType<typeof store.getState>;
+  
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -29,6 +36,24 @@ const CreateHomePostModal = ({
   const imageRef = useRef<HTMLImageElement>(null);
   const cropperRef = useRef<Cropper | null>(null);
   const [enableCrop, setEnableCrop] = useState(false);
+  const userDetails = useSelector(
+    (state: RootState) => state.accessTocken.userTocken
+  );
+
+  const selectedChat = useSelector(
+    (state: RootState) => state.accessTocken.SelectedChat
+  );
+
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    if (userDetails) {
+      socket.emit("setup", userDetails);
+    }
+    selectedChatCompare = selectedChat;
+    return () => {
+      socket.disconnect();
+    };
+  }, [userDetails]);
 
   const validationSchema = Yup.object({
     content: Yup.string()
@@ -50,17 +75,17 @@ const CreateHomePostModal = ({
       const totalImages = postImages.length + newImages.length;
 
       if (enableCrop) {
-         if (totalImages > 1) {
-           toast.error("You can only upload a maximum of 1 images.");
-           return;
-         }
+        if (totalImages > 1) {
+          toast.error("You can only upload a maximum of 1 images.");
+          return;
+        }
         setCurrentImage(newImages[0]);
         setModalVisible(true);
       } else {
-          if (totalImages > 4) {
-            toast.error("You can only upload a maximum of 4 images.");
-            return;
-          }
+        if (totalImages > 4) {
+          toast.error("You can only upload a maximum of 4 images.");
+          return;
+        }
         setPostImages((prevImages) => [...prevImages, ...newImages]);
       }
     }
@@ -98,7 +123,19 @@ const CreateHomePostModal = ({
     }
   };
 
- 
+  const [SaveAllUserData, setSaveAllUserData] = useState<IUser[]>([]);
+
+ const sendPostNotify = async (userInfo: IUser,postdetails:IAllNotification) => {
+   try {
+     if (socket) {
+       socket.emit("newpost", userInfo, postdetails);
+     }
+   } catch (error) {
+     console.error("Error fetching or emitting data:", error);
+   }
+ };
+
+
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
@@ -121,7 +158,6 @@ const CreateHomePostModal = ({
     const formData = new FormData();
     formData.append("content", values.content);
     formData.append("Category", values.Category);
-
     const imagesToUpload = enableCrop ? croppedImages : postImages;
     imagesToUpload.forEach((image) => {
       formData.append("images", image);
@@ -133,7 +169,7 @@ const CreateHomePostModal = ({
     formData.append("userId", userid || "");
 
     try {
-      const response = await Clintnew.post(
+      const response = await axiosClient.post(
         `${API_USER_URL}/createpost`,
         formData,
         {
@@ -143,7 +179,8 @@ const CreateHomePostModal = ({
 
       if (response.data.message === "Post uploaded successfully") {
         toast.success("Post uploaded successfully");
-        updatehomeState();
+        sendPostNotify(response.data.userinfo, response.data.postdetail);
+        updatehomeState(1);
         togglepostModal();
       } else {
         toast.error("Post upload failed");
@@ -151,8 +188,7 @@ const CreateHomePostModal = ({
       setSubmitting(false);
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-
-        toast.error(error.message)
+        toast.error(error.message);
         if (!error.response) {
           toast.error("Network error. Please check your internet connection.");
         } else {
@@ -179,22 +215,21 @@ const CreateHomePostModal = ({
     setShowEmojiPicker(false);
   };
 
-  const handleImageRemove = (index: number) =>{
-    if (postImages.length>0){
-     setPostImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  const handleImageRemove = (index: number) => {
+    if (postImages.length > 0) {
+      setPostImages((prevImages) => prevImages.filter((_, i) => i !== index));
     }
 
-     if (croppedImages.length > 0) {
-       setCroppedImages((prevImages) =>prevImages.filter((_, i) => i !== index)
-       );
-     }
-    
+    if (croppedImages.length > 0) {
+      setCroppedImages((prevImages) =>
+        prevImages.filter((_, i) => i !== index)
+      );
+    }
+  };
 
-  }
-
-  const handleVideoRemove = (index: number) =>{
+  const handleVideoRemove = (index: number) => {
     setPostVideos((prevVideos) => prevVideos.filter((_, i) => i !== index));
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex justify-center items-center z-50">
@@ -224,7 +259,6 @@ const CreateHomePostModal = ({
                   <option value="" disabled>
                     Select a category
                   </option>
-                  <option value="Latest news">Latest news</option>
                   <option value="Breaking news">Breaking news</option>
                   <option value="Sports news">Sports news</option>
                 </Field>

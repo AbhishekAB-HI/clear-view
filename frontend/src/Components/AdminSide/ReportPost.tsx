@@ -2,32 +2,20 @@ import  { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "./Navbar";
-import {
-  FaHome,
-  FaUsers,
-  FaUserFriends,
-  FaRegFileAlt,
-  FaSignOutAlt,
-} from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { clearAdminAccessTocken } from "../../Redux-store/Redux-slice";
 import { store } from "../../Redux-store/Reduxstore";
 import Swal from "sweetalert2";
 import { API_ADMIN_URL } from "../Constants/Constants";
-import { IPost } from "../Interfaces/Interface2";
+import {  IReportpost } from "../Interfaces/Interface2";
 import Adminsidebar from "./Adminsidebar";
-
-
-// const truncateText = (text: string, maxLength: number) => {
-//   return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
-// };
 
 const Reportmanagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [getPost, setGetpost] = useState<IPost[]>([]);
+  const [getPost, setGetpost] = useState<IReportpost[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [postsPerPage] = useState(5);
+  const [postsPerPage] = useState(2);
   const [totalPosts, setTotalPosts] = useState(0);
 
   const dispatch = useDispatch();
@@ -41,11 +29,9 @@ const Reportmanagement = () => {
     const getAllPost = async () => {
       try {
         const { data } = await axios.get(
-          `${API_ADMIN_URL}/getReportpost?page=${currentPage}&limit=${postsPerPage}`
+          `${API_ADMIN_URL}/getreportposts?page=${currentPage}&limit=${postsPerPage}`
         );
         if (data.message === "All posts found") {
-          console.log(data.data.posts,'&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&');
-          
           setGetpost(data.data.posts);
           setTotalPosts(data.data.total);
         }else{
@@ -64,16 +50,19 @@ const Reportmanagement = () => {
     };
 
     getAllPost();
-  }, [currentPage]);
+  }, []);
+
+
+
+  
+
 
      const getAllPost = async () => {
        try {
          const { data } = await axios.get(
-           `${API_ADMIN_URL}/getReportpost?page=${currentPage}&limit=${postsPerPage}`
+           `${API_ADMIN_URL}/getreportposts?page=${currentPage}&limit=${postsPerPage}`
          );
          if (data.message === "All posts found") {
-           console.log(data.data.posts, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&");
-
            setGetpost(data.data.posts);
            setTotalPosts(data.data.total);
          } else {
@@ -83,13 +72,23 @@ const Reportmanagement = () => {
          if (axios.isAxiosError(error)) {
            const errorMessage =
              error.response?.data?.message || "An error occurred";
-           toast.error(errorMessage);
+          console.log(error)
          } else {
-           toast.error("Unknown error occurred");
+               console.log(error);
+          //  toast.error("Unknown error occurred");
          }
          console.error("Error during login:", error);
        }
      };
+
+     useEffect(() => {
+      getAllPost()
+     }, [currentPage]);
+
+
+    
+
+
   const handleDeletePost = async (id: any) => {
     try {
 
@@ -137,48 +136,19 @@ const Reportmanagement = () => {
     navigate("/Adminlogin");
   };
 
+
   const totalPages = Math.ceil(totalPosts / postsPerPage);
 
   return (
     <div>
       <Navbar />
       <div className="flex">
-        {/* <aside className="w-64 bg-black text-white p-4 h-screen fixed left-20 top-20">
-          <div className="flex flex-col space-y-4">
-            <div className="flex items-center space-x-2">
-              <FaHome style={{ fontSize: "20px" }} />
-              <span>Dashboard</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaUsers style={{ fontSize: "20px" }} />
-              <Link to="/Adminhome">User Management</Link>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaUserFriends style={{ fontSize: "20px" }} />
-              <Link to="/news">News Management</Link>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <Link to="/reportpage">Report Management</Link>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaRegFileAlt style={{ fontSize: "20px" }} />
-              <span>User Report Management</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <FaSignOutAlt style={{ fontSize: "20px" }} />
-              <button onClick={handleLogout}>Log out</button>
-            </div>
-          </div>
-        </aside> */}
-
         <Adminsidebar />
 
         <main className="ml-64 flex-1 p-4">
           <div className="container mx-auto">
-            <h1 className="flex justify-left mt-10 text-white text-2xl">
-              Report Management System
+            <h1 className="flex justify-left mt-10 mb-10 text-white text-2xl">
+              News Report Management System
             </h1>
             <div className="flex justify-end mb-10">
               <input
@@ -198,6 +168,7 @@ const Reportmanagement = () => {
                   <th className="py-3 px-3">Report Reason</th>
                   <th className="py-3 px-3">Description</th>
                   <th className="py-3 px-3">Reported by</th>
+                  <th className="py-3 px-3">Posted by</th>
                   <th className="py-3 px-3">Delete</th>
                 </tr>
               </thead>
@@ -210,10 +181,10 @@ const Reportmanagement = () => {
                       </td>
                       <td className="py-2">
                         {post.postId &&
-                        post.postId.image &&
-                        post.postId.image.length > 0 ? (
+                        post.postimage &&
+                        post.postimage.length > 0 ? (
                           <img
-                            src={post.postId.image} // Ensure you're accessing the correct image
+                            src={post.postimage} // Ensure you're accessing the correct image
                             alt="post"
                             className="w-20 h-20 object-cover rounded-lg"
                           />
@@ -227,33 +198,26 @@ const Reportmanagement = () => {
                           <span>No media</span>
                         )}
                       </td>
-                      <td className="py-2 text-red-600">{post.reportReason}</td>
+                      <td className="py-2 text-red-600">{post.postreportReason}</td>
                       <td className="py-2">
-                        {post.postId && post.postId.description
-                          ? post.postId.description
+                        {post.postId && post.postcontent
+                          ? post.postcontent
                           : "No description available"}
                       </td>
                       <td className="py-2">
-                        {post.reporter && post.reporter.name
-                          ? post.reporter.name
+                        {post.reportedBy && post.reportedBy
+                          ? post.reportedBy
+                          : "Anonymous"}
+                      </td>
+                      <td className="py-2">
+                        {post.postedBy && post.postedBy
+                          ? post.postedBy
                           : "Anonymous"}
                       </td>
                       <td className="py-2">
                         <button
                           onClick={() => {
-                            // Check if postId exists before trying to delete
-                            if (post.postId && post.postId._id) {
-                              handleDeletePost(post.postId._id); // Call with valid ID
-                            } else {
-                              console.error(
-                                "Cannot delete: postId is null or undefined",
-                                post
-                              );
-                              // Optionally, you can show a toast or alert to inform the user
-                              toast.error(
-                                "Cannot delete this post because it no longer exists."
-                              );
-                            }
+                            handleDeletePost(post.postId._id);
                           }}
                           className="bg-red-500 text-white px-5 py-1 rounded-full"
                         >

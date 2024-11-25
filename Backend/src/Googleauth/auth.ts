@@ -39,7 +39,7 @@ app.get("/auth/callback/success", (req: Request, res: Response) => {
   if (!req.user) {
     return res.redirect("/auth/callback/failure");
   }
-  res.send("Welcome " + (req.user.email));
+  res.send("Welcome " + req.user.email);
 });
 
 // Failure

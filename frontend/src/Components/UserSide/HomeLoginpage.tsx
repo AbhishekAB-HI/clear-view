@@ -1,16 +1,10 @@
-import { ChangeEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import logoWeb from "../animations/Animation - 1724244656671.json";
 import { Link, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
 import { store } from "../../Redux-store/Reduxstore";
 import { clearuserAccessTocken } from "../../Redux-store/Redux-slice";
-import {
-  FaBars,
-  FaBell,
-  FaComment,
-  FaPaperPlane,
-  FaUserCircle,
-} from "react-icons/fa";
+import { FaBars, FaComment, FaPaperPlane, FaUserCircle } from "react-icons/fa";
 import { MdMoreVert } from "react-icons/md";
 import profileimg from "../images/Userlogo.png";
 import { useDispatch, useSelector } from "react-redux";
@@ -18,31 +12,39 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import EmojiPicker from "emoji-picker-react";
-import ClientNew from "../../Redux-store/Axiosinterceptor";
 import { AiOutlineSearch } from "react-icons/ai";
 import Posthomepage from "./AddpostHome";
 import { Pagination, Navigation } from "swiper/modules";
 import RenderReplies from "./RenderReplies";
 import { Home, MessageSquare, Bell, Plus, InboxIcon } from "lucide-react";
-import { API_CHAT_URL,API_USER_URL , CONTENT_TYPE_JSON } from "../Constants/Constants";
-import { IPost, Notification, ReplyingToState } from "../Interfaces/Interface";
-import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
+import { API_CHAT_URL, API_USER_URL } from "../Constants/Constants";
+import {
+  ActiveUsersType,
+  IAllNotification,
+  IPost,
+  IUser,
+  Notification,
+  ReplyingToState,
+} from "../Interfaces/Interface";
 import { Swiper, SwiperSlide } from "swiper/react";
 import debounce from "lodash.debounce";
 import { Heart, Users } from "lucide-react";
 import io, { Socket } from "socket.io-client";
+import { LogoutActiveUsershere } from "./GlobalSocket/CreateSocket";
+import axiosClient from "../../Services/Axiosinterseptor";
+import moment from "moment";
 
-  let selectedChatCompare: any;
-  const ENDPOINT = "http://localhost:3000";
-  let socket: Socket;
+let selectedChatCompare: any;
+const ENDPOINT = "http://localhost:3000";
+let socket: Socket;
 const HomeLoginPage = () => {
+  type RootState = ReturnType<typeof store.getState>;
 
-type RootState = ReturnType<typeof store.getState>;
-
-// STATE_MANAGEMENT===============================================================================================================================================================
+  // STATE_MANAGEMENT===============================================================================================================================================================
 
   const [isOpen, setIsOpen] = useState(false);
   const [Userpost, setPostList] = useState<IPost[]>([]);
+  const [LikeNotifications, setLikeNotifications] =useState<IAllNotification>();
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPost, setFilteredPost] = useState<IPost[]>([]);
@@ -57,77 +59,192 @@ type RootState = ReturnType<typeof store.getState>;
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [AccOpen, setAccOpen] = useState(false);
   const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
-  const [Notificationview, setNotificationview] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [postsPerPage] = useState(4);
   const [totalPosts, setTotalPosts] = useState(0);
   const [Category, setCategory] = useState("Allpost");
   const [showLikesList, setShowLikesList] = useState(false);
   const [messages, setMessages] = useState<any[]>([]);
   const [socketConnected, setSocketConnected] = useState(false);
+  const [savelikeNotify, setsavelikeNotify] = useState<IAllNotification>();
+  const [Savenewpost, setSavenewpost] = useState<IAllNotification[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const observer = useRef<IntersectionObserver | null>(null);
+
+
+ 
 
   const selectedChat = useSelector(
     (state: RootState) => state.accessTocken.SelectedChat
   );
 
-
-  const handleLikeClick = () => {
-    handleLike(post._id, saveid);
-    setShowLikesList(false);
-  };
- 
   const userDetails = useSelector(
     (state: RootState) => state.accessTocken.userTocken
   );
+
   const [showpostModal, setShowpostModal] = useState(false);
 
+  //  const formatTime = (dateString: string) => {
+  //    const date = new Date(dateString);
+  //    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" ,hour12:true });
+  //  };
+  moment.updateLocale("en", {
+    relativeTime: {
+      future: "in %s",
+      past: "%s ago",
+      s: "a few seconds",
+      m: "a minute",
+      mm: "%d minutes",
+      h: "an hour",
+      hh: "%d hours",
+      d: "a day",
+      dd: "%d days",
+      M: "a month",
+      MM: "%d months",
+      y: "a year",
+      yy: "%d years",
+    },
+  });
 
-  
- useEffect(() => {
-   socket = io(ENDPOINT);
- if (userDetails){
 
- socket.emit("setup", userDetails);
- socket.on("connected", () => setSocketConnected(true));
- }
 
-   return () => {
-     socket.disconnect();
-   };
- }, [userDetails]);
-    
-const getNotifications = async () => {
-  try {
-    const { data } = await ClientNew.get(`${API_CHAT_URL}/getnotifications`);
-    if (data.message === "get all notifications") {
-      setSaveAllNotifications(data.notifications);
+
+
+
+
+
+
+
+  const formatTime = (timestamp: string): string => {
+    const postTime = moment(timestamp); // Parse timestamp
+    return postTime.fromNow(); // Outputs "a few seconds ago," "5 hours ago," "yesterday," etc.
+  };
+
+
+
+
+
+
+
+
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    if (userDetails) {
+      socket.emit("setup", userDetails);
+      socket.on("connected", () => setSocketConnected(true));
     }
-  } catch (error) {
-    console.log(error);
-  }
-};
+    return () => {
+      socket.disconnect();
+    };
+  }, [userDetails]);
+
+  const [notifications, setNotifications] = useState<IUser[]>([]);
+
+  const getFollownotification = async (userId: string) => {
+    try {
+      const { data } = await axiosClient.get(
+        `${API_CHAT_URL}/getfollownotify?id=${userId}`
+      );
+      if (data.message === "get all notifications") {
+        setNotifications(data.follownotifications);
+      } else {
+        toast.error("User data not saved");
+      }
+    } catch (error) {
+      console.log(error);
+      if (axios.isAxiosError(error)) {
+        if (!error.response) {
+          toast.error("Network error. Please check your internet connection.");
+        } else {
+          const status = error.response.status;
+          if (status === 404) {
+            toast.error("Posts not found.");
+          } else if (status === 500) {
+            toast.error("Server error. Please try again later.");
+          } else {
+            toast.error("Something went wrong.");
+          }
+        }
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+      console.log("Error fetching posts:", error);
+    }
+  };
+  const getNotifications = async () => {
+    try {
+      const { data } = await axiosClient.get(
+        `${API_CHAT_URL}/getnotifications`
+      );
+      if (data.message === "get all notifications") {
+        setSaveAllNotifications(data.notifications);
+      } else {
+        toast.error("All notifications Failed");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (!error.response) {
+          toast.error("Network error. Please check your internet connection.");
+        } else {
+          const status = error.response.status;
+          if (status === 404) {
+            toast.error("Posts not found.");
+          } else if (status === 500) {
+            toast.error("Server error. Please try again later.");
+          } else {
+            toast.error("Something went wrong.");
+          }
+        }
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+      console.log("Error fetching posts:", error);
+    }
+  };
+
   useEffect(() => {
     socket.on("notification received", (newMessageReceived: any) => {
       if (
         !selectedChatCompare ||
         selectedChatCompare._id !== newMessageReceived.chat._id
       ) {
-        getNotifications()
-        // setMessages([...messages, newMessageReceived]);
+        getNotifications();
       } else {
       }
     });
-  }, [userDetails]);
+  }, []);
 
 
-     const logoutUser = (userId: string) => {
-       if(socket)socket.emit("logout", userId);
-    };
-  
+  const logoutUser = (userId: string) => {
+    socket.emit("logout", userId);
+  };
 
+  useEffect(() => {
+    socket.on("Likenotification", (postDetails) => {
+      toast.success("User Liked your post");
+      setsavelikeNotify(postDetails);
+    });
+
+    socket.on(
+      "follow received",
+      (logeduserinfo, followingUser, followuserId) => {
+        toast.success("User follow you");
+        setSavenewpost(followingUser);
+      }
+    );
+
+    socket.on("post update", (postedUserInfo, postdetails) => {
+      toast.success("new post uploaded");
+      setSavenewpost(postdetails);
+    });
+  }, []);
 
   // STATE_MANAGEMENT===============================================================================================================================================================
-
 
   const handlepostClick = () => {
     setShowpostModal(true);
@@ -158,9 +275,7 @@ const getNotifications = async () => {
   useEffect(() => {
     const getUserId = async () => {
       try {
-        const { data } = await axios.get(
-          `${API_USER_URL}/userdget/${userDetails}`
-        );
+        const { data } = await axiosClient.get(`${API_USER_URL}/getuserid`);
         if (data.message === "user id get") {
           setsaveid(data.userId);
         } else {
@@ -187,20 +302,50 @@ const getNotifications = async () => {
         } else {
           toast.error("An unexpected error occurred.");
         }
+
         console.log("Error fetching posts:", error);
       }
     };
 
     getUserId();
-  }, [userDetails]);
+  }, []);
 
-  const debouncedGetAllPost = useCallback(
-    debounce(async () => {
+     const lastPostRef = useCallback(
+       (node: HTMLElement | null) => {
+         if (isLoading) return;
+         if (observer.current) observer.current.disconnect();
+
+         observer.current = new IntersectionObserver((entries) => {
+           if (entries[0].isIntersecting && hasMore) {
+             setPage((prevPage) => prevPage + 1);
+           }
+         });
+
+         if (node) observer.current.observe(node);
+       },
+       [isLoading, hasMore]
+     );
+
+     
+  const UpdateHomestate = (page: number) => {
+    findAllthepost(page);
+  };
+
+
+
+
+  const debouncedGetAllPost = useCallback(debounce(async (currentpage:number) => {
+       setIsLoading(true);
       try {
-        const { data } = await axios.get(`${API_USER_URL}/getAllpost?search=${searchQuery}&category=${Category}`);
+        const { data } = await axiosClient.get(
+          `${API_USER_URL}/allposts?search=${searchQuery}&category=${Category}&page=${currentpage}`
+        );
         if (data.message === "getAllpostdetails") {
-          setPostList(data.data.posts || []);
-          setFilteredPost(data.data.posts || []);
+          // setPostList((prepost) => [...prepost, ...data.data.posts]);
+          setFilteredPost((prepost) => [...prepost, ...data.data.posts]);
+          const totalPages = data.data.totalPages || 0;
+          setHasMore(currentpage < totalPages); 
+    
         } else {
           toast.error("Failed to retrieve post details.");
         }
@@ -226,26 +371,91 @@ const getNotifications = async () => {
           toast.error("An unexpected error occurred.");
         }
         console.log("Error fetching posts:", error);
+      }finally{
+         setIsLoading(false);
       }
-    }, 300), // Debounce delay of 300ms
-    [searchQuery, currentPage, Category]
+    }, 300),
+    [searchQuery, Category]
   );
 
+
+
+
+const findAllthepost =async (currentpage: number) => {
+    setIsLoading(true);
+    try {
+      const { data } = await axiosClient.get(
+        `${API_USER_URL}/allposts?search=${searchQuery}&category=${Category}&page=${currentpage}`
+      );
+      console.log("333333333333333333333333333333333", data.data.posts);
+      if (data.message === "getAllpostdetails") {
+        setFilteredPost([...data.data.posts]);
+        const totalPages = data.data.totalPages || 0;
+        setHasMore(currentpage < totalPages);
+      } else {
+        toast.error("Failed to retrieve post details.");
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        if (!error.response) {
+          toast.error("Network error. Please check your internet connection.");
+        } else {
+          const status = error.response.status;
+          if (status === 404) {
+            toast.error("Posts not found.");
+          } else if (status === 500) {
+            toast.error("Server error. Please try again later.");
+          } else {
+            toast.error("Something went wrong.");
+          }
+        }
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+      console.log("Error fetching posts:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+
   useEffect(() => {
-    debouncedGetAllPost();
-  }, [searchQuery, currentPage, Category]);
+    setPage(1)
+    findAllthepost(page);
+  }, [Category]);
 
-  const UpdateHomestate = () => {
-    debouncedGetAllPost();
-  };
 
- 
+
+
+
+
+
+
+
+  useEffect(() => {
+    setPage(1);
+    findAllthepost(page);
+  }, [searchQuery]);
+
+
+
+
+
+   useEffect(() => {
+     debouncedGetAllPost(page);
+   }, [page]);
+
+
+
+
 
   const handleAllPost = (value: string) => {
     setCategory(value);
   };
 
-  const totalPages = Math.ceil(totalPosts / postsPerPage);
+  // const totalPages = Math.ceil(totalPosts / postsPerPage);
 
   const handleCommentClick = (postId: any) => {
     if (showCommentBox === postId) {
@@ -266,7 +476,7 @@ const getNotifications = async () => {
   useEffect(() => {
     const getAllreply = async () => {
       try {
-        const { data } = await ClientNew.get(`${API_USER_URL}/getreplys`);
+        const { data } = await axiosClient.get(`${API_USER_URL}/getreplys`);
         if (data.message === "get all reply comments") {
           setReplyPost(data.posts);
         } else {
@@ -304,15 +514,32 @@ const getNotifications = async () => {
   };
 
   const navigate = useNavigate();
+  const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
+
+  const LogoutActiveUsershere = (
+    setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>
+  ) => {
+    socket.emit("get-users", (users: ActiveUsersType[]) => {
+      setActiveUsers(users);
+    });
+  };
 
   const handleLogout = async () => {
-    
     try {
-
       logoutUser(saveid);
+      LogoutActiveUsershere(setActiveUsers);
+      const { data } = await axiosClient.patch(
+        `${API_USER_URL}/updatelastseen`
+      );
+
+      if (data.message === "lastTime updated") {
+        toast.success("Logout successfull");
+        navigate("/login");
+      } else {
+        toast.error("Logout failed");
+      }
       dispatch(clearuserAccessTocken());
       localStorage.removeItem("usertocken");
-      navigate("/login");
     } catch (error) {
       console.log(error);
     }
@@ -365,14 +592,9 @@ const getNotifications = async () => {
 
       if (text && text.trim().length > 0) {
         try {
-          const { data } = await axios.patch(
-            `${API_USER_URL}/Reportpost`,
-            { postId, text, userId },
-            {
-              headers: {
-                "Content-Type": CONTENT_TYPE_JSON,
-              },
-            }
+          const { data } = await axiosClient.patch(
+            `${API_USER_URL}/reportpost`,
+            { postId, text, userId }
           );
           if (data.message === "Post Reported succesfully") {
             toast.success("Post Reported successfully");
@@ -406,40 +628,31 @@ const getNotifications = async () => {
     }
   };
 
+
   const viewProfile = async (userID: string) => {
     try {
       if (userID === saveid) {
         navigate("/profile");
       } else {
-         navigate("/viewProfile", { state: { userID } });
+        navigate("/viewProfile", { state: { userID } });
       }
-
     } catch (error) {
       console.log(error);
     }
-  
-}
+  };
 
   const handleSendComment = async (postId: string, userId: string) => {
     try {
       if (comment.length === 0) {
         toast.error("please write something...");
       }
-      const { data } = await ClientNew.patch(
-        `${API_USER_URL}/CommentPost`,
-        {
-          postId,
-          userId,
-          comment,
-        },
-        {
-          headers: {
-            "Content-Type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
+      const { data } = await axiosClient.patch(`${API_USER_URL}/commentpost`, {
+        postId,
+        userId,
+        comment,
+      });
       if (data.message === "Post Commented succesfully") {
-        debouncedGetAllPost();
+        debouncedGetAllPost(page);
         setComment("");
         setShowEmojiPicker(false);
       } else {
@@ -468,62 +681,32 @@ const getNotifications = async () => {
     }
   };
 
-  const movetomessagepage = async (chatId: String) => {
-    try {
-      const { data } = await ClientNew.post(
-        `${API_CHAT_URL}`,
-        { chatId },
-        {
-          headers: {
-            "Content-type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
 
-      if (data.message === "Chat created succesfully") {
-        if (!getchat.find((c) => c._id === data.fullChat._id))
-        dispatch(setChats([data.fullChat, ...getchat]));
-        dispatch(setSelectedChat(data.fullChat));
-        navigate(`/chatpage/${chatId}/${data.fullChat._id}`);
-      } else {
-        toast.error("Chat created  Failed");
+
+  const ChangeCategory =()=>{
+      
+  }
+
+  const sendLikePost = async (postdetails: IAllNotification) => {
+    try {
+      if (socket) {
+        socket.emit("likepost", postdetails);
       }
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (!error.response) {
-          toast.error("Network error. Please check your internet connection.");
-        } else {
-          const status = error.response.status;
-          if (status === 404) {
-            toast.error("Posts not found.");
-          } else if (status === 500) {
-            toast.error("Server error. Please try again later.");
-          } else {
-            toast.error("Something went wrong.");
-          }
-        }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("An unexpected error occurred.");
-      }
-      console.log("Error fetching posts:", error);
+      console.error("Error fetching or emitting data:", error);
     }
   };
 
   const handleLike = async (postId: string, userId: string) => {
     try {
-      const { data } = await axios.patch(
-        `${API_USER_URL}/LikePost`,
-        { postId, userId },
-        {
-          headers: {
-            "Content-Type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
+      const { data } = await axiosClient.patch(`${API_USER_URL}/likepost`, {
+        postId,
+        userId,
+      });
       if (data.message === "Post liked succesfully") {
-        debouncedGetAllPost();
+        debouncedGetAllPost(page);
+        setLikeNotifications(data.getupdate);
+        sendLikePost(data.getupdate);
       } else {
         toast.error("Post liked Failed");
       }
@@ -550,25 +733,17 @@ const getNotifications = async () => {
     }
   };
 
-    const userToken = useSelector(
-      (state: RootState) => state.accessTocken.userTocken
-    );
-
+  const userToken = useSelector(
+    (state: RootState) => state.accessTocken.userTocken
+  );
 
   const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
     setSearchQuery(query);
-    setCurrentPage(1);
+    setPage(1);
   };
 
-
-
-
-
-
-
-
-
+  
 
 
   // PAGE VIEW =================================================================================================================================================================
@@ -591,7 +766,6 @@ const getNotifications = async () => {
               </h1>
             </div>
 
-            {/* Desktop Search Form */}
             <form className="hidden lg:flex items-center space-x-2">
               <input
                 type="search"
@@ -601,49 +775,7 @@ const getNotifications = async () => {
               />
             </form>
 
-            {/* Account Dropdown */}
             <div className="flex items-center space-x-4 md:space-x-6 lg:mr-10 text-white text-base md:text-lg">
-              <div className="relative inline-block">
-                {/* Bell Icon */}
-                <FaBell
-                  onClick={() => setNotificationview(!Notificationview)}
-                  className="text-[20px] hover:text-[22px] hover:cursor-pointer"
-                />
-                {/* Notification Count */}
-                {SaveAllNotifications && SaveAllNotifications.length > 0 && (
-                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
-                    {SaveAllNotifications.length}
-                  </span>
-                )}
-              </div>
-              {/* Notification Modal */}
-
-              {Notificationview && (
-                <div className="absolute right-60 mt-80 w-80 bg-white shadow-lg rounded-lg z-10">
-                  <div className="p-4">
-                    <h2 className="text-lg font-bold text-gray-700 mb-2">
-                      Notifications
-                    </h2>
-                    {SaveAllNotifications.length > 0 ? (
-                      SaveAllNotifications.map((notification) => (
-                        <div
-                          onClick={() =>
-                            movetomessagepage(notification.sender._id)
-                          }
-                          key={notification.id}
-                          className="p-2 border-b hover:cursor-pointer border-gray-300"
-                        >
-                          <small className="text-sm text-red-600 font-medium p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition duration-300 ease-in-out">
-                            You have a message from {notification.sender.name}
-                          </small>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-gray-500">No new notifications</p>
-                    )}
-                  </div>
-                </div>
-              )}
               {userDetails ? (
                 <div className="relative inline-block text-left">
                   <button
@@ -739,7 +871,7 @@ const getNotifications = async () => {
           {/* Create Post Button */}
           <button
             onClick={() => handlepostClick()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-3 
+            className="w-full bg-blue-600 mt-10 hover:bg-blue-700 text-white rounded-lg px-4 py-3 
              transition-all duration-200 flex items-center justify-center space-x-2 font-medium
              shadow-lg hover:shadow-blue-500/20"
           >
@@ -748,6 +880,7 @@ const getNotifications = async () => {
           </button>
 
           {/* Navigation Links */}
+
           <nav className="space-y-2">
             {[
               { icon: <Home size={24} />, text: "Home", path: "/homepage" },
@@ -755,6 +888,7 @@ const getNotifications = async () => {
                 icon: <MessageSquare size={24} />,
                 text: "Messages",
                 path: "/message",
+                notificationCount: SaveAllNotifications?.length || 0,
               },
               {
                 icon: <Users size={24} />,
@@ -766,12 +900,21 @@ const getNotifications = async () => {
                 text: "Following",
                 path: "/following",
               },
+
               {
                 icon: <Bell size={24} />,
                 text: "Notifications",
                 path: "/notifications",
+                followNotification:
+                  notifications.length !== 0 ||
+                  savelikeNotify !== undefined ||
+                  Savenewpost.length !== 0,
               },
-              { icon: <Users size={24} />, text: "People", path: "/people" },
+              {
+                icon: <Users size={24} />,
+                text: "Find Friends",
+                path: "/people",
+              },
             ].map((item, index) => (
               <Link
                 key={index}
@@ -792,6 +935,18 @@ const getNotifications = async () => {
                 >
                   {item.text}
                 </span>
+                {item.text === "Messages" && item.notificationCount > 0 && (
+                  <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                    {item.notificationCount}
+                  </span>
+                )}
+
+                {item.text === "Notifications" &&
+                  item.followNotification > 0 && (
+                    <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                      1
+                    </span>
+                  )}
                 <div
                   className="absolute inset-y-0 left-0 w-1 bg-blue-600 
               transform -translate-x-full group-hover:translate-x-0
@@ -869,238 +1024,497 @@ const getNotifications = async () => {
               />
             )}
             {filteredPost && filteredPost.length > 0 ? (
-              filteredPost.map((post) => (
-                <div
-                  key={post._id}
-                  className="relative mb-8 cursor-pointer p-4 border border-gray-700 rounded-md"
-                >
-                  <div className="flex items-center justify-between flex-wrap">
-                    <div onClick={() => viewProfile(post.user._id)}>
-                      <div className="flex items-center">
-                        <img
-                          src={post.user.image ? post.user.image : profileimg}
-                          alt="Profile"
-                          className="w-12 h-12 rounded-full"
-                        />
-                        <div className="ml-4">
-                          <h2 className="text-lg font-semibold">
-                            {post.user.name}
-                          </h2>
-                          <p className="text-md text-green-500  ">
-                            {post.category}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    {post.user._id !== saveid && (
-                      <button
-                        className="text-gray-400 hover:text-white mt-2 lg:mt-0"
-                        onClick={() => handleMenuClick(post._id)}
-                      >
-                        <MdMoreVert />
-                      </button>
-                    )}
-                  </div>
-
-                  {menuOpenPost === post._id && (
+              filteredPost.map((post, index) => {
+                if (index === filteredPost.length - 1) {
+                  return (
                     <div
-                      className="absolute right-4 mt-2 w-40 rounded-md shadow-lg bg-gray-800 text-white ring-1 ring-black ring-opacity-5"
-                      onMouseLeave={() => setMenuOpenPost(null)}
+                      ref={lastPostRef}
+                      key={index}
+                      className="relative mb-8 cursor-pointer p-4 border border-gray-700 rounded-md"
                     >
-                      <button
-                        onClick={() => handleReport(post._id, saveid)}
-                        className="block px-4 py-2 text-sm hover:bg-gray-600 w-full text-left"
-                      >
-                        Report
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="mt-4">
-                    <p className="text-md pb-5 text-left  text-white">
-                      {post.description}
-                    </p>
-                    {post.image.length > 0 || post.videos.length > 0 ? (
-                      <div className="max-w-full mx-auto">
-                        {(post.image || post.videos) && (
-                          <div className="h-[50vh] md:h-[60vh] lg:h-[70vh] mb-4">
-                            <Swiper
-                              modules={[Pagination, Navigation]}
-                              spaceBetween={10}
-                              slidesPerView={1}
-                              navigation={
-                                (post.image && post.image.length > 1) ||
-                                post.image.length + post.videos.length > 1 ||
-                                (post.videos && post.videos.length > 1)
-                                  ? {
-                                      nextEl: ".swiper-button-next-media",
-                                      prevEl: ".swiper-button-prev-media",
-                                    }
-                                  : false
+                      <div className="flex items-center justify-between flex-wrap">
+                        <div onClick={() => viewProfile(post.user._id)}>
+                          <div className="flex items-center">
+                            <img
+                              src={
+                                post.user.image ? post.user.image : profileimg
                               }
-                              pagination={{ clickable: true }}
-                              className="w-full h-full relative"
-                            >
-                              {/* Combine images and videos */}
-                              {[
-                                ...(post.image || []),
-                                ...(post.videos || []),
-                              ].map((mediaSrc, index) => (
-                                <SwiperSlide
-                                  key={index}
-                                  className="flex items-center justify-center"
-                                >
-                                  <div className="relative w-full h-full">
-                                    {/* Check if it's an image or video by file extension */}
-                                    {typeof mediaSrc === "string" &&
-                                    mediaSrc.match(/\.(jpeg|jpg|gif|png)$/i) ? (
-                                      <img
-                                        src={mediaSrc}
-                                        alt={`post-media-${index}`}
-                                        className="absolute inset-0 w-full h-full object-contain"
-                                      />
-                                    ) : (
-                                      <video
-                                        controls
-                                        className="w-full h-full object-contain"
-                                      >
-                                        <source
-                                          src={mediaSrc}
-                                          type="video/mp4"
-                                        />
-                                      </video>
-                                    )}
-                                  </div>
-                                </SwiperSlide>
-                              ))}
-                              {(post.image && post.image.length > 1) ||
-                              post.image.length + post.videos.length > 1 ||
-                              (post.videos && post.videos.length > 1) ? (
-                                <>
-                                  <button className="swiper-button-prev-media absolute top-1/2 left-4 transform -translate-y-1/2 z-10 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all">
-                                    &#8592;
-                                  </button>
-                                  <button className="swiper-button-next-media absolute top-1/2 right-4 transform -translate-y-1/2 z-10 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all">
-                                    &#8594;
-                                  </button>
-                                </>
-                              ) : null}
-                            </Swiper>
+                              alt="Profile"
+                              className="w-12 h-12 rounded-full"
+                            />
+                            <div className="ml-4">
+                              <h2 className="text-lg font-semibold">
+                                {post.user.name}
+                              </h2>
+                              <p className="text-md text-green-500  ">
+                                {post.category}
+                              </p>
+                            </div>
                           </div>
+                        </div>
+                        {post.user._id !== saveid && (
+                          <button
+                            className="text-gray-400 hover:text-white mt-2 lg:mt-0"
+                            onClick={() => handleMenuClick(post._id)}
+                          >
+                            <MdMoreVert />
+                          </button>
                         )}
                       </div>
-                    ) : (
-                      <div></div>
-                    )}
-                  </div>
 
-                  <div className="mainLikebar flex justify-around mt-4 text-sm sm:text-base">
-                    {showLikesList && (
-                      <div className="absolute z-20 mr-40    w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg">
-                        <div className="p-4  ">
-                          <div className="flex items-center justify-between">
-                            <span className="text-gray-900 dark:text-gray-100 font-medium">
-                              {post.likeCount} Likes
-                            </span>
-                            <Users
-                              size={18}
-                              className="text-gray-500 dark:text-gray-400"
-                            />
-                          </div>
-                          <div className="mt-4 max-h-40 overflow-y-auto">
-                            {post.likes.map((like) => (
-                              <div
-                                key={like._id}
-                                className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
-                              >
-                                <span className="text-gray-900 dark:text-gray-100">
-                                  {like.name}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    <div
-                      onClick={() => handleLike(post._id, saveid)}
-                      className="Likebutton flex hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
-                    >
-                      <div className="relative">
+                      {menuOpenPost === post._id && (
                         <div
-                          onMouseEnter={() => setShowLikesList(true)}
-                          onMouseLeave={() => setShowLikesList(false)}
-                          className="flex items-center hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
+                          className="absolute right-4 mt-2 w-40 rounded-md shadow-lg bg-gray-800 text-white ring-1 ring-black ring-opacity-5"
+                          onMouseLeave={() => setMenuOpenPost(null)}
                         >
-                          <Heart
-                            size={20}
-                            className={`${
-                              post.likes.some((like) => like._id === saveid)
-                                ? "text-blue-600 fill-blue-600"
-                                : "text-gray-500 dark:text-gray-400 fill-transparent"
-                            }`}
-                          />
-                          <span className="ml-2 text-gray-500 dark:text-gray-400">
-                            {post.likeCount}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      onClick={() => handleCommentClick(post._id)}
-                      className="Likebutton flex hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
-                    >
-                      <span className="mr-2">{post.comments.length}</span>
-                      <FaComment size="20px" color="blue" />
-                      <h1 className="pl-2">Comment</h1>
-                    </div>
-                  </div>
-
-                  {showCommentBox === post._id && (
-                    <div className="mt-10">
-                      <div className="flex items-center space-x-2">
-                        <button
-                          className="p-2 bg-blue-600 text-white rounded-md"
-                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                        >
-                          😊
-                        </button>
-                        <input
-                          type="text"
-                          className="border p-2 w-full text-black rounded-md"
-                          placeholder="Write a comment..."
-                          value={comment}
-                          onChange={(e) => setComment(e.target.value)}
-                        />
-                        <button
-                          className="p-2 bg-blue-600 text-white rounded-md"
-                          onClick={() => handleSendComment(post._id, saveid)}
-                        >
-                          <FaPaperPlane />
-                        </button>
-                      </div>
-
-                      {showEmojiPicker && (
-                        <div className="mt-2">
-                          <EmojiPicker onEmojiClick={handleEmojiClick} />
+                          <button
+                            onClick={() => handleReport(post._id, saveid)}
+                            className="block px-4 py-2 text-sm hover:bg-gray-600 w-full text-left"
+                          >
+                            Report
+                          </button>
                         </div>
                       )}
 
-                      <RenderReplies
-                        UpdateLikepost={debouncedGetAllPost}
-                        post={post}
-                        parentCommentId={comment._id}
-                        saveid={saveid}
-                        replyingTo={replyingTo}
-                        replyContent={replyContent}
-                        handleReply={handleReply}
-                        setReplyContent={setReplyContent}
-                      />
+                      <div className="mt-4">
+                        <p className="text-md pb-5 text-left  text-white">
+                          {post.description}
+                        </p>
+                        {post.image.length > 0 || post.videos.length > 0 ? (
+                          <div className="max-w-full mx-auto">
+                            {(post.image || post.videos) && (
+                              <div className="h-[50vh] md:h-[60vh] lg:h-[70vh] mb-4">
+                                <Swiper
+                                  modules={[Pagination, Navigation]}
+                                  spaceBetween={10}
+                                  slidesPerView={1}
+                                  navigation={
+                                    (post.image && post.image.length > 1) ||
+                                    post.image.length + post.videos.length >
+                                      1 ||
+                                    (post.videos && post.videos.length > 1)
+                                      ? {
+                                          nextEl: ".swiper-button-next-media",
+                                          prevEl: ".swiper-button-prev-media",
+                                        }
+                                      : false
+                                  }
+                                  pagination={{ clickable: true }}
+                                  className="w-full h-full relative"
+                                >
+                                  {/* Combine images and videos */}
+                                  {[
+                                    ...(post.image || []),
+                                    ...(post.videos || []),
+                                  ].map((mediaSrc, index) => (
+                                    <SwiperSlide
+                                      key={index}
+                                      className="flex items-center justify-center"
+                                    >
+                                      <div className="relative w-full h-full">
+                                        {/* Check if it's an image or video by file extension */}
+                                        {typeof mediaSrc === "string" &&
+                                        mediaSrc.match(
+                                          /\.(jpeg|jpg|gif|png)$/i
+                                        ) ? (
+                                          <img
+                                            src={mediaSrc}
+                                            alt={`post-media-${index}`}
+                                            className="absolute inset-0 w-full h-full object-contain"
+                                          />
+                                        ) : (
+                                          <video
+                                            controls
+                                            className="w-full h-full object-contain"
+                                          >
+                                            <source
+                                              src={mediaSrc}
+                                              type="video/mp4"
+                                            />
+                                          </video>
+                                        )}
+                                      </div>
+                                    </SwiperSlide>
+                                  ))}
+                                  {(post.image && post.image.length > 1) ||
+                                  post.image.length + post.videos.length > 1 ||
+                                  (post.videos && post.videos.length > 1) ? (
+                                    <>
+                                      <button className="swiper-button-prev-media absolute top-1/2 left-4 transform -translate-y-1/2 z-10 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all">
+                                        &#8592;
+                                      </button>
+                                      <button className="swiper-button-next-media absolute top-1/2 right-4 transform -translate-y-1/2 z-10 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all">
+                                        &#8594;
+                                      </button>
+                                    </>
+                                  ) : null}
+                                </Swiper>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div></div>
+                        )}
+                      </div>
+
+                      <div className="mainLikebar flex justify-around mt-4 text-sm sm:text-base">
+                        {showLikesList && (
+                          <div className="absolute z-20 mr-40    w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg">
+                            <div className="p-4  ">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-900 dark:text-gray-100 font-medium">
+                                  {post.likeCount} Likes
+                                </span>
+                                <Users
+                                  size={18}
+                                  className="text-gray-500 dark:text-gray-400"
+                                />
+                              </div>
+                              <div className="mt-4 max-h-40 overflow-y-auto">
+                                {post.likes.map((like) => (
+                                  <div
+                                    key={like._id}
+                                    className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
+                                  >
+                                    <span className="text-gray-900 dark:text-gray-100">
+                                      {like.name}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div
+                          onClick={() => handleLike(post._id, saveid)}
+                          className="Likebutton flex hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
+                        >
+                          <div className="relative">
+                            <div
+                              onMouseEnter={() => setShowLikesList(true)}
+                              onMouseLeave={() => setShowLikesList(false)}
+                              className="flex items-center hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
+                            >
+                              <Heart
+                                size={20}
+                                className={`${
+                                  post.likes.some((like) => like._id === saveid)
+                                    ? "text-blue-600 fill-blue-600"
+                                    : "text-gray-500 dark:text-gray-400 fill-transparent"
+                                }`}
+                              />
+                              <span className="ml-2 text-gray-500 dark:text-gray-400">
+                                {post.likeCount}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          onClick={() => handleCommentClick(post._id)}
+                          className="Likebutton flex hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
+                        >
+                          <span className="mr-2">{post.comments.length}</span>
+                          <FaComment size="20px" color="blue" />
+                          <h1 className="pl-2">Comment</h1>
+                        </div>
+                      </div>
+
+                      {showCommentBox === post._id && (
+                        <div className="mt-10">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              className="p-2 bg-blue-600 text-white rounded-md"
+                              onClick={() =>
+                                setShowEmojiPicker(!showEmojiPicker)
+                              }
+                            >
+                              😊
+                            </button>
+                            <input
+                              type="text"
+                              className="border p-2 w-full text-black rounded-md"
+                              placeholder="Write a comment..."
+                              value={comment}
+                              onChange={(e) => setComment(e.target.value)}
+                            />
+                            <button
+                              className="p-2 bg-blue-600 text-white rounded-md"
+                              onClick={() =>
+                                handleSendComment(post._id, saveid)
+                              }
+                            >
+                              <FaPaperPlane />
+                            </button>
+                          </div>
+
+                          {showEmojiPicker && (
+                            <div className="mt-2">
+                              <EmojiPicker onEmojiClick={handleEmojiClick} />
+                            </div>
+                          )}
+
+                          <RenderReplies
+                            UpdateLikepost={debouncedGetAllPost}
+                            post={post}
+                            parentCommentId={comment._id}
+                            saveid={saveid}
+                            replyingTo={replyingTo}
+                            replyContent={replyContent}
+                            handleReply={handleReply}
+                            setReplyContent={setReplyContent}
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              ))
+                  );
+                } else {
+                  return (
+                    <div
+                      key={index}
+                      className="relative mb-8 cursor-pointer p-4 border border-gray-700 rounded-md"
+                    >
+                      <div className="flex items-center justify-between flex-wrap">
+                        <div onClick={() => viewProfile(post.user._id)}>
+                          <div className="flex items-center">
+                            <img
+                              src={
+                                post.user.image ? post.user.image : profileimg
+                              }
+                              alt="Profile"
+                              className="w-12 h-12 rounded-full"
+                            />
+                            <div className="ml-4">
+                              <h2 className="text-lg font-semibold">
+                                {post.user.name}
+                              </h2>
+                              <p className="text-md text-green-500  ">
+                                {post.category}
+                              </p>
+                              <small className="text-left text-gray-400  font-normal">
+                                {formatTime(post.createdAt)}
+                              </small>
+                            </div>
+                          </div>
+                        </div>
+                        {post.user._id !== saveid && (
+                          <button
+                            className="text-gray-400 hover:text-white mt-2 lg:mt-0"
+                            onClick={() => handleMenuClick(post._id)}
+                          >
+                            <MdMoreVert />
+                          </button>
+                        )}
+                      </div>
+
+                      {menuOpenPost === post._id && (
+                        <div
+                          className="absolute right-4 mt-2 w-40 rounded-md shadow-lg bg-gray-800 text-white ring-1 ring-black ring-opacity-5"
+                          onMouseLeave={() => setMenuOpenPost(null)}
+                        >
+                          <button
+                            onClick={() => handleReport(post._id, saveid)}
+                            className="block px-4 py-2 text-sm hover:bg-gray-600 w-full text-left"
+                          >
+                            Report
+                          </button>
+                        </div>
+                      )}
+
+                      <div className="mt-4">
+                        <p className="text-md pb-5 text-left  text-white">
+                          {post.description}
+                        </p>
+                        {post.image.length > 0 || post.videos.length > 0 ? (
+                          <div className="max-w-full mx-auto">
+                            {(post.image || post.videos) && (
+                              <div className="h-[50vh] md:h-[60vh] lg:h-[70vh] mb-4">
+                                <Swiper
+                                  modules={[Pagination, Navigation]}
+                                  spaceBetween={10}
+                                  slidesPerView={1}
+                                  navigation={
+                                    (post.image && post.image.length > 1) ||
+                                    post.image.length + post.videos.length >
+                                      1 ||
+                                    (post.videos && post.videos.length > 1)
+                                      ? {
+                                          nextEl: ".swiper-button-next-media",
+                                          prevEl: ".swiper-button-prev-media",
+                                        }
+                                      : false
+                                  }
+                                  pagination={{ clickable: true }}
+                                  className="w-full h-full relative"
+                                >
+                                  {/* Combine images and videos */}
+                                  {[
+                                    ...(post.image || []),
+                                    ...(post.videos || []),
+                                  ].map((mediaSrc, index) => (
+                                    <SwiperSlide
+                                      key={index}
+                                      className="flex items-center justify-center"
+                                    >
+                                      <div className="relative w-full h-full">
+                                        {/* Check if it's an image or video by file extension */}
+                                        {typeof mediaSrc === "string" &&
+                                        mediaSrc.match(
+                                          /\.(jpeg|jpg|gif|png)$/i
+                                        ) ? (
+                                          <img
+                                            src={mediaSrc}
+                                            alt={`post-media-${index}`}
+                                            className="absolute inset-0 w-full h-full object-contain"
+                                          />
+                                        ) : (
+                                          <video
+                                            controls
+                                            className="w-full h-full object-contain"
+                                          >
+                                            <source
+                                              src={mediaSrc}
+                                              type="video/mp4"
+                                            />
+                                          </video>
+                                        )}
+                                      </div>
+                                    </SwiperSlide>
+                                  ))}
+                                  {(post.image && post.image.length > 1) ||
+                                  post.image.length + post.videos.length > 1 ||
+                                  (post.videos && post.videos.length > 1) ? (
+                                    <>
+                                      <button className="swiper-button-prev-media absolute top-1/2 left-4 transform -translate-y-1/2 z-10 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all">
+                                        &#8592;
+                                      </button>
+                                      <button className="swiper-button-next-media absolute top-1/2 right-4 transform -translate-y-1/2 z-10 text-white bg-black bg-opacity-50 rounded-full p-2 hover:bg-opacity-75 transition-all">
+                                        &#8594;
+                                      </button>
+                                    </>
+                                  ) : null}
+                                </Swiper>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div></div>
+                        )}
+                      </div>
+
+                      <div className="mainLikebar flex justify-around mt-4 text-sm sm:text-base">
+                        {showLikesList && (
+                          <div className="absolute z-20 mr-40    w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg">
+                            <div className="p-4  ">
+                              <div className="flex items-center justify-between">
+                                <span className="text-gray-900 dark:text-gray-100 font-medium">
+                                  {post.likeCount} Likes
+                                </span>
+                                <Users
+                                  size={18}
+                                  className="text-gray-500 dark:text-gray-400"
+                                />
+                              </div>
+                              <div className="mt-4 max-h-40 overflow-y-auto">
+                                {post.likes.map((like) => (
+                                  <div
+                                    key={like._id}
+                                    className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
+                                  >
+                                    <span className="text-gray-900 dark:text-gray-100">
+                                      {like.name}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div
+                          onClick={() => handleLike(post._id, saveid)}
+                          className="Likebutton flex hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
+                        >
+                          <div className="relative">
+                            <div
+                              onMouseEnter={() => setShowLikesList(true)}
+                              onMouseLeave={() => setShowLikesList(false)}
+                              className="flex items-center hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
+                            >
+                              <Heart
+                                size={20}
+                                className={`${
+                                  post.likes.some((like) => like._id === saveid)
+                                    ? "text-blue-600 fill-blue-600"
+                                    : "text-gray-500 dark:text-gray-400 fill-transparent"
+                                }`}
+                              />
+                              <span className="ml-2 text-gray-500 dark:text-gray-400">
+                                {post.likeCount}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div
+                          onClick={() => handleCommentClick(post._id)}
+                          className="Likebutton flex hover:text-blue-600 cursor-pointer hover:scale-110 transition-transform duration-200"
+                        >
+                          <span className="mr-2">{post.comments.length}</span>
+                          <FaComment size="20px" color="blue" />
+                          <h1 className="pl-2">Comment</h1>
+                        </div>
+                      </div>
+
+                      {showCommentBox === post._id && (
+                        <div className="mt-10">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              className="p-2 bg-blue-600 text-white rounded-md"
+                              onClick={() =>
+                                setShowEmojiPicker(!showEmojiPicker)
+                              }
+                            >
+                              😊
+                            </button>
+                            <input
+                              type="text"
+                              className="border p-2 w-full text-black rounded-md"
+                              placeholder="Write a comment..."
+                              value={comment}
+                              onChange={(e) => setComment(e.target.value)}
+                            />
+                            <button
+                              className="p-2 bg-blue-600 text-white rounded-md"
+                              onClick={() =>
+                                handleSendComment(post._id, saveid)
+                              }
+                            >
+                              <FaPaperPlane />
+                            </button>
+                          </div>
+
+                          {showEmojiPicker && (
+                            <div className="mt-2">
+                              <EmojiPicker onEmojiClick={handleEmojiClick} />
+                            </div>
+                          )}
+
+                          <RenderReplies
+                            UpdateLikepost={debouncedGetAllPost}
+                            post={post}
+                            parentCommentId={comment._id}
+                            saveid={saveid}
+                            replyingTo={replyingTo}
+                            replyContent={replyContent}
+                            handleReply={handleReply}
+                            setReplyContent={setReplyContent}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+              })
             ) : (
               <>
                 <div className="relative mb-10 h-[500px] flex flex-col items-center justify-center p-8 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-900 dark:border-gray-800">
@@ -1126,6 +1540,11 @@ const getNotifications = async () => {
               </>
             )}
           </div>
+          {isLoading && (
+            <div className="flex justify-center mt-4">
+              <div className="w-9 h-9 border-4 border-solid border-r-transparent border-left-4 border-blue-600 rounded-full animate-spin"></div>
+            </div>
+          )}
         </main>
       </div>
     </div>

@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import Postpage from "./Addpost";
 import { IPost } from "../Interfaces/Interface";
 import ClientNew from "../../Redux-store/Axiosinterceptor";
+import axiosClient from "../../Services/Axiosinterseptor";
 const SideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [saveid, setsaveid] = useState<string | any>(null);
@@ -68,7 +69,7 @@ const SideBar = () => {
 
   const fetchdatas = async () => {
     try {
-      const response = await ClientNew.get(`${API_USER_URL}/userposts`);
+      const response = await axiosClient.get(`${API_USER_URL}/userposts`);
       if (response.data.message === "User Post found") {
         setuserPost(response.data.getdetails);
         setFilteredPost(response.data.getdetails);

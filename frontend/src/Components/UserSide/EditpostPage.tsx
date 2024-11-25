@@ -3,12 +3,12 @@ import { FaImage, FaVideo, FaSmile, FaSpinner } from "react-icons/fa";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import toast from "react-hot-toast";
-import Clintnew from "../../Redux-store/Axiosinterceptor";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { EditPostModalProps } from "../Interfaces/Interface";
 import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
 import axios from "axios";
+import axiosClient from "../../Services/Axiosinterseptor";
 
 
 const EditPostModal = ({toggleeditpostModal,updateState,postid,
@@ -81,7 +81,7 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
     formData.append("postId", postid || "");
 
     try {
-      const response = await Clintnew.post(
+      const response = await axiosClient.post(
         `${API_USER_URL}/editpost`,
         formData,
         {

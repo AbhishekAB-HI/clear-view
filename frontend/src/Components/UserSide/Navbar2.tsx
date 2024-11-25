@@ -8,14 +8,18 @@ import { useDispatch, useSelector } from "react-redux";
 import { clearuserAccessTocken } from "../../Redux-store/Redux-slice";
 import { FaBell, FaUserCircle } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
-import { IPost, Notification } from "../Interfaces/Interface";
+import { ActiveUsersType, IPost, Notification } from "../Interfaces/Interface";
 import { API_CHAT_URL, API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 import toast from "react-hot-toast";
-import ClientNew from "../../Redux-store/Axiosinterceptor";
 import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
+import { LogoutActiveUsershere } from "./GlobalSocket/CreateSocket";
+import io, { Socket } from "socket.io-client";
+import axiosClient from "../../Services/Axiosinterseptor";
+const ENDPOINT = "http://localhost:3000";
+let socket: Socket;
 const Navbar2 = () => {
   type RootState = ReturnType<typeof store.getState>;
-  const userDetails = useSelector((state: RootState) => state.accessTocken.userTocken);
+
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPost, setFilteredPost] = useState<IPost[]>([]);
@@ -25,16 +29,38 @@ const Navbar2 = () => {
   const [AccOpen, setAccOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [Notificationview, setNotificationview] = useState(false);
+    const [saveid, setsaveid] = useState<string | any>(null);
    const getchat = useSelector((state: RootState) => state.accessTocken.chats);
+  const userDetails = useSelector(
+    (state: RootState) => state.accessTocken.userTocken
+  );
+
+
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    if (userDetails) {
+      socket.emit("setup", userDetails);
+    }
+    return () => {
+      socket.disconnect();
+    };
+  }, [userDetails]);
+
+ 
+
+
+
+
   useEffect(() => {
     const getNotifications = async () => {
       try {
-        const { data } = await ClientNew.get(
+        const { data } = await axiosClient.get(
           `${API_CHAT_URL}/getnotifications`
         );
         if (data.message === "get all notifications") {
           setSaveAllNotifications(data.notifications);
+        }else{
+              toast.error("Notifications not get")
         }
       } catch (error) {
         console.log(error);
@@ -43,85 +69,25 @@ const Navbar2 = () => {
     getNotifications();
   }, []);
 
-  useEffect(() => {
-    const getAllpost = async () => {
-      try {
-        const { data } = await axios.get(`${API_USER_URL}/getAllpost`);
-        if (data.message === "getAllpostdetails") {
-          setPostList(data.getAlldetails);
-          setFilteredPost(data.getAlldetails);
-        } else {
-          toast.error("getting post fail");
-        }
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          if (!error.response) {
-            toast.error(
-              "Network error. Please check your internet connection."
-            );
-          } else {
-            const status = error.response.status;
-            if (status === 404) {
-              toast.error("Posts not found.");
-            } else if (status === 500) {
-              toast.error("Server error. Please try again later.");
-            } else {
-              toast.error("Something went wrong.");
-            }
-          }
-        } else if (error instanceof Error) {
-          toast.error(error.message);
-        } else {
-          toast.error("An unexpected error occurred.");
-        }
-        console.log("Error fetching posts:", error);
-      }
-    };
-
-    getAllpost();
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      dispatch(clearuserAccessTocken());
-      localStorage.removeItem("usertocken");
-      navigate("/login");
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
 
-
-
-   const movetomessagepage = async (chatId: String) => {
+ useEffect(() => {
+   const getUserId = async () => {
      try {
-       const { data } = await ClientNew.post(
-         `${API_CHAT_URL}`,
-         { chatId },
-         {
-           headers: {
-             "Content-type": CONTENT_TYPE_JSON,
-           },
-         }
-       );
-
-       if (data.message === "Chat created succesfully") {
-         if (!getchat.find((c) => c._id === data.fullChat._id))
-           dispatch(setChats([data.fullChat, ...getchat]));
-         dispatch(setSelectedChat(data.fullChat));
-         navigate(`/chatpage/${chatId}/${data.fullChat._id}`);
+       const { data } = await axiosClient.get(`${API_USER_URL}/getuserid`);
+       if (data.message === "user id get") {
+         setsaveid(data.userId);
        } else {
-         toast.error("Chat created  Failed");
+         toast.error("Failed to retrieve userid.");
        }
-     } catch (error) {
+     } catch (error: unknown) {
        if (axios.isAxiosError(error)) {
          if (!error.response) {
            toast.error("Network error. Please check your internet connection.");
          } else {
            const status = error.response.status;
            if (status === 404) {
-             toast.error("Posts not found.");
+             toast.error("Posts not found");
            } else if (status === 500) {
              toast.error("Server error. Please try again later.");
            } else {
@@ -133,9 +99,52 @@ const Navbar2 = () => {
        } else {
          toast.error("An unexpected error occurred.");
        }
+
        console.log("Error fetching posts:", error);
      }
    };
+
+   getUserId();
+ }, []);
+  
+
+  const logoutUser = (userId: string) => {
+    if (socket) socket.emit("logout", userId);
+  };
+  const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
+
+
+   const LogoutActiveUsershere = (setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>) => {
+     if (socket) {
+       socket.emit("get-users", (users: ActiveUsersType[]) => {
+         setActiveUsers(users);
+       });
+     }
+   };
+
+  const handleLogout = async () => {
+    try {
+      logoutUser(saveid);
+      LogoutActiveUsershere(setActiveUsers);
+      const { data } = await axiosClient.patch(
+        `${API_USER_URL}/updatelastseen`
+      );
+
+      if (data.message === "lastTime updated") {
+        toast.success("Logout successfull");
+        navigate("/login");
+      } else {
+        toast.error("Logout failed");
+      }
+      dispatch(clearuserAccessTocken());
+      localStorage.removeItem("usertocken");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+
+
 
   return (
     <nav className="fixed w-full top-0 left-0 z-50 bg-black border-b border-gray-700">
@@ -155,47 +164,6 @@ const Navbar2 = () => {
 
           {/* Account Dropdown */}
           <div className="flex items-center space-x-4 md:space-x-6 lg:mr-10 text-white text-base md:text-lg">
-            <div className="relative inline-block">
-              {/* Bell Icon */}
-              <FaBell
-                onClick={() => setNotificationview(!Notificationview)}
-                className="text-[20px] hover:text-[22px] hover:cursor-pointer"
-              />
-              {/* Notification Count */}
-              {SaveAllNotifications && SaveAllNotifications.length > 0 && (
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full transform translate-x-1/2 -translate-y-1/2">
-                  {SaveAllNotifications.length}
-                </span>
-              )}
-            </div>
-            {/* Notification Modal */}
-
-            {Notificationview && (
-              <div className="absolute right-60 mt-80 w-80 bg-white shadow-lg rounded-lg z-10">
-                <div className="p-4">
-                  <h2 className="text-lg font-bold text-gray-700 mb-2">
-                    Notifications
-                  </h2>
-                  {SaveAllNotifications.length > 0 ? (
-                    SaveAllNotifications.map((notification) => (
-                      <div
-                        onClick={() =>
-                          movetomessagepage(notification.sender._id)
-                        }
-                        key={notification.id}
-                        className="p-2 border-b hover:cursor-pointer border-gray-300"
-                      >
-                        <small className="text-sm text-red-600 font-medium p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition duration-300 ease-in-out">
-                          You have a message from {notification.sender.name}
-                        </small>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-500">No new notifications</p>
-                  )}
-                </div>
-              </div>
-            )}
             {userDetails ? (
               <div className="relative inline-block text-left">
                 <button

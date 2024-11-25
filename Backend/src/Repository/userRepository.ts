@@ -4,20 +4,20 @@ import { Posts, Postsget } from "../Entities/Postentities";
 import newspostSchemadata from "../Model/Newsmodal";
 import UserSchemadata from "../Model/Usermodel";
 import UserTempSchemadata from "../Model/Usertempmodel";
-import cloudinary from "../Utils/Cloudinary";
+import cloudinary from "../Config/Cloudinaryconfig";
 import HashPassword from "../Utils/Hashpassword";
 import {
   generateOtp,
   sendVerifyMail,
   sendVerifyMailforemail,
 } from "../Utils/Mail";
-
+import GetAllNotificationsSchema from "../Model/AllnotificationSchema";
+import { IAllNotification } from "../Interface/userInterface/Userdetail";
 class userRepository {
   async userRegister(
     userData: Partial<IUser>
   ): Promise<IUserReturn | undefined> {
     try {
-      console.log("register.............");
       if (!userData.password) {
         throw new Error("Password is Required");
       }
@@ -26,13 +26,11 @@ class userRepository {
         throw new Error("Email is Required");
       }
       const hashedPassword = await HashPassword.hashPassword(userData.password);
-
-      console.log("wdn ufhcnef");
-
       const otp = generateOtp();
-
-      let userName = userData.name || "";
-      await sendVerifyMail(userData.email, userName, otp);
+      console.log(userData.email, "email 111111111111111111");
+      console.log(userData.name, "name11111111111111");
+      console.log(otp, "otpnumber1111111111111");
+      await sendVerifyMail(userData.email, userData.name, otp);
       const updateData = {
         ...userData,
         password: hashedPassword,
@@ -57,19 +55,28 @@ class userRepository {
     }
   }
 
+  async findlastseenupdate(userId: unknown): Promise<IUser | unknown> {
+    try {
+      const getUserInfo = await UserSchemadata.findByIdAndUpdate(
+        userId,
+        { $set: { lastSeen: new Date() } },
+        { new: true, upsert: true }
+      );
+      return getUserInfo;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
   async findUserInfo(userId: unknown) {
     try {
+      const getUserInfo = await UserSchemadata.findById(userId)
+        .populate("followers", "name email image")
+        .populate("following", "name email image");
 
-       const getUserInfo = await UserSchemadata.findById(userId)
-         .populate("followers", "name email image")
-         .populate("following", "name email image");
-
-       if (!getUserInfo) {
-          throw new Error("No uses founded")
-       }
-
-     
-      // const getUserinfo = await UserSchemadata.findById(userId)
+      if (!getUserInfo) {
+        throw new Error("No uses founded");
+      }
       return getUserInfo;
     } catch (error) {
       console.log(error);
@@ -115,6 +122,7 @@ class userRepository {
         password: userDetail.password,
         isActive: false,
         isAdmin: false,
+        lastSeen: new Date(),
       });
 
       const userdetailsget = await userSchema.save();
@@ -138,6 +146,17 @@ class userRepository {
         throw new Error("No user found");
       }
       return userDetail;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  async updateTime(email: string) {
+    try {
+      let userData = await UserSchemadata.findOneAndUpdate(
+        { email },
+        { $set: { lastSeen: new Date() } },
+        { new: true, upsert: true }
+      );
     } catch (error) {
       console.log(error);
     }
@@ -219,9 +238,6 @@ class userRepository {
       { $push: { comments: newComment } },
       { new: true }
     );
-
-    console.log(getPostdetails, "updateted here2222222222222222222222222222");
-
     const parnetid = getPostdetails?.comments.map((item) => item.parentComment);
     const getReplyComments = await newspostSchemadata.find({
       _id: postId,
@@ -258,8 +274,9 @@ class userRepository {
       const totalpost = await newspostSchemadata
         .find({ user: userId })
         .countDocuments();
-
-      const userinfo = await UserSchemadata.findById(userId);
+      const userinfo = await UserSchemadata.findById(userId)
+        .populate("following")
+        .populate("followers");
       return {
         userinfo,
         postinfo,
@@ -325,59 +342,126 @@ class userRepository {
     return matchingComments;
   }
 
-  async LikethePost(postId: string, userId: mongoose.Types.ObjectId) {
-    const post = await newspostSchemadata.findById(postId);
+  async LikethePost(
+    postId: string,
+    userId: mongoose.Types.ObjectId
+  ): Promise<IAllNotification | unknown> {
+    const post = await newspostSchemadata.findById(postId).populate("user");
     if (!post) {
       throw new Error("Post not found");
     }
+
+    const finduserinfo = await UserSchemadata.findById(userId);
     const alreadyLiked = post.likes.includes(userId);
     if (alreadyLiked) {
       post.likes = post.likes.filter((like) => !like.equals(userId));
       post.likeCount -= 1;
       post.LikeStatement = false;
     } else {
-      console.log("recahed het");
-
       post.likes.push(userId);
-
       post.likeCount += 1;
       post.LikeStatement = true;
     }
     const updatedPost = await post.save();
-    return updatedPost;
+    if (alreadyLiked) {
+      return [];
+    }
+    const findLikednotify = await GetAllNotificationsSchema.findOne({
+      "LikeNotifications.postId": postId,
+    });
+
+    if (findLikednotify) {
+      return findLikednotify;
+    }
+
+    if (findLikednotify && !post.LikeStatement) {
+      return [];
+    }
+
+    const likenotifications = {
+      postId: postId,
+      postuserId: post?.user._id,
+      likedusername: finduserinfo?.name,
+      userimage: post?.user.image,
+      postimage: post?.image[0],
+      postcontent: post?.description,
+      likeduserId: userId,
+      likedstatus: post.likes,
+    };
+    const postDetails = new GetAllNotificationsSchema({
+      LikeNotifications: [likenotifications],
+    });
+    const savethepost = await postDetails.save();
+
+    const sameuser = postDetails.LikeNotifications.filter((postdetail: any) => {
+      return (
+        postdetail.postuserId[0].toString() ===
+        postdetail.likeduserId.toString()
+      );
+    });
+
+    if (sameuser) {
+      return [];
+    }
+
+    return savethepost;
   }
 
   async findBlockedUserinRepo(
-    userId: unknown
-  ): Promise<IUser[] | undefined> {
+    userId: unknown,
+    page: number,
+    limit: number
+  ): Promise<{ Allusers: IUser[]; totalblockuser: number } | undefined> {
     try {
-      const user = await UserSchemadata.findById(userId).populate(
-        "blockedUser",
-        "name email image"
-      );
-      if (user && user.blockedUser) {  
+      const skip = (page - 1) * limit;
+      const user = await UserSchemadata.findById(userId, { blockedUser: 1 })
+        .populate("blockedUser", "name email image")
+        .skip(skip)
+        .limit(limit);
+
+      console.log(user, "2222222222222222222222");
+
+      const totalusers = await UserSchemadata.findById(userId, {
+        blockedUser: 1,
+      }).countDocuments();
+
+      if (user && user.blockedUser) {
         console.log("Blocked users:", user.blockedUser);
-        return user.blockedUser || [];
+        return { Allusers: user.blockedUser || [], totalblockuser: totalusers };
       } else {
         console.log("No blocked users found.");
-        return [];
+        return { Allusers: [], totalblockuser: 0 };
       }
     } catch (error) {
       console.log(error);
     }
   }
 
+  
+ 
+
   async RepostPost(postid: string, text: string, userId: string) {
     try {
       const reported = await UserSchemadata.findById(userId);
+      const postdetails = await newspostSchemadata.findById(postid).populate("user")
+
+    const postImage =
+      Array.isArray(postdetails?.image) && postdetails?.image[0]
+        ? String(postdetails?.image[0])
+        : ""; 
+         
       if (reported) {
         reported?.ReportPost?.push({
           postId: new mongoose.Types.ObjectId(postid),
           postreportReason: text,
           userinfo: new mongoose.Types.ObjectId(userId),
+          postcontent: postdetails?.description,
+          postimage: postImage,
+          postedBy: postdetails?.user.name,
+          reportedBy: reported.name,
         });
       } else {
-        throw new Error("Post not found");
+        throw new Error("issue with posting post report");
       }
       await reported.save();
       return reported;
@@ -411,15 +495,12 @@ class userRepository {
   async checkingmail(email: string | undefined) {
     try {
       const otp = generateOtp();
-      console.log(otp, "otp");
-      console.log(email, "email............");
       await sendVerifyMailforemail(email, otp);
       const options = {
         new: true,
         upsert: true,
         setDefaultsOnInsert: true,
       };
-
       const updateUser = await UserTempSchemadata.findOneAndUpdate(
         { email: email },
         { otp: otp },
@@ -454,254 +535,196 @@ class userRepository {
     }
   }
 
-  async getAllbeeakingnews(
-    page: number,
-    limit: number,
-    search: string
-  ): Promise<{ total: number; posts: Posts[] | undefined }> {
-    try {
-      const skip = (page - 1) * limit;
-
-      const posts = await newspostSchemadata.aggregate([
-        {
-          $match: {
-            category: "Breaking news",
-          },
-        },
-        {
-          $lookup: {
-            from: "userdetails",
-            localField: "user",
-            foreignField: "_id",
-            as: "user",
-          },
-        },
-        { $unwind: "$user" },
-        {
-          $match: {
-            $or: [
-              { description: { $regex: search, $options: "i" } },
-              { "user.name": { $regex: search, $options: "i" } },
-            ],
-          },
-        },
-        { $sort: { _id: -1 } },
-        { $skip: skip },
-        { $limit: limit },
-      ]);
-
-      // Check if no posts found
-      if (posts.length === 0) {
-        return {
-          total: 0,
-          posts: [],
-        };
-      }
-
-      const totalResults = await newspostSchemadata.aggregate([
-        {
-          $match: {
-            category: "Breaking news",
-          },
-        },
-        {
-          $lookup: {
-            from: "userdetails",
-            localField: "user",
-            foreignField: "_id",
-            as: "user",
-          },
-        },
-        { $unwind: "$user" },
-        {
-          $match: {
-            $or: [
-              { description: { $regex: search, $options: "i" } },
-              { "user.name": { $regex: search, $options: "i" } },
-            ],
-          },
-        },
-        { $count: "total" },
-      ]);
-
-      const total = totalResults[0]?.total || 0;
-
-      return {
-        total,
-        posts,
-      };
-    } catch (error) {
-      console.error("Error fetching paginated data:", error);
-      throw error;
-    }
-  }
-
-  async getAllthedata(search: string,category: string): Promise<{ posts: Posts[] | undefined }> {
+  async getAllthedata(
+    search: string,
+    category: string,
+    page: string | number
+  ): Promise<{
+    posts: Posts[];
+    currentPage: string | number;
+    totalPages: number;
+  }> {
+    const limit = 5;
     try {
       if (category === "Allpost") {
-        const posts = await newspostSchemadata.aggregate([
-          { $match: { BlockPost: false } },
-          {
-            $lookup: {
-              from: "userdetails",
-              localField: "user",
-              foreignField: "_id",
-              as: "user",
+        const posts = await newspostSchemadata
+          .aggregate([
+            { $match: { BlockPost: false } },
+            {
+              $lookup: {
+                from: "userdetails",
+                localField: "user",
+                foreignField: "_id",
+                as: "user",
+              },
             },
-          },
-          { $unwind: "$user" },
+            { $unwind: "$user" },
 
-          {
-            $match: {
-              $or: [
-                { description: { $regex: search, $options: "i" } },
-                { "user.name": { $regex: search, $options: "i" } },
-              ],
+            {
+              $match: {
+                $or: [
+                  { description: { $regex: search, $options: "i" } },
+                  { "user.name": { $regex: search, $options: "i" } },
+                ],
+              },
             },
-          },
 
-          { $sort: { _id: -1 } },
+            { $sort: { _id: -1 } },
 
-        
-
-          {
-            $lookup: {
-              from: "userdetails",
-              localField: "comments.user",
-              foreignField: "_id",
-              as: "commentUsers",
+            {
+              $lookup: {
+                from: "userdetails",
+                localField: "comments.user",
+                foreignField: "_id",
+                as: "commentUsers",
+              },
             },
-          },
 
-          {
-            $addFields: {
-              comments: {
-                $map: {
-                  input: "$comments",
-                  as: "comment",
-                  in: {
-                    $mergeObjects: [
-                      "$$comment",
-                      {
-                        user: {
-                          $arrayElemAt: [
-                            "$commentUsers",
-                            {
-                              $indexOfArray: [
-                                "$comments.user",
-                                "$$comment.user",
-                              ],
-                            },
-                          ],
+            {
+              $addFields: {
+                comments: {
+                  $map: {
+                    input: "$comments",
+                    as: "comment",
+                    in: {
+                      $mergeObjects: [
+                        "$$comment",
+                        {
+                          user: {
+                            $arrayElemAt: [
+                              "$commentUsers",
+                              {
+                                $indexOfArray: [
+                                  "$comments.user",
+                                  "$$comment.user",
+                                ],
+                              },
+                            ],
+                          },
                         },
-                      },
-                    ],
+                      ],
+                    },
                   },
                 },
               },
             },
-          },
 
-          { $unset: "commentUsers" },
+            { $unset: "commentUsers" },
 
-          {
-            $lookup: {
-              from: "userdetails",
-              localField: "likes",
-              foreignField: "_id",
-              as: "likes",
+            {
+              $lookup: {
+                from: "userdetails",
+                localField: "likes",
+                foreignField: "_id",
+                as: "likes",
+              },
             },
-          },
-        ]);
+          ])
+          .skip((Number(page) - 1) * Number(limit))
+          .limit(Number(limit));
+
+        const totalPosts = await newspostSchemadata.countDocuments();
 
         if (posts.length === 0) {
-          return { posts: [] };
+          return { posts: [], currentPage: 0, totalPages: 0 };
         }
         return {
           posts,
+          currentPage: page,
+          totalPages: Math.ceil(totalPosts / limit),
         };
-      }else if (category === "Latest news"){
+      } else if (category === "Latest news") {
         const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000);
-         const latestposts = await newspostSchemadata.aggregate([
-           { $match: { BlockPost: false, createdAt: { $gte: fiveHoursAgo } } },
-           {
-             $lookup: {
-               from: "userdetails",
-               localField: "user",
-               foreignField: "_id",
-               as: "user",
-             },
-           },
-           { $unwind: "$user" },
+        const latestposts = await newspostSchemadata
+          .aggregate([
+            { $match: { BlockPost: false, createdAt: { $gte: fiveHoursAgo } } },
+            {
+              $lookup: {
+                from: "userdetails",
+                localField: "user",
+                foreignField: "_id",
+                as: "user",
+              },
+            },
+            { $unwind: "$user" },
 
-           {
-             $match: {
-               $or: [
-                 { description: { $regex: search, $options: "i" } },
-                 { "user.name": { $regex: search, $options: "i" } },
-               ],
-             },
-           },
+            {
+              $match: {
+                $or: [
+                  { description: { $regex: search, $options: "i" } },
+                  { "user.name": { $regex: search, $options: "i" } },
+                ],
+              },
+            },
 
-           { $sort: { _id: -1 } },
+            { $sort: { _id: -1 } },
 
-           {
-             $lookup: {
-               from: "userdetails",
-               localField: "comments.user",
-               foreignField: "_id",
-               as: "commentUsers",
-             },
-           },
+            {
+              $lookup: {
+                from: "userdetails",
+                localField: "comments.user",
+                foreignField: "_id",
+                as: "commentUsers",
+              },
+            },
 
-           {
-             $addFields: {
-               comments: {
-                 $map: {
-                   input: "$comments",
-                   as: "comment",
-                   in: {
-                     $mergeObjects: [
-                       "$$comment",
-                       {
-                         user: {
-                           $arrayElemAt: [
-                             "$commentUsers",
-                             {
-                               $indexOfArray: [
-                                 "$comments.user",
-                                 "$$comment.user",
-                               ],
-                             },
-                           ],
-                         },
-                       },
-                     ],
-                   },
-                 },
-               },
-             },
-           },
+            {
+              $addFields: {
+                comments: {
+                  $map: {
+                    input: "$comments",
+                    as: "comment",
+                    in: {
+                      $mergeObjects: [
+                        "$$comment",
+                        {
+                          user: {
+                            $arrayElemAt: [
+                              "$commentUsers",
+                              {
+                                $indexOfArray: [
+                                  "$comments.user",
+                                  "$$comment.user",
+                                ],
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            },
 
-           { $unset: "commentUsers" },
+            { $unset: "commentUsers" },
 
-           {
-             $lookup: {
-               from: "userdetails",
-               localField: "likes",
-               foreignField: "_id",
-               as: "likes",
-             },
-           },
-         ]);
+            {
+              $lookup: {
+                from: "userdetails",
+                localField: "likes",
+                foreignField: "_id",
+                as: "likes",
+              },
+            },
+          ])
+          .skip((Number(page) - 1) * limit)
+          .limit(Number(limit));
 
-         if (latestposts.length === 0) {
-           return { posts: [] };
-         }
-      
-        return { posts: latestposts };
+        const totalPosts = await newspostSchemadata.countDocuments();
+
+        if (latestposts.length === 0) {
+          return { posts: [], currentPage: 0, totalPages: 0 };
+        }
+
+        return {
+          posts: latestposts,
+          currentPage: page,
+          totalPages: Math.ceil(totalPosts / limit),
+        };
       }
-        const posts = await newspostSchemadata.aggregate([
+      const posts = await newspostSchemadata
+        .aggregate([
           { $match: { $and: [{ BlockPost: false }, { category: category }] } },
           {
             $lookup: {
@@ -768,14 +791,20 @@ class userRepository {
               as: "likes",
             },
           },
-        ]);
+        ])
+        .skip((Number(page) - 1) * limit)
+        .limit(Number(limit));
+
+      const totalPosts = await newspostSchemadata.countDocuments();
+
       if (posts.length === 0) {
-        return {
-          posts: [],
-        };
+        return { posts: [], currentPage: 0, totalPages: 0 };
       }
+
       return {
         posts,
+        currentPage: page,
+        totalPages: Math.ceil(totalPosts / limit),
       };
     } catch (error) {
       console.error("Error fetching paginated data:", error);
@@ -886,8 +915,6 @@ class userRepository {
     videoFiles: string[]
   ): Promise<Posts | undefined> {
     try {
-      // Step 1: Verify the user
-
       console.log(
         {
           postId,
@@ -897,9 +924,6 @@ class userRepository {
         },
         "Data to be saved"
       );
-
-      // Step 2: Create and save the new post
-
       const savedPost = await newspostSchemadata.findByIdAndUpdate(
         postId,
         {
@@ -926,15 +950,16 @@ class userRepository {
     Category: string,
     imageFiles: string[],
     videoFiles: string[]
-  ): Promise<Posts | undefined> {
+  ): Promise<{
+    savePosts: Posts | undefined;
+    postNotify: IAllNotification | undefined;
+  }> {
     try {
-      // Step 1: Verify the user
-      const user = await UserSchemadata.findById(userId);
+      const user = await UserSchemadata.findById(userId).populate("followers");
       if (!user) {
-        throw new Error("user not found");
+        throw new Error("User not found");
       }
 
-      // Step 2: Create and save the new post
       const newPost = new newspostSchemadata({
         user: user._id,
         description: content,
@@ -944,11 +969,39 @@ class userRepository {
       });
 
       const savedPost = await newPost.save();
-      if (savedPost) {
-        return savedPost;
+
+      const followerIds = user.followers.map((follower: any) =>
+        follower._id.toString()
+      );
+      console.log("Follower IDs:", followerIds);
+
+      const saveFollowerId = {
+        userId: followerIds,
+        postusername: user.name,
+        image: imageFiles,
+        followuserId: user._id,
+      };
+
+      const findNotify = new GetAllNotificationsSchema({
+        PostNotifications: [saveFollowerId],
+      });
+
+      const savedNotification = await findNotify.save();
+      console.log("Notification saved successfully:", savedNotification);
+
+      // Return saved post and notification
+      if (savedPost && savedNotification) {
+        const postAndUser = await savedPost.populate("user");
+        return {
+          savePosts: postAndUser as Posts,
+          postNotify: savedNotification as IAllNotification,
+        };
       }
+
+      return { savePosts: undefined, postNotify: undefined }; // Fallback return in case of missing data
     } catch (error) {
       console.error("Error while creating post:", error);
+      return { savePosts: undefined, postNotify: undefined }; // Return fallback in case of errors
     }
   }
 

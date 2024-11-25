@@ -1,11 +1,17 @@
-import { IUser} from "../Entities/Userentities";
+import { IUser } from "../Entities/Userentities";
 import { Message } from "../Entities/Chatentities";
 import messageRepository from "../Repository/Messagerepository";
 
 class MessageServices {
   constructor(private messageRepo: messageRepository) {}
 
-  async sendAllmessages( userId: string,content: string,chatId: string,imageUrls: string[],videoUrls: string[]): Promise<Message | undefined> {
+  async sendAllmessages(
+    userId: string,
+    content: string,
+    chatId: string,
+    imageUrls: string[],
+    videoUrls: string[]
+  ): Promise<Message | undefined> {
     const getAllmessges = await this.messageRepo.sendAllDataToRepo(
       userId,
       content,
@@ -19,6 +25,18 @@ class MessageServices {
     }
 
     return getAllmessges;
+  }
+
+  async viewProfilePage(userId: string | unknown): Promise<IUser | undefined> {
+    try {
+      const findUserStatus = await this.messageRepo.findUserProfilepage(userId);
+      if (!findUserStatus) {
+        throw new Error("No users get here");
+      }
+      return findUserStatus;
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async blockUserhere(

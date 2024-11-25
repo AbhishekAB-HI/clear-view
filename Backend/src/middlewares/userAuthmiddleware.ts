@@ -7,13 +7,20 @@ import { ACCESS_TOKEN } from "../Config/Jwt";
 
 dotenv.config();
 
-const AuthenticationMiddleware = async (req: Request, res: Response, next: NextFunction) => { 
+const AuthenticationMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const token = req.header("Authorization")?.split(" ")[1];
   if (!token) {
     return res.status(401).json({ message: "Unauthorized: Token is missing" });
   }
   try {
-    const decoded = jwt.verify(token,process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN) as userPayload;
+    const decoded = jwt.verify(
+      token,
+      process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
+    ) as userPayload;
     const userdata = await UserSchemadata.findById(decoded.id);
     if (!userdata) {
       return res.status(404).json({ message: "User not found" });

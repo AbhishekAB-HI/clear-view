@@ -31,6 +31,7 @@ import {
 } from "../Constants/Constants";
 import { userInfo } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
+import axiosClient from "../../Services/Axiosinterseptor";
 
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
@@ -58,9 +59,7 @@ const GroupChatPage = () => {
   useEffect(() => {
     const GetUserId = async () => {
       try {
-        const { data } = await axios.get(
-          `${API_MESSAGE_URL}/getuserid/${chatId}`
-        );
+        const { data } = await axios.get(`${API_MESSAGE_URL}/getuserid/${chatId}`);
         if (data.message == "Get user id") {
           setuserinfo(data.userinfo);
         } else {
@@ -150,11 +149,7 @@ const GroupChatPage = () => {
   const fetchMessages = async () => {
     if (!selectedChat) return;
     try {
-      const { data } = await ClientNew.get(`${API_MESSAGE_URL}/${dataId}`, {
-        headers: {
-          "Content-Type": CONTENT_TYPE_JSON,
-        },
-      });
+      const { data } = await axiosClient.get(`${API_MESSAGE_URL}/${dataId}`);
       if (data.message === "Get all messages") {
         setMessages(data.Allmessage);
         socket.emit("join chat", dataId);
@@ -210,7 +205,7 @@ const GroupChatPage = () => {
         formData.append(`videos`, video);
       });
 
-      const { data } = await ClientNew.post(`${API_MESSAGE_URL}`, formData, {
+      const { data } = await axiosClient.post(`${API_MESSAGE_URL}`, formData, {
         headers: {
           "Content-Type": CONTENT_TYPE_MULTER,
         },
@@ -250,11 +245,7 @@ const GroupChatPage = () => {
     }
   };
 
-  const handleBlockUser = async (
-    userId: string,
-    LogedUserId: string,
-    isActive: boolean
-  ) => {
+  const handleBlockUser = async (userId: string,LogedUserId: string,isActive: boolean) => {
     try {
       const actionText = isActive ? "Block user" : "Unblock user";
       const confirmationText = isActive
@@ -270,16 +261,10 @@ const GroupChatPage = () => {
         confirmButtonText: actionText,
       }).then(async (result) => {
         if (result.isConfirmed) {
-          const { data } = await ClientNew.patch(
+          const { data } = await axiosClient.patch(
             `${API_MESSAGE_URL}/blockuser`,
-            { userId, LogedUserId },
-            {
-              headers: {
-                "Content-Type": CONTENT_TYPE_JSON,
-              },
-            }
+            { userId, LogedUserId }
           );
-
           if (data.message == "User blocked") {
             setuserStatus(data.userStatus);
           } else {
@@ -405,7 +390,7 @@ const GroupChatPage = () => {
       <div className="flex mt-20">
         <SideNavBar />
         <main className="w-full lg:w-4/5 ml-auto p-4 flex flex-col space-y-4 relative h-screen">
-          <div className="top-30 fixed w-full lg:w-4/5 rounded-xl bg-gray-900 p-4 flex items-center justify-between z-50">
+          <div className="top-20 fixed w-full lg:w-4/5 rounded-xl bg-gray-900 p-4 flex items-center justify-between z-50">
             <div className="flex items-center space-x-4">
               <label
                 htmlFor="profile-image-upload"

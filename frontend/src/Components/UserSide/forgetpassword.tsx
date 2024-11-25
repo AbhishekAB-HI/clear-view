@@ -22,16 +22,7 @@ const Forgetpassword: React.FC = () => {
 
   const emaildata = { email: values.email };
     try {
-      const { data } = await axios.post(
-        `${API_USER_URL}/forgetmail`,
-        emaildata,
-        {
-          headers: {
-            "Content-Type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
-
+      const { data } = await axios.post(`${API_USER_URL}/forgetmail`,emaildata);
       if (data.message === "confirm user") {
         const secretKey = "your-secret-key-crypto";
         const emailget = data.email;

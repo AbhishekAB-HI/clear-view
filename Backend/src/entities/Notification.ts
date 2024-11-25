@@ -4,7 +4,7 @@ export interface Notification extends Document {
   sender: mongoose.Types.ObjectId;
   content: string;
   image: string;
-  sendername:string;
+  sendername: string;
   videos: string;
   isRead: boolean;
   chat: mongoose.Types.ObjectId;

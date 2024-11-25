@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
 } from "react";
-import ClientNew from "../../Redux-store/Axiosinterceptor";
 import { useSelector } from "react-redux";
 import { store } from "../../Redux-store/Reduxstore";
 import axios from "axios";
@@ -25,19 +24,20 @@ import Swal from "sweetalert2";
 import Navbar2 from "./Navbar2";
 import {
   API_MESSAGE_URL,
-  CONTENT_TYPE_JSON,
   CONTENT_TYPE_MULTER,
 } from "../Constants/Constants";
 import { ActiveUsersType, userInfo } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
 import { ActiveUsershere, handleTyping, initilizeSocket, joinChatRoom, sendMessage, setupOnMessageReceived, stopTyping } from "./GlobalSocket/CreateSocket";
+import { setSelectedChat } from "../../Redux-store/Redux-slice";
+import axiosClient from "../../Services/Axiosinterseptor";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
 let selectedChatCompare: any;
 
 interface YourComponentProps {
   userToken: string;
-  users:any[]; // Replace `ActiveUsersType` with the actual type of your `users` array
+  users:any[]; 
 }
 const ChatPage: React.FC<YourComponentProps> = (users) => {
   const [messages, setMessages] = useState<any[]>([]);
@@ -59,27 +59,24 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
   const [userStatus, setuserStatus] = useState(false);
   const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
   const [isOnline,setIsOnline] = useState(false)
+
   useEffect(() => {
     const socketInstance = initilizeSocket(userToken);
-    
-      ActiveUsershere(setActiveUsers);
-
+    ActiveUsershere(setActiveUsers);
     const onMessageReceived = (newMessageReceived: any) => {
-      if (
-        !selectedChatCompare ||
-        selectedChatCompare._id !== newMessageReceived.chat._id
-      ) {
+      if (!selectedChatCompare ||selectedChatCompare._id !== newMessageReceived.chat._id) {
         setMessages((prevMessages) => [...prevMessages, newMessageReceived]);
         scrollToBottom();
       } else {
       }
     };
 
+    
     setupOnMessageReceived(onMessageReceived);
     return () => {
       socketInstance.off("message received");
     };
-  }, []);
+  }, [])
 
   useEffect(() => {
     const GetUserId = async () => {
@@ -88,7 +85,6 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
           `${API_MESSAGE_URL}/getuserimage/${chatId}`
         );
         if (data.message === "Get user id") {
-          console.log("2222222222222222222222222222222222222222222222222222",data)
           setuserinfo(data.userinfo);
         } else {
           toast.error("User id not found");
@@ -122,9 +118,13 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
   }, []);
 
   useEffect(() => {
-       handleOnline();
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    handleOnline();
+  }, [activeUsers]);
+
 
   const handleJoinRoom = useCallback(() => {
     navigate(`/room/${dataId}`);
@@ -155,6 +155,7 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
     }
   };
 
+
   const handleEmojiSelect = (emoji: any) => {
     setNewMessage((prevContent) => prevContent + emoji.native);
     setShowEmojiPicker(false);
@@ -179,15 +180,10 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
   const fetchMessages = async () => {
     if (!selectedChat) return;
     try {
-      const { data } = await ClientNew.get(`${API_MESSAGE_URL}/${dataId}`, {
-        headers: {
-          "Content-Type": CONTENT_TYPE_JSON,
-        },
-      });
+      const { data } = await axiosClient.get(`${API_MESSAGE_URL}/${dataId}`);
       if (data.message === "Get all messages") {
         setMessages(data.Allmessage);
         joinChatRoom(dataId);
-        // socket.emit("join chat", dataId);
       } else {
         toast.error("Failed to get all messages");
       }
@@ -213,6 +209,7 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
       console.log("Error fetching posts:", error);
     }
   };
+
 
   const handleSubmit = async (e: FormEvent) => {
     setLoading(true);
@@ -240,17 +237,18 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
         formData.append(`videos`, video);
       });
 
-      const { data } = await ClientNew.post(`${API_MESSAGE_URL}`, formData, {
+      const { data } = await axiosClient.post(`${API_MESSAGE_URL}`, formData, {
         headers: {
           "Content-Type": CONTENT_TYPE_MULTER,
         },
       });
 
       if (data) {
+        // socket.emit("new message", data);
         setLoading(false);
         sendMessage(data);
-        // socket.emit("new message", data);
         setMessages([...messages, data]);
+        setSelectedChat([...messages, data]);
         setNewMessage("");
         setPostImages([]);
         setPostVideos([]);
@@ -301,16 +299,7 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
         confirmButtonText: actionText,
       }).then(async (result) => {
         if (result.isConfirmed) {
-          const { data } = await ClientNew.patch(
-            `${API_MESSAGE_URL}/blockuser`,
-            { userId, LogedUserId },
-            {
-              headers: {
-                "Content-Type": CONTENT_TYPE_JSON,
-              },
-            }
-          );
-
+          const { data } = await axiosClient.patch(`${API_MESSAGE_URL}/blockuser`,{ userId, LogedUserId },);
           if (data.message == "User blocked") {
             setuserStatus(data.userStatus);
           } else {
@@ -341,6 +330,9 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
     }
   };
 
+
+
+
   useEffect(() => {
     fetchMessages();
     selectedChatCompare = selectedChat;
@@ -351,9 +343,7 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
     const getUserToken = async () => {
       if (!userToken) return;
       try {
-        const { data } = await axios.get(
-          `${API_MESSAGE_URL}/getuserId/${userToken}`
-        );
+        const { data } = await axiosClient.get(`${API_MESSAGE_URL}/getuserid/${userToken}`);
         if (data.message === "User id found") {
           setUserId(data.userId);
         } else {
@@ -392,14 +382,7 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
 
 
   const handleOnline = () =>{
-    console.log(
-      "9999999999999999999999999999999999999999999999999999999999999999",
-      userinfo
-    );
-    console.log(
-      "888888888888888888888888888888888888888888888888888888888888888888",
-      activeUsers
-    );
+
     activeUsers.some((user) => user.userId === userinfo?._id)?setIsOnline(true):setIsOnline(false)
     
 
@@ -428,38 +411,12 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
 
   return (
     <div className="bg-black text-white min-h-screen">
-      <Navbar2  />
+      <Navbar2 />
+      <SideNavBar />
       <div className="flex mt-20">
-        <SideNavBar />
-        <main className="w-full lg:w-4/5 ml-auto p-4 flex flex-col space-y-4 relative h-screen">
-          <div className="top-30 fixed w-full lg:w-4/5 rounded-xl bg-gray-900 p-4 flex items-center justify-between z-50">
-            {/* <div
-              className={`flex items-center space-x-4 ${
-                activeUsers.some((user) => user.userId === userinfo?._id)
-                  ? "bg-gray-300"
-                  : "bg-green-500"
-              }`}
-            >
-              <label
-                htmlFor="profile-image-upload"
-                className="cursor-pointer bg-gray-700 p-2 rounded-full"
-              >
-                <img
-                  src={
-                    userinfo?.image ||
-                    "https://dummyimage.com/150x150/cccccc/ffffff&text=Uploadimage"
-                  }
-                  alt="profile-upload"
-                  className="rounded-full w-10 h-10"
-                />
-              </label>
-              <h1 className="text-lg lg:text-2xl font-bold">
-                {userinfo?.name}
-              </h1>
-            </div> */}
-
+        <main className="w-full lg:w-4/5 ml-auto p-4 flex flex-col space-y-4 relative  h-screen">
+          <div className="top-20 fixed w-full lg:w-4/5 rounded-xl bg-gray-900  p-4 flex items-center justify-between z-50">
             <div className="flex items-center space-x-4 p-3 rounded-lg ">
-              {/* Profile Image Container with Active Status Indicator */}
               <div className="relative">
                 <label
                   htmlFor="profile-image-upload"
@@ -472,13 +429,10 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
                   />
                 </label>
 
-                {/* Active Status Indicator */}
                 <div
                   className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white ${
                     // activeUsers.some((user) => user.userId === userinfo?._id)
-                    isOnline
-                      ? "bg-green-500"
-                      : "bg-gray-400"
+                    isOnline ? "bg-green-500" : "bg-gray-400"
                   }`}
                 />
               </div>

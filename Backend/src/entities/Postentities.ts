@@ -1,13 +1,14 @@
 import mongoose from "mongoose";
 import { ObjectId } from "mongoose";
 import { Document, Types } from "mongoose";
+import { IUser } from "./Userentities";
 
 export interface Posts {
   _id: ObjectId;
-  user: ObjectId;
+  user: IUser;
   description: string;
-  category:string
-  image: string
+  category: string;
+  image: string;
   videos: string;
   reportPost: Boolean;
   text: string;
@@ -18,7 +19,6 @@ export interface Posts {
   userName: string;
   BlockPost: boolean;
 }
-
 
 export interface Comments {
   _id: ObjectId;

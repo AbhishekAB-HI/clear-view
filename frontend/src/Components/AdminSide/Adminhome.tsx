@@ -13,11 +13,13 @@ import Swal from "sweetalert2";
 import { IUser } from "../Interfaces/Interface";
 import { API_ADMIN_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 import Adminsidebar from "./Adminsidebar";
+import { Home, Users } from "lucide-react";
 const AdminHomePage = () => {
  
   const [searchTerm, setSearchTerm] = useState("");
   const [usersList, setUsersList] = useState<IUser[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [countPosts,setCountpost] =useState(0)
   const [itemsPerPage] = useState(5); 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -29,9 +31,12 @@ const AdminHomePage = () => {
   useEffect(() => {
     const FetchUserdetails = async () => {
       try {
-        const { data } = await axios.get(`${API_ADMIN_URL}/admindashboardget`);
+        const { data } = await axios.get(
+          `${API_ADMIN_URL}/admindashboard?page=${currentPage}&limit=${itemsPerPage}&search=${searchTerm}`
+        );
         if (data.message === "user data get succesfull") {
-          setUsersList(data.userdata);
+          setUsersList(data.userinfo);
+          setCountpost(data.userscount);
         }else{
           toast.error("No data found")
         }
@@ -62,15 +67,46 @@ const AdminHomePage = () => {
     FetchUserdetails();
   }, []);
 
-  const handleLogout = () => {
-    try {
-      dispatch(clearAdminAccessTocken());
-      localStorage.removeItem("admintocken");
-      navigate("/Adminlogin");
-    } catch (error) {
-      console.log(error);
-    }
-  };
+   useEffect(() => {
+     FetchUserdetails();
+   }, [currentPage,searchTerm]);
+
+    const FetchUserdetails = async () => {
+      try {
+        const { data } = await axios.get(
+          `${API_ADMIN_URL}/admindashboard?page=${currentPage}&limit=${itemsPerPage}&search=${searchTerm}`
+        );
+        if (data.message === "user data get succesfull") {
+          setUsersList(data.userinfo);
+          setCountpost(data.userscount);
+        } else {
+          toast.error("No data found");
+        }
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          if (!error.response) {
+            toast.error(
+              "Network error. Please check your internet connection."
+            );
+          } else {
+            const status = error.response.status;
+            if (status === 404) {
+              toast.error("Posts not found.");
+            } else if (status === 500) {
+              toast.error("Server error. Please try again later.");
+            } else {
+              toast.error("Something went wrong.");
+            }
+          }
+        } else if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("An unexpected error occurred.");
+        }
+        console.log("Error fetching posts:", error);
+      }
+    };
+
   const updateBlock = async (userId: string, isActive: boolean) => {
     try {
       const actionText = isActive ? "Unblock user" : "Block user";
@@ -88,7 +124,7 @@ const AdminHomePage = () => {
       }).then(async (result) => {
         if (result.isConfirmed) {
           const { data } = await axios.patch(
-            `${API_ADMIN_URL}/blockuser`,
+            `${API_ADMIN_URL}/blockusers`,
             { userId, isActive },
             {
               headers: {
@@ -141,95 +177,97 @@ const AdminHomePage = () => {
   );
 
   // Calculate pagination
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const totalPages = Math.ceil(countPosts / itemsPerPage);
   const indexOfLastUser = currentPage * itemsPerPage;
   const indexOfFirstUser = indexOfLastUser - itemsPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
 
   return (
     <div>
-      <Navbar />
-      <div className="flex">
-        {/* Sidebar */}
-       
-        <Adminsidebar />
+      <div>
+        <Navbar />
+        <div className="flex">
+          {/* Sidebar */}
+          <Adminsidebar />
 
-        {/* Main Content */}
-        <main className="ml-64 flex-1 p-4">
-          <div className="container mx-auto">
-            <h1
-              className="text-3xl mb-6 text-center"
-              style={{ fontFamily: "Viaoda Libre" }}
-            >
-              User Management System
-            </h1>
+          {/* Main Content */}
 
-            {/* Search Bar */}
-            <h1
-              className="flex justify-left mt-10"
-              style={{ color: "white", fontSize: "25px" }}
-            >
-              User Management System
-            </h1>
-            <div className="flex justify-end mb-10">
-              <input
-                type="search"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Type here..."
-                className="bg-gray-800 text-white px-4 py-2 rounded-l-full w-1/3 outline-none"
-              />
-            </div>
+          <main className="ml-36 w-3/5 flex-1 p-4">
+            <div className="container mx-auto">
+              {/* Search Bar */}
+              <div className=" pb-1 w-full ">
+                <h1
+                  className="text-left ml-20  nb-20    mt-20 "
+                  style={{ color: "white", fontSize: "25px" }}
+                >
+                  User Management System
+                </h1>
+              </div>
 
-            {/* User Cards */}
-            <div className="space-y-4">
-              {currentUsers.length > 0 ? (
-                currentUsers.map((user) => (
-                  <div
-                    key={user._id}
-                    className="bg-white text-black p-4 rounded-lg flex justify-between items-center max-w-4xl mx-auto"
-                  >
-                    <div className="flex items-center space-x-4">
-                      <FaRegUser style={{ fontSize: "45px" }} />
-                      <div>
-                        <p className="font-bold">{user.name}</p>
-                        <p className="text-gray-600">{user.email}</p>
+              <div className="">
+                <div className="flex justify-end mb-10">
+                  <input
+                    type="search"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Type here..."
+                    className="bg-gray-800 text-white px-4 py-2 rounded-l-full w-1/3 outline-none"
+                  />
+                </div>
+
+                {/* User Cards */}
+                <div className="space-y-4 ">
+                  {usersList.length > 0 ? (
+                    usersList.map((user) => (
+                      <div
+                        key={user._id}
+                        className="bg-white text-black p-4 rounded-lg flex justify-between items-center max-w-4xl mx-auto"
+                      >
+                        <div className="flex items-center space-x-4">
+                          <FaRegUser style={{ fontSize: "45px" }} />
+                          <div>
+                            <p className="font-bold">{user.name}</p>
+                            <p className="text-gray-600">{user.email}</p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="contained"
+                          onClick={() => updateBlock(user._id, user.isActive)}
+                          color={
+                            user.isActive === true ? "secondary" : "primary"
+                          }
+                        >
+                          {user.isActive === false ? "Block" : "Unblock"}
+                        </Button>
                       </div>
-                    </div>
-                    <Button
-                      variant="contained"
-                      onClick={() => updateBlock(user._id, user.isActive)}
-                      color={user.isActive === true ? "secondary" : "primary"}
-                    >
-                      {user.isActive === false ? "Block" : "Unblock"}
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <p className="text-center text-gray-500">
-                  No users found for the search term.
-                </p>
-              )}
-            </div>
+                    ))
+                  ) : (
+                    <p className="text-center text-gray-500">
+                      No users found for the search term.
+                    </p>
+                  )}
+                </div>
+              </div>
 
-            {/* Pagination */}
-            <div className="flex justify-center mt-8">
-              <nav className="flex space-x-2">
-                {Array.from({ length: totalPages }, (_, index) => (
-                  <Button
-                    key={index}
-                    variant="text"
-                    color="primary"
-                    className="text-lg"
-                    onClick={() => setCurrentPage(index + 1)}
-                  >
-                    {index + 1}
-                  </Button>
-                ))}
-              </nav>
+              {/* Pagination */}
+              <div className="flex justify-center mt-8">
+                <nav className="flex space-x-2">
+                  {Array.from({ length: totalPages }, (_, index) => (
+                    <Button
+                      key={index}
+                      variant="text"
+                      color="primary"
+                      className="text-lg"
+                      onClick={() => setCurrentPage(index + 1)}
+                    >
+                      {index + 1}
+                    </Button>
+                  ))}
+                </nav>
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </div>
   );

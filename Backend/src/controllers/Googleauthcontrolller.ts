@@ -33,11 +33,7 @@ export const authSuccess = async (req: AuthenticatedRequest, res: Response) => {
     }
     const username = req.user.displayName;
     const email = req.user.email;
-
     const userdetails = await UserSchemadata.findOne({ email });
-
-    console.log(userdetails, "user details get here...........");
-
     if (userdetails) {
       const userPayload: userPayload = {
         id: userdetails._id as unknown,
@@ -47,14 +43,11 @@ export const authSuccess = async (req: AuthenticatedRequest, res: Response) => {
 
       res.redirect(`http://localhost:5173/homepage?tocken=${tocken}`);
     } else {
-      console.log("reached hereeeeeee");
       const options = {
         new: true,
         upsert: true,
         setDefaultsOnInsert: true,
       };
-      console.log(username, email, "pppppppppppppppppppppppppppppp");
-
       const userinfo = new UserSchemadata({
         name: username,
         email: email,

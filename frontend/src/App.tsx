@@ -31,6 +31,7 @@ import UserReportmanagement from "./Components/AdminSide/UserReportPage";
 import GroupChatPage from "./Components/Userside/GroupChatpage";
 import AdminDashboard from "./Components/AdminSide/AdminDashboard";
 import ViewProfilePage from "./Components/Userside/ViewProfile";
+import NotificationPage from "./Components/Userside/NotificationPage";
 
 function App() {
   const [showModal, setShowModal] = useState(false);
@@ -81,6 +82,8 @@ function App() {
             element={<Postpage togglepostModal={togglepostModal} />}
           />
           <Route path="/message" element={<MessagePage />} />
+          <Route path="/notifications" element={<NotificationPage />} />
+
           <Route path="/following" element={<FollowingPage />} />
           <Route path="/followers" element={<FollowersPage />} />
           <Route path="/people" element={<PeoplePage />} />
@@ -94,7 +97,6 @@ function App() {
           <Route path="/reportpage" element={<Reportmanagement />} />
           <Route path="/userReportpage" element={<UserReportmanagement />} />
           <Route path="/viewProfile" element={<ViewProfilePage />} />
-
           <Route
             path="/forgetpass"
             element={<UserLogoutPrivateRoute element={<Forgetpassword />} />}

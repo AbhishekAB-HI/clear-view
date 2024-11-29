@@ -3,7 +3,7 @@ import Loginpage from "./Components/UserSide/Loginpage.tsx";
 import Registerpage from "./Components/UserSide/RegisterPage.tsx";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import HomeLoginPage from "./Components/UserSide/HomeLoginpage.tsx";
-import Forgetpassword from "./Components/UserSide/Forgetpassword.tsx";
+
 import ForgetPassPage from "./Components/UserSide/Forgetpasspage.tsx";
 import AdminLoginpage from "./Components/AdminSide/AdminLogin.tsx";
 import AdminHomePage from "./Components/AdminSide/Adminhome.tsx";
@@ -25,9 +25,9 @@ import GroupChatPage from "./Components/UserSide/GroupChatpage.tsx";
 import AdminDashboard from "./Components/AdminSide/AdminDashboard.tsx";
 import ViewProfilePage from "./Components/UserSide/ViewProfile.tsx";
 import NotificationPage from "./Components/UserSide/NotificationPage.tsx";
-import Otppage from "./Components/UserSide/Otp.tsx";
-import ForgetOtppage from './Components/UserSide/ForgotOtp.tsx'
-
+import Otppage from "./Components/UserSide/otp.tsx";
+import ForgetOtppage from './Components/UserSide/forgotOtp.tsx'
+import Forgetpassword from "./Components/UserSide/forgetpassword.tsx";
 
 const App = () => {
   return (

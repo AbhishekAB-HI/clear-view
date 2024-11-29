@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setChats, setSelectedChat } from "../../Redux-store/redux-slice";
 import { store } from "../../Redux-store/reduxstore";
-import Navbar2 from "./Navbar2";
+import Navbar2 from "../UserSide/Navbar2";
 import { API_CHAT_URL } from "../Constants/Constants";
 import axios from "axios";
 import {
@@ -13,7 +13,7 @@ import {
   IUser,
   Notification,
 } from "../Interfaces/Interface";
-import SideNavBar from "./SideNavbar";
+import SideNavBar from "../UserSide/SideNavbar";
 import { MessageCircle, PlusCircle, Search, Users, X } from "lucide-react";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";

@@ -1,13 +1,13 @@
 import toast from "react-hot-toast";
 import {  useEffect, useState } from "react";
-import Navbar2 from "./Navbar2";
+import Navbar2 from "../UserSide/Navbar2";
 import {
   API_CHAT_URL,
   
 } from "../Constants/Constants";
 import axios from "axios";
 import { IAllNotification, LikeNotification, postinfos } from "../Interfaces/Interface";
-import SideNavBar from "./SideNavbar";
+import SideNavBar from "../UserSide/SideNavbar";
 import {  Users2Icon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../Services/Axiosinterseptor";

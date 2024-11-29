@@ -8,7 +8,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { clearuserAccessTocken } from "../../Redux-store/redux-slice";
 import { FaUserCircle } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
-import { ActiveUsersType } from "../Interfaces/Interface";
 import { API_USER_URL } from "../Constants/Constants";
 import toast from "react-hot-toast";
 import io, { Socket } from "socket.io-client";
@@ -80,22 +79,12 @@ const Navbar2 = () => {
   const logoutUser = (userId: string) => {
     if (socket) socket.emit("logout", userId);
   };
-  const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
 
-  const LogoutActiveUsershere = (
-    setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>
-  ) => {
-    if (socket) {
-      socket.emit("get-users", (users: ActiveUsersType[]) => {
-        setActiveUsers(users);
-      });
-    }
-  };
+
 
   const handleLogout = async () => {
     try {
       logoutUser(saveid);
-      LogoutActiveUsershere(setActiveUsers);
       const { data } = await axiosClient.patch(
         `${API_USER_URL}/updatelastseen`
       );

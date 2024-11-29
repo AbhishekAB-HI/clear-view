@@ -4,7 +4,7 @@ import "swiper/css/pagination";
 import { Pagination, Navigation } from "swiper/modules";
 import profileimg from "../images/Userlogo.png";
 import Navbar2 from "../UserSide/Navbar2";
-import SideNavBar from "./SideNavbar";
+import SideNavBar from "../UserSide/SideNavbar";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Heart, Users, Users2Icon } from "lucide-react";
 import {

@@ -3,8 +3,8 @@ import {
   Admintockens,
   passwords,
 } from "../Types/Servicetype/Admininterface";
-import { IReportUser, IUser, ReportedPost } from "../Entities/Userentities";
-import { Posts } from "../Entities/Postentities";
+import { IReportUser, IUser, ReportedPost } from "../entities/userEntities";
+import { Posts } from "../entities/Postentities";
 import { adminPayload } from "../Types/Commontype/TockenInterface";
 // import adminRepository from "../Repository/Adminrepository";
 import HashPassword from "../Utils/Hashpassword";
@@ -14,7 +14,7 @@ import { ParsedQs } from "qs";
 import { ObjectId } from "mongoose";
 import { IAdminServices } from "../Interface/Admin/AdminServises";
 import { IAdminReposityory } from "../Interface/Admin/AdminRepository";
-import cloudinary from "../Config/Cloudinaryconfig";
+import cloudinary from "../config/Cloudinaryconfig";
 
 class AdminServices implements IAdminServices {
   constructor(private adminRepository: IAdminReposityory) {}
@@ -124,7 +124,7 @@ class AdminServices implements IAdminServices {
         await this.adminRepository.findTotalReportUsers();
 
       return {
-        Reports: reports ,
+        Reports: reports,
         totalcount: TotalReportusers || 0,
       };
     } catch (error) {

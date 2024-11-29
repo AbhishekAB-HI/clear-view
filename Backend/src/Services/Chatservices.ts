@@ -1,15 +1,15 @@
 import { promises } from "dns";
-import { IUser } from "../Entities/Userentities";
-import { Chats, FormattedChat } from "../Entities/Chatentities";
+import { IUser } from "../entities/userEntities";
+import { Chats, FormattedChat } from "../entities/Chatentities";
 import chatRepository from "../Repository/Chatrepository";
-import { Notification } from "../Entities/Notification";
+import { Notification } from "../entities/Notification";
 import { error } from "console";
 import { Types } from "mongoose";
-import { Posts } from "../Entities/Postentities";
+import { Posts } from "../entities/Postentities";
 import {
   IAllNotification,
   IFollowNotification,
-} from "../Entities/Notificationentitities";
+} from "../entities/Notificationentitities";
 import { IChatServices } from "../Interface/Chats/ChatServices";
 import { IChatRepository } from "../Interface/Chats/ChatRepository";
 import { generateRandomString } from "../Utils/Generageradomroomid";
@@ -63,7 +63,7 @@ class ChatServices implements IChatServices {
         const createdChat = await this.chatRepository.createChat(newChatData);
         return await this.chatRepository.findChatById(
           createdChat._id.toString()
-        ); 
+        );
       }
     } catch (error) {
       console.log(error);
@@ -249,9 +249,6 @@ class ChatServices implements IChatServices {
   // ): Promise<{ followusers: IUser[]; totalfollow: number } | undefined> {
   //   try {
 
-  
-
-
   //     if (!findcurrentuser?.totalfollowing) {
   //       return {
   //         followusers: [],
@@ -302,7 +299,7 @@ class ChatServices implements IChatServices {
   // }
 
   async getAllFollowers(
-    userId: string ,
+    userId: string,
     page: number,
     limit: number
   ): Promise<{ users: IUser[]; totalfollowers: number } | undefined> {
@@ -329,16 +326,16 @@ class ChatServices implements IChatServices {
       page,
       limit
     );
-        const filteredFollowing = findFollowers?.filter(
-          (following: any) => !blockedUsers.includes(following._id.toString())
-        );
+    const filteredFollowing = findFollowers?.filter(
+      (following: any) => !blockedUsers.includes(following._id.toString())
+    );
 
-        if (!filteredFollowing) {
-          return {
-            users: [],
-            totalfollowers: 0,
-          };
-        }
+    if (!filteredFollowing) {
+      return {
+        users: [],
+        totalfollowers: 0,
+      };
+    }
 
     return {
       totalfollowers: totalfollower,

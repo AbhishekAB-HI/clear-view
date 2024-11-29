@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { Notification } from "../Entities/Notification";
+import { Notification } from "../entities/Notification";
 
 const NotifiactSchema: Schema = new Schema(
   {

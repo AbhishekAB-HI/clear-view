@@ -1,5 +1,5 @@
-import { IUser } from "../Entities/Userentities";
-import { Chats, Message } from "../Entities/Chatentities";
+import { IUser } from "../entities/userEntities";
+import { Chats, Message } from "../entities/Chatentities";
 import ChatSchemamodel from "../Model/Chatmodel";
 import messageSchemaModel from "../Model/Messagemodel";
 import UserSchemadata from "../Model/Usermodel";

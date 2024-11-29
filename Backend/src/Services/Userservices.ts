@@ -3,11 +3,9 @@ import {
   Checkuser,
   Confirmuser,
   tockens,
-} from "../Entities/Userentities";
-import { Posts, Postsget } from "../Entities/Postentities";
-import {
-  IAllNotification,
-} from "../Entities/Notificationentitities";
+} from "../entities/userEntities";
+import { Posts, Postsget } from "../entities/Postentities";
+import { IAllNotification } from "../entities/Notificationentitities";
 import { TokenResponce } from "../Types/Servicetype/UserInterface";
 import { userPayload } from "../Types/Commontype/TockenInterface";
 import userRepository from "../Repository/Userrepository";
@@ -104,7 +102,7 @@ class userServises implements IUserServices {
     }
   }
 
-  async verifymail(userdata: string): Promise<Confirmuser | undefined  |null> {
+  async verifymail(userdata: string): Promise<Confirmuser | undefined | null> {
     let getData = userdata;
     const checkEmail = await this.userRepository.FindEmail(getData);
     if (!checkEmail) {
@@ -117,7 +115,10 @@ class userServises implements IUserServices {
     return getUser;
   }
 
-  async verifyotp(otp: number, email: string): Promise<Checkuser | undefined | null> {
+  async verifyotp(
+    otp: number,
+    email: string
+  ): Promise<Checkuser | undefined | null> {
     console.log(otp, "get otp numbers");
     const getUser = await this.userRepository.checkingforgetotp(otp, email);
 
@@ -161,10 +162,10 @@ class userServises implements IUserServices {
     logeduserId: string | unknown
   ): Promise<void> {
     try {
-            console.log(
-              userId,
-              "service to report1111111111111111111111111111111111111"
-            );
+      console.log(
+        userId,
+        "service to report1111111111111111111111111111111111111"
+      );
       const userDetails = await this.userRepository.sendTheReportReason(
         userId,
         text,

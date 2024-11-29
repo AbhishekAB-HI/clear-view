@@ -1,13 +1,13 @@
 import express from "express";
 import cors from "cors";
-import userRouter from "./Routes/Userroutes";
-import connectDB from "./Config/Db";
-import adminRouter from "./Routes/Adminrouter";
+import userRouter from "./Routes/userRoutes";
+import connectDB from "./config/Db";
+import adminRouter from "./Routes/adminRouter";
 import passportauth from "./Googleauth/Passport";
 import session from "express-session";
-import googleauthRoutes from "./Routes/Googleroute";
-import chatRoutes from "./Routes/Chatroute";
-import messageRoute from "./Routes/Messageroute";
+import googleauthRoutes from "./Routes/googleRoute";
+import chatRoutes from "./Routes/ChatRoute";
+import messageRoute from "./Routes/messageRoute";
 import jwt from "jsonwebtoken";
 import logger from "./logger";
 import morgan from "morgan";
@@ -15,9 +15,9 @@ import { Socket } from "socket.io";
 
 import { ActiveUsersType } from "./Types/Servicetype/UserInterface";
 import { NewMessage } from "./Types/Servicetype/MessageInterface";
-import{ IAllNotification} from "./Entities/Notificationentitities"
-import { IUser } from "./Entities/Userentities";
-import { Posts } from "./Entities/Postentities";
+import { IAllNotification } from "./entities/Notificationentitities";
+import { IUser } from "./entities/userEntities";
+import { Posts } from "./entities/Postentities";
 
 const morganFormat = ":method :url :status :response-time ms";
 const app = express();
@@ -106,14 +106,12 @@ io.on("connection", (socket: Socket) => {
     let userId = decoded.id;
     socket.join(userId);
     socket.emit("connected");
-    
+
     if (!activeUsers.some((user) => user.userId === userId)) {
       activeUsers.push({ userId: userId, socketId: socket.id });
     }
-    console.log("11111111111111111111111111111111111111111")
+    console.log("11111111111111111111111111111111111111111");
     io.emit("get-users", activeUsers);
-    
-
   });
 
   socket.on("logout", (userId) => {
@@ -143,7 +141,7 @@ io.on("connection", (socket: Socket) => {
     }
     chat.users.forEach((user: string) => {
       if (user === newMessageReceived.sender._id) return;
-  io.emit("hello", "hai");
+      io.emit("hello", "hai");
 
       socket.in(user).emit("message received", newMessageReceived);
       socket.in(user).emit("notification received", newMessageReceived);
@@ -174,8 +172,8 @@ io.on("connection", (socket: Socket) => {
 
   socket.on("likepost", (postDetails: IAllNotification) => {
     postDetails?.LikeNotifications?.forEach((like) => {
-      const targetUserId = like.postuserId; 
-      const posteduserid =like.likeduserId
+      const targetUserId = like.postuserId;
+      const posteduserid = like.likeduserId;
       if (targetUserId != posteduserid) {
         io.to(targetUserId).emit("Likenotification", postDetails);
         console.log(`Notification sent to user ${targetUserId}`);
@@ -185,19 +183,22 @@ io.on("connection", (socket: Socket) => {
     });
   });
 
-  socket.on("newpost", (postedUserInfo: Posts, postdetails:IAllNotification) => {
-    console.log("New post received from:", postedUserInfo);
-    console.log("postedUserInfo.user.followers", postedUserInfo.user);
-    const followers = postedUserInfo.user.followers || [];
-    followers.forEach((followerId: any) => {
-      io.to(followerId).emit("post update", postedUserInfo, postdetails);
-    });
+  socket.on(
+    "newpost",
+    (postedUserInfo: Posts, postdetails: IAllNotification) => {
+      console.log("New post received from:", postedUserInfo);
+      console.log("postedUserInfo.user.followers", postedUserInfo.user);
+      const followers = postedUserInfo.user.followers || [];
+      followers.forEach((followerId: any) => {
+        io.to(followerId).emit("post update", postedUserInfo, postdetails);
+      });
 
-    socket.emit("post received", {
-      status: "success",
-      message: "Post has been received and processed.",
-    });
-  });
+      socket.emit("post received", {
+        status: "success",
+        message: "Post has been received and processed.",
+      });
+    }
+  );
 
   socket.off("setup", (userdata: string) => {
     const decoded = jwt.verify(userdata, "key_for_accesst") as {
@@ -207,6 +208,4 @@ io.on("connection", (socket: Socket) => {
     console.log("USER DISCONNECTED");
     socket.leave(userId);
   });
- 
-
 });

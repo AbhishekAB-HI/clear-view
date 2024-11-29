@@ -1,10 +1,11 @@
-import { Posts } from "../../Entities/Postentities";
-import { IUser, ReportedPost } from "../../Entities/Userentities";
-import { ICounts, Ipostcount, RecentPosts } from "../../Types/Servicetype/PostInterface";
+import { Posts } from "../../entities/Postentities";
+import { IUser, ReportedPost } from "../../entities/userEntities";
+import {
+  ICounts,
+  Ipostcount,
+  RecentPosts,
+} from "../../Types/Servicetype/PostInterface";
 import { ParsedQs } from "qs";
-
-
-
 
 export interface IAdminReposityory {
   findAdminbyemail(email: string): Promise<IUser | null>;
@@ -45,6 +46,8 @@ export interface IAdminReposityory {
   getTotalReportedPostUsers(): Promise<number | undefined>;
   findReportPost(page: number, limit: number): Promise<IUser[]>;
   findTotalReportUsers(): Promise<number | undefined>;
-   findThePostToDelete(id: string): Promise<{ images: string[]; videos: string[] }>
-   deletePostFromUsers(postId:string):Promise<void>
+  findThePostToDelete(
+    id: string
+  ): Promise<{ images: string[]; videos: string[] }>;
+  deletePostFromUsers(postId: string): Promise<void>;
 }

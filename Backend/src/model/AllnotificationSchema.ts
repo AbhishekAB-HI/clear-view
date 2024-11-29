@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
-import { IUser } from "../Entities/Userentities";
-import { IAllNotification } from "../Entities/Notificationentitities";
+import { IUser } from "../entities/userEntities";
+import { IAllNotification } from "../entities/Notificationentitities";
 
 const AllnotificationSchema: Schema = new Schema(
   {

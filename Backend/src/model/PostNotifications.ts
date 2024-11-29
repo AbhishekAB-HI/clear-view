@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { Posts } from "../Entities/Postentities";
+import { Posts } from "../entities/Postentities";
 
 const postSchemaNotifications: Schema = new Schema(
   {

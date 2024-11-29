@@ -1,5 +1,5 @@
 // express.d.ts
-import { IUser } from "./src/Entities/Userentities";
+import { IUser } from "./src/entities/userEntities";
 
 declare global {
   namespace Express {

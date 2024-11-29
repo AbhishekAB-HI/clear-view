@@ -1,5 +1,4 @@
 import { IAdminServices } from "../Interface/Admin/AdminServises";
-// import AdminServices from "../Servises/Adminservises";
 import { Request, Response } from "express";
 
 class AdminController {

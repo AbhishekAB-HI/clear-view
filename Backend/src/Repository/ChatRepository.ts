@@ -1,18 +1,18 @@
 import mongoose, { ObjectId, Types } from "mongoose";
-import { IUser } from "../Entities/Userentities";
-import { Chats, Chats1, FormattedChat, IUser1 } from "../Entities/Chatentities";
+import { IUser } from "../entities/userEntities";
+import { Chats, Chats1, FormattedChat, IUser1 } from "../entities/Chatentities";
 import ChatSchemamodel from "../Model/Chatmodel";
 import UserSchemadata from "../Model/Usermodel";
 import NotifiactSchemaModal from "../Model/NotificationSchema";
-import { Notification } from "../Entities/Notification";
+import { Notification } from "../entities/Notification";
 import newspostSchemadata from "../Model/Newsmodal";
 import newspostSchemadataNotifications from "../Model/PostNotifications";
-import { Posts } from "../Entities/Postentities";
+import { Posts } from "../entities/Postentities";
 import GetAllNotificationsSchema from "../Model/AllnotificationSchema";
 import {
   IAllNotification,
   IFollowNotification,
-} from "../Entities/Notificationentitities";
+} from "../entities/Notificationentitities";
 import { IChatRepository } from "../Interface/Chats/ChatRepository";
 
 class chatRepository implements IChatRepository {

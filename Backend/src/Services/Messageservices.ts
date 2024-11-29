@@ -1,5 +1,5 @@
-import { IUser } from "../Entities/Userentities";
-import { Message } from "../Entities/Chatentities";
+import { IUser } from "../entities/userEntities";
+import { Message } from "../entities/Chatentities";
 import messageRepository from "../Repository/Messagerepository";
 import { IMessageServices } from "../Interface/Messages/Messageservices";
 import { IMessageRepository } from "../Interface/Messages/MessageRepository";

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { ObjectId } from "mongoose";
 import { Document, Types } from "mongoose";
-import { IUser } from "./Userentities";
+import { IUser } from "./userEntities";
 
 export interface Posts {
   _id: ObjectId;

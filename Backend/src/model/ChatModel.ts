@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { Chats } from "../Entities/Chatentities";
+import { Chats } from "../entities/Chatentities";
 
 const ChatModel: Schema = new Schema(
   {

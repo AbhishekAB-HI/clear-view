@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import MessageServices from "../Services/Messageservices";
 import jwt from "jsonwebtoken";
-import cloudinary from "../Config/Cloudinaryconfig";
-import { ACCESS_TOKEN } from "../Config/Jwt";
-import { userPayload } from "../Entities/UserTypes";
+import cloudinary from "../config/Cloudinaryconfig";
+import { ACCESS_TOKEN } from "../config/Jwt";
+import { userPayload } from "../entities/UserTypes";
 import { IMessageServices } from "../Interface/Messages/Messageservices";
 
 class MessageControllers {

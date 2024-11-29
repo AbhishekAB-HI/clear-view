@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { IUserReturn } from "../Entities/Userentities";
+import { IUserReturn } from "../entities/userEntities";
 
 const UserTempSchema: Schema = new Schema(
   {
@@ -38,13 +38,3 @@ const UserTempSchemadata = mongoose.model<IUserReturn>(
 );
 
 export default UserTempSchemadata;
-
-
-
-
-
-
-
-
-
-

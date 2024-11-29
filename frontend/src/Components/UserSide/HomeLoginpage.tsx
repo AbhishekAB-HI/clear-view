@@ -267,7 +267,7 @@ const HomeLoginPage = () => {
         );
 
         if (response.success) {
-          setFilteredPost(() => [...response.allposts]);
+          setFilteredPost((prev) => [...prev,...response.allposts]);
           const totalPages = response.totalPages || 0;
           setHasMore(currentpage < totalPages);
         } else {
@@ -553,13 +553,9 @@ const HomeLoginPage = () => {
   const handleLike = async (postId: string, userId: string) => {
     try {
       // const response = await likeupdate(postId, userId);
-      const { data } = await axiosClient.patch(`${API_USER_URL}/likepost`, {
-        postId,
-        userId,
-      });
+      const { data } = await axiosClient.patch(`${API_USER_URL}/likepost`, {postId,userId});
       if (data.message === "Post liked succesfully") {
         debouncedGetAllPost(page);
-
         sendLikePost(data.getupdate);
         console.log(data.getupdate, "22222222222222222");
       } else {

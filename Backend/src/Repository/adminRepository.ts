@@ -1,8 +1,8 @@
-import { IUser, ReportedPost } from "../Entities/Userentities";
-import { Posts } from "../Entities/Postentities";
+import { IUser, ReportedPost } from "../entities/userEntities";
+import { Posts } from "../entities/Postentities";
 import newspostSchemadata from "../Model/Newsmodal";
 import UserSchemadata from "../Model/Usermodel";
-import cloudinary from "../Config/Cloudinaryconfig";
+import cloudinary from "../config/Cloudinaryconfig";
 import {
   ICounts,
   Ipostcount,
@@ -157,8 +157,8 @@ class adminRepository implements IAdminReposityory {
       const objectId = new mongoose.Types.ObjectId(postId);
 
       const deleted = await UserSchemadata.updateMany(
-        { "ReportPost._id": objectId }, 
-        { $pull: { ReportPost: { _id: objectId } } } 
+        { "ReportPost._id": objectId },
+        { $pull: { ReportPost: { _id: objectId } } }
       );
 
       if (deleted.modifiedCount > 0) {

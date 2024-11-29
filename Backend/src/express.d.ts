@@ -1,6 +1,6 @@
 // src/express.d.ts
 
-import { userPayload } from "./Entities/UserTypes"; // Adjust to the correct path
+import { userPayload } from "./entities/UserTypes"; // Adjust to the correct path
 
 declare global {
   namespace Express {

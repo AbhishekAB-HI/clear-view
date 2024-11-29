@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { Message } from "../Entities/MessageEntities";
+import { Message } from "../entities/MessageEntities";
 
 const messageSchema: Schema = new Schema(
   {

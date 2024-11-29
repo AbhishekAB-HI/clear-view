@@ -1,10 +1,10 @@
 import mongoose, { ObjectId } from "mongoose";
-import { IUser, IUserReturn } from "../Entities/Userentities";
-import { Posts, Postsget } from "../Entities/Postentities";
+import { IUser, IUserReturn } from "../entities/userEntities";
+import { Posts, Postsget } from "../entities/Postentities";
 import newspostSchemadata from "../Model/Newsmodal";
 import UserSchemadata from "../Model/Usermodel";
 import UserTempSchemadata from "../Model/Usertempmodel";
-import cloudinary from "../Config/Cloudinaryconfig";
+import cloudinary from "../config/Cloudinaryconfig";
 import HashPassword from "../Utils/Hashpassword";
 import {
   generateOtp,
@@ -12,7 +12,7 @@ import {
   sendVerifyMailforemail,
 } from "../Utils/Mail";
 import GetAllNotificationsSchema from "../Model/AllnotificationSchema";
-import { IAllNotification } from "../Entities/Notificationentitities";
+import { IAllNotification } from "../entities/Notificationentitities";
 import { IUserRepository } from "../Interface/Users/UserRepository";
 class userRepository implements IUserRepository {
   async userRegister(
@@ -72,7 +72,7 @@ class userRepository implements IUserRepository {
         .populate("followers", "name email image")
         .populate("following", "name email image");
 
-        console.log(getUserInfo,'user detailsssssssssssssssssssssssssssssssss');
+      console.log(getUserInfo, "user detailsssssssssssssssssssssssssssssssss");
 
       if (!getUserInfo) {
         throw new Error("No uses founded");
@@ -336,18 +336,21 @@ class userRepository implements IUserRepository {
     logeduserId: string
   ): Promise<void> {
     try {
-      console.log(userID,'111111111111111111111111111111111111');
+      console.log(userID, "111111111111111111111111111111111111");
       const findReporteduser = await UserSchemadata.findById(userID);
-      console.log(findReporteduser,'222222222222222222222222222222222222222222222222222222222');
+      console.log(
+        findReporteduser,
+        "222222222222222222222222222222222222222222222222222222222"
+      );
       const findUser = await UserSchemadata.findById(logeduserId);
       if (findUser) {
         findUser?.ReportUser?.push({
           userId: userID,
           reportReason: text,
-          Reportedby: findUser?.name ,
-          username: findReporteduser?.name ,
-          userimage: findReporteduser?.image ,
-        }); 
+          Reportedby: findUser?.name,
+          username: findReporteduser?.name,
+          userimage: findReporteduser?.image,
+        });
 
         await findUser.save();
         console.log("Report reason successfully saved.");
@@ -476,7 +479,6 @@ class userRepository implements IUserRepository {
     if (sameuser) {
       return [];
     }
-    
 
     return savethepost;
   }

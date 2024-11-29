@@ -1,13 +1,12 @@
 import { Request, Response } from "express";
 import ChatSchemamodel from "../Model/Chatmodel";
-import ChatServices from "../Services/Chatservices";
 import UserSchemadata from "../Model/Usermodel";
-import { ACCESS_TOKEN } from "../Config/Jwt";
+import { ACCESS_TOKEN } from "../config/Jwt";
 import { userPayload } from "../Types/Commontype/TockenInterface";
 import jwt from "jsonwebtoken";
 import { IChatServices } from "../Interface/Chats/ChatServices";
 
-class ChatController  {
+class ChatController {
   constructor(private ChatServices: IChatServices) {}
 
   async getAllmessages(req: Request, res: Response) {
@@ -303,7 +302,9 @@ class ChatController  {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const userId = decoded.id;
-      const notifications = await this.ChatServices.searchAllNotifications(userId);
+      const notifications = await this.ChatServices.searchAllNotifications(
+        userId
+      );
 
       res.status(200).json({ message: "get all notifications", notifications });
     } catch (error) {
@@ -395,8 +396,6 @@ class ChatController  {
     }
   }
 
-
-
   async blockUserStatus(req: Request, res: Response) {
     try {
       const token = req.header("Authorization")?.split(" ")[1];
@@ -444,14 +443,18 @@ class ChatController  {
       return res.status(400).send("Chat id not found");
     }
     const fullChat = await this.ChatServices.getAccessgroupChat(chatId);
-    return res.status(200).json({ message: "Chat created succesfully", fullChat });
+    return res
+      .status(200)
+      .json({ message: "Chat created succesfully", fullChat });
   }
 
   async accessChat(req: Request, res: Response) {
     const { chatId } = req.body;
     const token = req.header("Authorization")?.split(" ")[1];
     if (!token) {
-      return res.status(401).json({ message: "Unauthorized: Token is missing" });
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: Token is missing" });
     }
     const decoded = jwt.verify(
       token,
@@ -467,7 +470,9 @@ class ChatController  {
       throw new Error("User is not authenticated");
     }
     const fullChat = await this.ChatServices.getAccessChat(userId, chatId);
-    return res.status(200).json({ message: "Chat created succesfully", fullChat });
+    return res
+      .status(200)
+      .json({ message: "Chat created succesfully", fullChat });
   }
 
   async fetchChat(req: Request, res: Response) {

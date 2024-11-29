@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import UserSchemadata from "../Model/Usermodel";
 import { userPayload } from "../Types/Commontype/TockenInterface";
-import { ACCESS_TOKEN } from "../Config/Jwt";
+import { ACCESS_TOKEN } from "../config/Jwt";
 
 dotenv.config();
 

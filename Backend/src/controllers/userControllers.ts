@@ -3,10 +3,10 @@ import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { userPayload } from "../Types/Commontype/TockenInterface";
 import dotenv from "dotenv";
-import { ACCESS_TOKEN } from "../Config/Jwt";
-import cloudinary from "../Config/Cloudinaryconfig";
+import { ACCESS_TOKEN } from "../config/Jwt";
+import cloudinary from "../config/Cloudinaryconfig";
 import fs from "fs";
-import {  generateRefreshToken } from "../Utils/Jwt";
+import { generateRefreshToken } from "../Utils/Jwt";
 import { IUserServices } from "../Interface/Users/UserServices";
 
 dotenv.config();
@@ -53,13 +53,11 @@ class UserController {
 
       const getUserdata = await this.userService.getUserInfoses(userId);
 
-      return res
-        .status(200)
-        .json({
-          message: "get User data",
-          userDetails: getUserdata,
-          userIdget: userId,
-        });
+      return res.status(200).json({
+        message: "get User data",
+        userDetails: getUserdata,
+        userIdget: userId,
+      });
     } catch (error) {
       console.log(error);
     }
@@ -181,13 +179,11 @@ class UserController {
       );
 
       if (!FindUsers?.Allusers || !FindUsers.totalblockuser) {
-        return res
-          .status(200)
-          .json({
-            message: "Get Blocked users",
-            Allusers: [],
-            totalblockuser: 0,
-          });
+        return res.status(200).json({
+          message: "Get Blocked users",
+          Allusers: [],
+          totalblockuser: 0,
+        });
       }
 
       const { Allusers, totalblockuser } = FindUsers;

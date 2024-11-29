@@ -71,11 +71,10 @@ const forgetOtppage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-         const response = await verifyforgetotp(otp, email);
+      const response = await verifyforgetotp(otp, email);
       if (response.success) {
         const secretKey = "your-secret-key-crypto";
         const emailget = response.emaildetail;
@@ -92,15 +91,15 @@ const forgetOtppage: React.FC = () => {
       }
     } catch (error) {
       console.error("Error verifying OTP:", error);
-       if (axios.isAxiosError(error)) {
-         const errorMessage = error.response?.data?.message || "An error occured";
-         toast.error(errorMessage);
-       } else {
-         toast.error("Unknown error occurred");
-       }
+      if (axios.isAxiosError(error)) {
+        const errorMessage =
+          error.response?.data?.message || "An error occured";
+        toast.error(errorMessage);
+      } else {
+        toast.error("Unknown error occurred");
+      }
     }
   };
-
 
   const handleChange = (
     index: number,

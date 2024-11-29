@@ -1,11 +1,9 @@
 import "./App.css";
 import Loginpage from "./Components/UserSide/Loginpage.tsx";
 import Registerpage from "./Components/UserSide/RegisterPage.tsx";
-import Otppage from "./Components/UserSide/otp.tsx";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import HomeLoginPage from "./Components/UserSide/HomeLoginpage.tsx";
-import Forgetpassword from "./Components/UserSide/forgetpassword.tsx";
-import ForgetOtppage from "./Components/UserSide/forgotOtp.tsx";
+import Forgetpassword from "./Components/UserSide/Forgetpassword.tsx";
 import ForgetPassPage from "./Components/UserSide/Forgetpasspage.tsx";
 import AdminLoginpage from "./Components/AdminSide/AdminLogin.tsx";
 import AdminHomePage from "./Components/AdminSide/Adminhome.tsx";
@@ -27,7 +25,8 @@ import GroupChatPage from "./Components/UserSide/GroupChatpage.tsx";
 import AdminDashboard from "./Components/AdminSide/AdminDashboard.tsx";
 import ViewProfilePage from "./Components/UserSide/ViewProfile.tsx";
 import NotificationPage from "./Components/UserSide/NotificationPage.tsx";
-
+import Otppage from "./Components/UserSide/Otp.tsx";
+import ForgetOtppage from './Components/UserSide/ForgotOtp.tsx'
 
 
 const App = () => {
@@ -45,6 +44,10 @@ const App = () => {
             element={<UserLogoutPrivateRoute element={<Loginpage />} />}
           />
           <Route
+            path="/"
+            element={<UserLogoutPrivateRoute element={<Loginpage />} />}
+          />
+          <Route
             path="/verify-otp"
             element={<UserLogoutPrivateRoute element={<Otppage />} />}
           />
@@ -58,14 +61,14 @@ const App = () => {
           <Route path="/profile" element={<HomeProfilepage />} />
           <Route path="/room/:roomId" element={<RoomPage />} />
           <Route path="/editprofile" />
-         
+
           <Route path="/message" element={<MessagePage />} />
           <Route path="/notifications" element={<NotificationPage />} />
 
           <Route path="/following" element={<FollowingPage />} />
           <Route path="/followers" element={<FollowersPage />} />
           <Route path="/people" element={<PeoplePage />} />
-         
+
           <Route path="/news" element={<Newsmanagement />} />
           <Route path="/reportpage" element={<Reportmanagement />} />
           <Route path="/userReportpage" element={<UserReportmanagement />} />

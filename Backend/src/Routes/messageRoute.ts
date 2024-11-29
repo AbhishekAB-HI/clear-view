@@ -1,6 +1,6 @@
 import { Router } from "express";
 import messageRepository from "../Repository/Messagerepository";
-import MessageServices from "../Servises/Messageservises";
+import MessageServices from "../Services/Messageservices";
 import MessageControllers from "../Controllers/MessageController";
 import AuthenticationMiddleware from "../Middlewares/Userauthmiddleware";
 import multer, { FileFilterCallback } from "multer";
@@ -13,11 +13,10 @@ const MessageController = new MessageControllers(messageServise);
 
 const router = Router();
 
-router.post("/",AuthenticationMiddleware,upload.fields([{ name: "images", maxCount: 4 },{ name: "videos", maxCount: 4 },]),
-async (req, res) => MessageController.sendMessage(req, res));
-router.get("/:chatid", AuthenticationMiddleware, async (req, res) =>MessageController.allChats(req, res));
-router.get("/getuserid/:usertocken", async (req, res) =>MessageController.getId(req, res));
-router.get("/getuserimage/:chatid", async (req, res) =>MessageController.getUserInfo(req, res));
-router.patch("/blockuser", AuthenticationMiddleware, async (req, res) =>MessageController.blockUserNow(req, res));
+router.post("/",AuthenticationMiddleware,upload.fields([{ name: "images", maxCount: 4 },{ name: "videos", maxCount: 4 },]), MessageController.sendMessage.bind(MessageController));
+router.get("/:chatid",AuthenticationMiddleware,MessageController.allChats.bind(MessageController));
+router.get("/getuserid/:usertocken",MessageController.getId.bind(MessageController));
+router.get("/getuserimage/:chatid",  MessageController.getUserInfo.bind(MessageController));
+router.patch("/blockuser",AuthenticationMiddleware,MessageController.blockUserNow.bind(MessageController));
 
 export default router;

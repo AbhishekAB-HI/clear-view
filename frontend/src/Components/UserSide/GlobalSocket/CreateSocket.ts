@@ -1,14 +1,10 @@
-import { useState } from "react";
-import { useSelector } from "react-redux";
+
 import io, { Socket } from "socket.io-client";
-import { store } from "../../../Redux-store/Reduxstore";
 import { ActiveUsersType, IAllNotification, IUser } from "../../Interfaces/Interface";
 
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket | undefined; // Define socket as optional
-let selectedChatCompare: any;
 
-type RootState = ReturnType<typeof store.getState>;
 
 export const initilizeSocket = (userToc: string): Socket => {
   socket = io(ENDPOINT);

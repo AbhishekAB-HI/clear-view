@@ -5,9 +5,9 @@ import newlogo from "../images/newslogo.jpg";
 import CryptoJS from "crypto-js";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { Toaster, toast } from "react-hot-toast";
+import {  toast } from "react-hot-toast";
 import "react-toastify/dist/ReactToastify.css";
-import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
+import { resendotp, verifyforgetotp } from "../../Services/User_API/Forgotsideapis";
 
 const forgetOtppage: React.FC = () => {
   const [otp, setOtp] = useState<string>("");
@@ -19,9 +19,7 @@ const forgetOtppage: React.FC = () => {
   const secretKey = "your-secret-key-crypto";
   const bytes = CryptoJS.AES.decrypt(encryptedEmail, secretKey);
   const email = bytes.toString(CryptoJS.enc.Utf8);
-
   const navigate = useNavigate();
-
   const startTimer = (duration: number) => {
     const endTime = Date.now() + duration * 1000;
     localStorage.setItem("otpEndTime", endTime.toString());
@@ -76,12 +74,11 @@ const forgetOtppage: React.FC = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
-      const { data } = await axios.post(`${API_USER_URL}/verifyforgetotp`,{ otp, email });
-      if (data.message === "confirm user") {
+         const response = await verifyforgetotp(otp, email);
+      if (response.success) {
         const secretKey = "your-secret-key-crypto";
-        const emailget = data.email;
+        const emailget = response.emaildetail;
         console.log(emailget, "email.....get");
 
         const encryptedEmail = CryptoJS.AES.encrypt(
@@ -90,7 +87,7 @@ const forgetOtppage: React.FC = () => {
         ).toString();
 
         navigate("/ForgetPassPage", { state: { email: encryptedEmail } });
-      }else{
+      } else {
         toast.error("confirm user Failed");
       }
     } catch (error) {
@@ -131,10 +128,10 @@ const forgetOtppage: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      let { data } = await axios.patch(`${API_USER_URL}/resend-otp`,{ email });
-      if (data.message === "resend otp successfully") {
+      const response = await resendotp(email);
+      if (response.success) {
         toast.success("OTP resent successfully");
-      }else{
+      } else {
         toast.error("OTP resent Failed");
       }
       startTimer(30);

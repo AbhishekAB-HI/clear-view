@@ -1,46 +1,31 @@
 import toast from "react-hot-toast";
-import { FormEvent, useEffect, useState } from "react";
-import ThreeDot from "react-loading";
-import { store } from "../../Redux-store/Reduxstore";
+import {  useEffect, useState } from "react";
 import Navbar2 from "./Navbar2";
-import { API_CHAT_URL, API_USER_URL } from "../Constants/Constants";
 import axios from "axios";
 import { IUser } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
-import { useSelector } from "react-redux";
-import axiosClient from "../../Services/Axiosinterseptor";
 import { useNavigate } from "react-router-dom";
 import { sendfollow } from "./GlobalSocket/CreateSocket";
 import { Users2Icon } from "lucide-react";
+import { findfollowing, followuser, getuserinfomations } from "../../Services/User_API/FollowerApi";
 
 const FollowingPage = () => {
-  const [Loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [searchResult, setSearchResult] = useState<IUser[]>([]);
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
   const [userid, setuserID] = useState<string>("");
-  const [userFound, setuserFound] = useState(false);
-  const [userinfo, setuserinfo] = useState<IUser | null>(null);
+  const [userinfo, setuserinfo] = useState<IUser>();
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPosts, setTotalPosts] = useState(0);
   const [postsPerPage] = useState(1);
 
-  type RootState = ReturnType<typeof store.getState>;
-
-  const userToken = useSelector(
-    (state: RootState) => state.accessTocken.userTocken
-  );
-
   useEffect(() => {
     const getAllPost = async () => {
       try {
-        const { data } = await axiosClient.get(
-          `${API_CHAT_URL}/allusers?page=${currentPage}&limit=${postsPerPage}`
-        );
-        if (data.message === "Other users found") {
-          setgetAlluser(data.followusers);
-          setTotalPosts(data.totalfollow);
+         const responce = await findfollowing(currentPage, postsPerPage);
+
+        if (responce.success) {
+          setgetAlluser(responce.followusers);
+          setTotalPosts(responce.totalfollow);
         } else {
           toast.error("Failed to get other users");
         }
@@ -79,12 +64,10 @@ const FollowingPage = () => {
 
   const updateUsers = async () => {
     try {
-      const { data } = await axiosClient.get(
-        `${API_CHAT_URL}/allusers?page=${currentPage}&limit=${postsPerPage}`
-      );
-      if (data.message === "Other users found") {
-        setgetAlluser(data.followusers);
-        setTotalPosts(data.totalfollow);
+   const responce = await findfollowing(currentPage, postsPerPage);
+      if (responce.success) {
+        setgetAlluser(responce.followusers);
+        setTotalPosts(responce.totalfollow);
       } else {
         toast.error("Failed to get other users");
       }
@@ -114,9 +97,9 @@ const FollowingPage = () => {
   useEffect(() => {
     const findUsers = async () => {
       try {
-        const { data } = await axiosClient.get(`${API_CHAT_URL}/getUserdata`);
-        if (data.message === "userId get") {
-          setuserID(data.userId);
+          const response = await getuserinfomations();
+        if (response.success) {
+          setuserID(response.useridfound);
         } else {
           toast.error("user id not found");
         }
@@ -161,9 +144,9 @@ const FollowingPage = () => {
 
   const getUserinfo = async () => {
     try {
-      const { data } = await axiosClient.get(`${API_USER_URL}/getUserinfo`);
-      if (data.message === "get User data") {
-        setuserinfo(data.userDetails);
+       const response = await getuserinfomations();
+      if (response.success) {
+        setuserinfo(response.userdetails);
       } else {
         toast.error("No user found");
       }
@@ -181,12 +164,10 @@ const FollowingPage = () => {
 
   const followUser = async (userId: string, LoguserId: string) => {
     try {
-      const { data } = await axiosClient.post(`${API_CHAT_URL}/followuser`, {
-        userId,
-        LoguserId,
-      });
-      if (data.message === "followed users") {
-        sendfollow(userId, data.Userinfo, data.followingUser);
+
+      const response = await followuser(userId, LoguserId);
+      if (response.success) {
+        sendfollow(userId, response.usersinfos, response.followingUsers);
         getUserinfo();
         updateUsers();
       } else {
@@ -207,9 +188,9 @@ const FollowingPage = () => {
   useEffect(() => {
     const getUserinfo = async () => {
       try {
-        const { data } = await axiosClient.get(`${API_USER_URL}/getUserinfo`);
-        if (data.message === "get User data") {
-          setuserinfo(data.userDetails);
+     const response = await getuserinfomations();
+        if (response.success) {
+          setuserinfo(response.userdetails);
         } else {
           toast.error("No user found");
         }

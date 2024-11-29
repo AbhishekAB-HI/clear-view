@@ -1,41 +1,29 @@
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { FormEvent, useEffect, useState } from "react";
-import ThreeDot from "react-loading";
-import { store } from "../../Redux-store/Reduxstore";
+import {  useEffect, useState } from "react";
 import axios from "axios";
 import Navbar2 from "./Navbar2";
 import {
   API_CHAT_URL,
-  API_USER_URL,
 } from "../Constants/Constants";
 import { IUser } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
 import axiosClient from "../../Services/Axiosinterseptor";
 import { sendfollow } from "./GlobalSocket/CreateSocket";
 
-
-
 const PeoplePage = () => {
 
-
-  const [Loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [searchResult, setSearchResult] = useState<IUser[]>([]);
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
   const [userinfos, setuserinfos] = useState<IUser>();
   const [useridget, setuserID] = useState<string>("");
-  const [userFound, setuserFound] = useState(false);
-  const [userStatus, setuserStatus] = useState(false);
   const [findAllUsers, setfindAllUsers] = useState<IUser[]>([]);
   const [searchusers, setsearchusers] = useState("");
-  const [findtheUsers, setfindtheUsers] = useState([]);
+  const [findtheUsers, setfindtheUsers] = useState<IUser[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPosts, setTotalPosts] = useState(0);
   const [postsPerPage] = useState(2);
 
 
-  type RootState = ReturnType<typeof store.getState>;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -150,7 +138,6 @@ const PeoplePage = () => {
         LoguserId,
       });
       if (data.message === "followed users") {
-        setuserFound(data.addFollower);
         sendfollow(userId, data.Userinfo, data.followingUser);
         updateUsers();
         findUsers();
@@ -196,34 +183,7 @@ const PeoplePage = () => {
     getAllPost();
   }, []);
 
-  const handleSearch = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!search) {
-      throw new Error("No search ID");
-    }
-    try {
-      setLoading(true);
-      const { data } = await axiosClient.get(
-        `${API_USER_URL}/searched?search=${search}`
-      );
-      if (data.message === "get all users") {
-        setSearchResult(data.SearchedUsers);
-        setLoading(false);
-      } else {
-        toast.error("No user found");
-      }
-    } catch (error) {
-      setLoading(false);
-      if (axios.isAxiosError(error)) {
-        const errorMessage =
-          error.response?.data?.message || "An error occurred";
-        toast.error(errorMessage);
-      } else {
-        toast.error("Unknown error occurred");
-      }
-      console.error("Error verifying OTP:", error);
-    }
-  };
+  
 
   const viewProfile = async (userID: string) => {
     try {
@@ -314,19 +274,14 @@ const PeoplePage = () => {
           )}
           <div className="space-y-4 p-5  mt-5 w-full h-[100vh]">
             <div className="space-y-4">
-              {/* Loading or Results */}
-              {Loading ? (
-                <div className="flex justify-center items-center">
-                  <ThreeDot className="w-20 h-3 space-x-10" color="#3168cc" />
-                </div>
-              ) : getAlluser.length === 0 ? (
+              {getAlluser.length === 0 ? (
                 <div className="flex justify-center items-center">
                   <p className="text-gray-400">No users found</p>
                 </div>
               ) : (
                 getAlluser.map((user, index) => (
                   <div
-                    key={user._id}
+                    key={index}
                     className="flex items-center justify-between bg-gray-900 p-4 rounded-lg"
                   >
                     <div className="flex items-center space-x-4">

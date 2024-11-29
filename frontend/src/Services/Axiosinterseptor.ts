@@ -18,8 +18,6 @@ axiosClient.interceptors.request.use(
   (config) => {
     const state = store.getState();
     const accessToken = state.accessTocken.userTocken;
-    console.log(accessToken, "geteeeeeeeeeeeeeeee");
-
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }

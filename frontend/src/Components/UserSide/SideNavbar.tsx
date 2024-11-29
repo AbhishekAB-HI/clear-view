@@ -1,16 +1,14 @@
-import React, { useEffect, useState } from "react";
+import  { useEffect, useState } from "react";
 import {FaBars} from "react-icons/fa";
 import { Link } from "react-router-dom";
-import { Home, MessageSquare, Users, Bell, Plus } from "lucide-react";
+import { Home, MessageSquare, Users, Bell,} from "lucide-react";
 import { useSelector } from "react-redux";
 import { store } from "../../Redux-store/Reduxstore";
 import {
   API_CHAT_URL,
-  API_USER_URL,
 } from "../Constants/Constants";
-import axios from "axios";
 import toast from "react-hot-toast";
-import { FormattedChat, IAllNotification, IPost, IUser } from "../Interfaces/Interface";
+import { IAllNotification,Notification } from "../Interfaces/Interface";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";
 const ENDPOINT = "http://localhost:3000";
@@ -18,26 +16,16 @@ let socket: Socket;
 let selectedChatCompare: any;
 const SideNavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [saveid, setsaveid] = useState<string | any>(null);
-  type RootState = ReturnType<typeof store.getState>;
-  const [filteredPost, setFilteredPost] = useState<IPost[]>([]);
-  const [userPost, setuserPost] = useState<IPost[]>([]);
-  const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
-  const [saveAllmessage, setsaveAllmessage] = useState<FormattedChat[]>([]);
-  const [saveAllgroupmessage, setsaveAllgroupmessage] = useState<FormattedChat[]>([]);
-  const [SaveAllNotifications, setSaveAllNotifications] = useState<
-    Notification[]
-  >([]);
 
-  console.log(SaveAllNotifications,"101029999999999999999999999999999999999999999999999992222222222222222222");
+  type RootState = ReturnType<typeof store.getState>;
+
+  const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
+
   const userDetails = useSelector(
     (state: RootState) => state.accessTocken.userTocken
   );
 
-  const selectedChat = useSelector(
-    (state: RootState) => state.accessTocken.SelectedChat
-  );
-  const [showpostModal, setShowpostModal] = useState(false);
+  
 
   useEffect(() => {
     socket = io(ENDPOINT);
@@ -65,57 +53,11 @@ const SideNavBar = () => {
   };
 
 
-  
 
-  const getAllPost = async () => {
-    try {
-      const { data } = await axiosClient.get(`${API_CHAT_URL}/allmessages`);
-      if (data.message === "other message get here") {
-        setgetAlluser(data.foundUsers);
-        setsaveAllmessage(data.formattedChats);
-        setsaveAllgroupmessage(data.formatgroupchats);
-      } else {
-        toast.error("other message is not get here");
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (!error.response) {
-          toast.error("Network error. Please check your internet connection.");
-        } else {
-          const status = error.response.status;
-          if (status === 404) {
-            toast.error("Posts not found.");
-          } else if (status === 500) {
-            toast.error("Server error. Please try again later.");
-          } else {
-            toast.error("Something went wrong.");
-          }
-        }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("An unexpected error occurred.");
-      }
-      console.log("Error fetching posts:", error);
-    }
-  };
 
-  const [notifications, setNotifications] = useState<IUser[]>([]);
   const [Savenewpost, setSavenewpost] = useState<IAllNotification[]>([]);
   const [savelikeNotify, setsavelikeNotify] = useState<IAllNotification>();
-  const getFollownotification = async (userId: string,followuserId:string,followValue: boolean) => {
-    try {
-      const { data } = await axiosClient.get(`${API_CHAT_URL}/getfollownotify?id=${userId}&&followvalue=${followValue}&&followid=${followuserId}` );
-      if (data.message === "get all notifications") {
-        setNotifications(data.follownotifications);
-      } else {
-        toast.error("User data not saved");
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
+  
     
 
   useEffect(() => {
@@ -132,7 +74,7 @@ const SideNavBar = () => {
  
 
   useEffect(() => {
-    socket.on("follow received",(logeduserinfo, followingUser, followuserId) => {
+    socket.on("follow received",( followingUser) => {
          toast.success("User follow you");
         setSavenewpost(followingUser);
       }
@@ -144,7 +86,7 @@ const SideNavBar = () => {
     });
 
   
-    socket.on("post update", (postedUserInfo, postdetails) => {
+    socket.on("post update", ( postdetails) => {
       toast.success("new post uploaded");
       setSavenewpost(postdetails);
     });
@@ -155,45 +97,8 @@ const SideNavBar = () => {
 
 
 
-  useEffect(() => {
-    const getUserId = async () => {
-      try {
-        const { data } = await axiosClient.get(`${API_USER_URL}/getuserid`);
-        if (data.message === "user id get") {
-          setsaveid(data.userId);
-        } else {
-          toast.error("Failed to retrieve userid.");
-        }
-      } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-          if (!error.response) {
-            toast.error(
-              "Network error. Please check your internet connection."
-            );
-          } else {
-            const status = error.response.status;
-            if (status === 404) {
-              toast.error("Posts not found.");
-            } else if (status === 500) {
-              toast.error("Server error. Please try again later.");
-            } else {
-              toast.error("Something went wrong.");
-            }
-          }
-        } else if (error instanceof Error) {
-          toast.error(error.message);
-        } else {
-          toast.error("An unexpected error occurred.");
-        }
-        console.log("Error fetching posts:", error);
-      }
-    };
-
-    getUserId();
-  }, [userDetails]);
-
   const groupedNotifications = Array.isArray(SaveAllNotifications)
-    ? SaveAllNotifications.reduce((acc, notification) => {
+    ? SaveAllNotifications.reduce((acc:any, notification:any) => {
         const senderId = notification.sender._id;
         if (!acc[senderId]) {
           acc[senderId] = { ...notification, count: 1 };
@@ -206,9 +111,6 @@ const SideNavBar = () => {
 
   const groupedNotificationsArray = Object.values(groupedNotifications);
 
-  const togglepostModal = () => {
-    setShowpostModal(!showpostModal);
-  };
 
   // Toggle sidebar visibility
   const toggleSidebar = () => {
@@ -216,9 +118,7 @@ const SideNavBar = () => {
   };
 
   // Close sidebar after a link is clicked
-  const handleLinkClick = () => {
-    setIsOpen(false);
-  };
+
 
   return (
     <>
@@ -247,7 +147,7 @@ const SideNavBar = () => {
               notificationCount:
                 SaveAllNotifications?.length ||
                 groupedNotificationsArray?.length ||
-                0,
+                null
             },
             {
               icon: <Users size={24} />,
@@ -264,7 +164,7 @@ const SideNavBar = () => {
               text: "Notifications",
               path: "/notifications",
               followNotification:
-                notifications.length !== 0 ||
+           
                 Savenewpost.length !== 0 ||
                 savelikeNotify !== undefined,
             },
@@ -293,12 +193,12 @@ const SideNavBar = () => {
               >
                 {item.text}
               </span>
-              {item.text === "Messages" && item.notificationCount > 0 && (
+              {item.text === "Messages" && item.notificationCount  && (
                 <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                   {item.notificationCount}
                 </span>
               )}
-              {item.text === "Notifications" && item.followNotification > 0 && (
+              {item.text === "Notifications" && item.followNotification  && (
                 <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                   1
                 </span>

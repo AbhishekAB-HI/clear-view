@@ -1,11 +1,14 @@
-import AdminServices from "../Servises/Adminservises";
+import { IAdminServices } from "../Interface/Admin/AdminServises";
+// import AdminServices from "../Servises/Adminservises";
 import { Request, Response } from "express";
 
 class AdminController {
-  constructor(private adminservises: AdminServices) {}
+  constructor(private adminservises: IAdminServices) {}
 
   async adminLogin(req: Request, res: Response): Promise<void> {
     try {
+
+      console.log("3333333333333333333333333333333333333")
       const userData = req.body;
       let userdata = await this.adminservises.verifyUser(userData);
       if (userdata) {
@@ -50,26 +53,20 @@ class AdminController {
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 2;
-      const search = req.query.search 
+      const search = req.query.search;
       let userdata = await this.adminservises.getUserdetails(
         page,
         limit,
         search
       );
 
-      if (!userdata) {
-        return res.status(200).json({
-            message: "user data get succesfull",
-            userinfo: [],
-            userscount: 0,
-          });
-      }
+      const response = {
+        message: "user data get succesfull",
+        userinfo: userdata?.userinfo || [],
+        userscount: userdata?.userscount || 0,
+      };
 
-      const { userinfo, userscount } = userdata;
-
-      res
-        .status(200)
-        .json({ message: "user data get succesfull", userinfo, userscount });
+      res.status(200).json(response);
     } catch (error) {
       console.log(error);
       if (error instanceof Error) {
@@ -85,11 +82,15 @@ class AdminController {
 
   async deleteReportPost(req: Request, res: Response) {
     try {
-      const deleteId = req.params.postid;
-      const userdata = await this.adminservises.deleteReportPost(deleteId);
-      if (userdata) {
-        res.status(200).json({ message: "delete post" });
+      const deleteId = req.query.id;
+      const postId = req.query.postid;
+
+      if (typeof deleteId !== "string" || typeof postId !== "string") {
+        return res.status(400).json({ message: "Invalid ID or Post ID" });
       }
+
+      await this.adminservises.deleteReportPost(deleteId, postId);
+      res.status(200).json({ message: "delete post" });
     } catch (error) {
       console.log(error);
     }
@@ -98,7 +99,7 @@ class AdminController {
   async deletePost(req: Request, res: Response) {
     try {
       const deleteId = req.params.id;
-      const userdata = await this.adminservises.deletePost(deleteId);
+      await this.adminservises.deletePost(deleteId);
       res.status(200).json({ message: "delete post" });
     } catch (error) {
       console.log(error);
@@ -107,8 +108,8 @@ class AdminController {
 
   async getAllReportUsers(req: Request, res: Response) {
     try {
-        const page = parseInt(req.query.page as string, 5) || 1;
-        const limit = parseInt(req.query.limit as string, 4) || 4;
+      const page = parseInt(req.query.page as string, 5) || 1;
+      const limit = parseInt(req.query.limit as string, 4) || 4;
       const { search } = req.query;
       const foundusers = await this.adminservises.getAllReportUsers(
         page,
@@ -116,20 +117,13 @@ class AdminController {
         search
       );
 
-      
-      if (!foundusers?.Reports || !foundusers.totalcount) {
+      if (!foundusers?.Reports || !foundusers?.totalcount) {
         return res
           .status(200)
-          .json({ message: "All user found", Reports: [], totalcount:0 });
+          .json({ message: "All user found", Reports: [], totalcount: 0 });
       }
-
-           const { Reports, totalcount } = foundusers;
-
-
-
-      res
-        .status(200)
-        .json({ message: "All user found", Reports, totalcount });
+      const { Reports, totalcount } = foundusers;
+      res.status(200).json({ message: "All user found", Reports, totalcount });
     } catch (error) {
       console.log(error);
     }
@@ -148,7 +142,6 @@ class AdminController {
         data: {
           posts,
           total,
-        
         },
       });
     } catch (error) {
@@ -185,9 +178,7 @@ class AdminController {
   async handleBlocking(req: Request, res: Response) {
     try {
       const { userId, isActive } = req.body;
-      console.log(userId, isActive, "id and bool");
       let userdata = await this.adminservises.updateBlocking(userId, isActive);
-      console.log(userdata, "user dataaaaaaaa");
       if (!userdata) {
         res.status(200).json({ message: "User is blocked" });
       } else {

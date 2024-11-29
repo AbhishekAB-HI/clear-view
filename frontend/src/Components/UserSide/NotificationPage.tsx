@@ -1,34 +1,24 @@
 import toast from "react-hot-toast";
-import { FormEvent, useEffect, useState } from "react";
-import { store } from "../../Redux-store/Reduxstore";
+import {  useEffect, useState } from "react";
 import Navbar2 from "./Navbar2";
 import {
   API_CHAT_URL,
-  API_USER_URL,
+  
 } from "../Constants/Constants";
 import axios from "axios";
-import { IAllNotification, IPost, IUser } from "../Interfaces/Interface";
+import { IAllNotification, LikeNotification, postinfos } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
-import { Bell, MoreHorizontal, Users2Icon } from "lucide-react";
+import {  Users2Icon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import axiosClient from "../../Services/Axiosinterseptor";
 
 const NotificationPage = () => {
-  const [Loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [searchResult, setSearchResult] = useState<IUser[]>([]);
+
   const [notifications, setnotifications] = useState<IAllNotification[]>([]);
-  const [likenotifications, setlikenotifications] = useState<
-    IAllNotification[]
-  >([]);
-  const [AllPosts, setAllPosts] = useState<IPost[]>([]);
-  const [userID, setuserID] = useState<string>("");
-  const [userFound, setuserFound] = useState(false);
-  const [userinfo, setuserinfo] = useState<IUser | null>(null);
-  const [useruserprofile, setuserprofile] = useState<IUser | null>(null);
+  const [likenotifications, setlikenotifications] = useState<LikeNotification[]>([]);
+  const [AllPosts, setAllPosts] = useState<postinfos[]>([]);
   const navigate = useNavigate();
 
-  type RootState = ReturnType<typeof store.getState>;
 
   useEffect(() => {
     const updateUsers = async () => {
@@ -71,82 +61,9 @@ const NotificationPage = () => {
     updateUsers();
   }, []);
 
-  const updateUsers = async () => {
-    try {
-      const { data } = await axiosClient.get(
-        `${API_CHAT_URL}/findnotifications`
-      );
-      if (data.message === "Allnotifications get") {
-        setnotifications(data.Follownotifications);
-        setAllPosts(data.findAllposts);
-      } else {
-        toast.error("followers not found");
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        if (!error.response) {
-          toast.error("Network error. Please check your internet connection.");
-        } else {
-          const status = error.response.status;
-          if (status === 404) {
-            toast.error("Posts not found.");
-          } else if (status === 500) {
-            toast.error("Server error. Please try again later.");
-          } else {
-            toast.error("Something went wrong.");
-          }
-        }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("An unexpected error occurred.");
-      }
-      console.log("Error fetching posts:", error);
-    }
-  };
+  
 
-  useEffect(() => {
-    const getUserinfo = async () => {
-      try {
-        const { data } = await axiosClient.get(`${API_USER_URL}/getUserinfo`);
-        if (data.message === "get User data") {
-          setuserinfo(data.userDetails);
-        } else {
-          toast.error("No user found");
-        }
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          const errorMessage =
-            error.response?.data?.message || "An error occurred";
-          toast.error(errorMessage);
-        } else {
-          toast.error("Unknown error occurred");
-        }
-        console.error("Error verifying OTP:", error);
-      }
-    };
-    getUserinfo();
-  }, []);
-
-  const getUserinfo = async () => {
-    try {
-      const { data } = await axiosClient.get(`${API_USER_URL}/getUserinfo`);
-      if (data.message === "get User data") {
-        setuserinfo(data.userDetails);
-      } else {
-        toast.error("No user found");
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage =
-          error.response?.data?.message || "An error occurred";
-        toast.error(errorMessage);
-      } else {
-        toast.error("Unknown error occurred");
-      }
-      console.error("Error verifying OTP:", error);
-    }
-  };
+  
 
   const ViewProfilePage = async (userID: string) => {
     try {
@@ -156,29 +73,6 @@ const NotificationPage = () => {
     }
   };
 
-  const followUser = async (userId: string, LoguserId: string) => {
-    try {
-      const { data } = await axiosClient.post(`${API_CHAT_URL}/followuser`, {
-        userId,
-        LoguserId,
-      });
-      if (data.message === "followed users") {
-        getUserinfo();
-        updateUsers();
-      } else {
-        toast.error("followers found failed");
-      }
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMessage =
-          error.response?.data?.message || "An error occurred";
-        toast.error(errorMessage);
-      } else {
-        toast.error("Unknown error occurred");
-      }
-      console.error("Error verifying OTP:", error);
-    }
-  };
 
   return (
     <div className="bg-black text-white min-h-screen">
@@ -194,7 +88,9 @@ const NotificationPage = () => {
                 Notifications
               </h2>
 
-              {(notifications && notifications.length > 0) || (likenotifications && likenotifications.length > 0)  ||  (AllPosts && AllPosts.length > 0) ? (
+              {(notifications && notifications.length > 0) ||
+              (likenotifications && likenotifications.length > 0) ||
+              (AllPosts && AllPosts.length > 0) ? (
                 <>
                   {/* Notifications */}
                   {notifications && notifications.length > 0 && (
@@ -230,9 +126,9 @@ const NotificationPage = () => {
                   {/* New Posts */}
                   {likenotifications && likenotifications.length > 0 && (
                     <>
-                      {likenotifications.map((post) => (
+                      {likenotifications.map((post, index) => (
                         <div
-                          key={post._id}
+                          key={index}
                           onClick={() => ViewProfilePage(post.likeduserId)}
                           className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200"
                         >
@@ -260,13 +156,12 @@ const NotificationPage = () => {
                             )}
 
                             <div className="flex flex-col">
-                               <span className="text-md text-gray-500 dark:text-gray-400">
+                              <span className="text-md text-gray-500 dark:text-gray-400">
                                 {post.postcontent}
                               </span>
                               <span className="text-sm text-gray-500 dark:text-gray-400">
                                 Liked by {post.likedusername}
                               </span>
-                             
                             </div>
                           </div>
                         </div>
@@ -276,9 +171,9 @@ const NotificationPage = () => {
 
                   {AllPosts && AllPosts.length > 0 && (
                     <>
-                      {AllPosts.map((post) => (
+                      {AllPosts.map((post, index) => (
                         <div
-                          key={post._id}
+                          key={index}
                           onClick={() => ViewProfilePage(post.followuserId)}
                           className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200"
                         >

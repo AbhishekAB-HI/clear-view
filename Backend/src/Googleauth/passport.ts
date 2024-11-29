@@ -4,20 +4,11 @@ import {
   VerifyCallback,
 } from "passport-google-oauth2";
 import dotenv from "dotenv";
-import { Profile } from "passport";
 import { Request } from "express";
+import { GoogleProfile, User } from "../Types/Commontype/Googleauthinterface";
 
 dotenv.config();
 
-interface User {
-  id?: string;
-  email?: string;
-  displayName?: string;
-}
-
-interface GoogleProfile extends Profile {
-  email?: string; // Add other fields if required
-}
 
 passport.serializeUser((user: User, done: (err: any, id?: any) => void) => {
   done(null, user);

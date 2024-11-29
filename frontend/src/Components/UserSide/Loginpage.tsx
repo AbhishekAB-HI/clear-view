@@ -14,15 +14,14 @@ import {
   setUserRefreshtocken,
 } from "../../Redux-store/Redux-slice";
 import Lottie from "lottie-react";
-import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 import { FaSpinner } from "react-icons/fa";
+import { googleSignIn, loginPage } from "../../Services/User_API/Homepageapis";
 
 const Loginpage: React.FC = () => {
-  const navigate = useNavigate();
-  const [error, setError] = useState("");
-  const dispatch = useDispatch();
-    const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
   const validationSchema = Yup.object().shape({
     email: Yup.string()
       .email("Invalid email address")
@@ -39,29 +38,16 @@ const Loginpage: React.FC = () => {
       .required("Password is required"),
   });
 
-  const googleSignIn = async () => {
-    window.location.href = "http://localhost:3000/auth";
-  };
-
   const handlesubmit = async (values: { email: string; password: string }) => {
     try {
       setLoading(true)
-      const { data } = await axios.post(
-        `${API_USER_URL}/login`,
-        values,
-        {
-          headers: {
-            "Content-Type": CONTENT_TYPE_JSON,
-          },
-        }
-      );
-
-      if (data.message === "user Login succesfully") {
+      const response = await loginPage(values);
+      if (response.success) {
         toast.success("Login successfully");
-        dispatch(setUserAccessTocken(data.accesstok));
-        dispatch(setUserRefreshtocken(data.refreshtok));
+        dispatch(setUserAccessTocken(response.Acesstoc));
+        dispatch(setUserRefreshtocken(response.Refreshtoc));
         navigate("/homepage");
-      }else{
+      } else {
         toast.error("user Login Failed");
       }
     } catch (error) {
@@ -86,7 +72,7 @@ const Loginpage: React.FC = () => {
             <div className="flex items-center space-x-0">
               <Lottie
                 animationData={logoWeb}
-                className="w-24  sm:w-36" // Responsive sizing for logo
+                className="w-24  sm:w-36" 
               />
               <h1
                 className="text-3xl sm:text-4xl  text-white  font-bold"
@@ -169,7 +155,6 @@ const Loginpage: React.FC = () => {
                     className="text-red-500 mb-2"
                   />
 
-                  {error && <div className="text-red-500 mb-2">{error}</div>}
 
                   <button
                     type="submit"

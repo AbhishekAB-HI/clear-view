@@ -9,35 +9,29 @@ import { API_CHAT_URL } from "../Constants/Constants";
 import axios from "axios";
 import {
   ActiveUsersType,
-  Chats,
   FormattedChat,
   IUser,
+  Notification,
 } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
 import { MessageCircle, PlusCircle, Search, Users, X } from "lucide-react";
-// import { ActiveUsershere, initilizeSocket } from "./GlobalSocket/CreateSocket";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
 let selectedChatCompare: any;
 const MessagePage = () => {
-  const [Loading, setLoading] = useState(false);
-  const [searchResult, setSearchResult] = useState<IUser[]>([]);
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
   const [saveAllmessage, setsaveAllmessage] = useState<FormattedChat[]>([]);
-  const [saveAllgroupmessage, setsaveAllgroupmessage] = useState<
-    FormattedChat[]
-  >([]);
+  const [saveAllgroupmessage, setsaveAllgroupmessage] = useState<FormattedChat[]>([]);
   const [saveAllUsers, setsaveAllUsers] = useState<IUser[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState<IUser[]>([]);
   const [groupName, setGroupName] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchusers, setsearchusers] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState([]);
-  const [findtheUsers, setfindtheUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState<IUser[]>([]);
+  const [findtheUsers, setfindtheUsers] = useState<IUser[]>([]);
   const [saveTheUser, setsaveTheUser] = useState<FormattedChat[]>([]);
-  const [saveGroupinfo, setsaveGroupinfo] = useState<Chats>();
   const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
   const [findAllUsers, setfindAllUsers] = useState<IUser[]>([]);
   const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
@@ -46,15 +40,12 @@ const MessagePage = () => {
   const [totalPosts, setTotalPosts] = useState(0);
   const [currentgroupPage, setCurrentgroupPage] = useState(1);
   const [totalGroupPosts, setTotalGroupPosts] = useState(0);
-
   const dispatch = useDispatch();
   const navigate = useNavigate();
   type RootState = ReturnType<typeof store.getState>;
   const [isFormVisible, setIsFormVisible] = useState(false);
 
-  const notifications = useSelector(
-    (state: RootState) => state.accessTocken.Notification
-  );
+
 
   // Function to toggle form visibility
   const toggleForm = () => {
@@ -70,9 +61,6 @@ const MessagePage = () => {
     (state: RootState) => state.accessTocken.userTocken
   );
 
-  const selectedChat = useSelector(
-    (state: RootState) => state.accessTocken.SelectedChat
-  );
 
   useEffect(() => {
     socket = io(ENDPOINT);
@@ -143,7 +131,7 @@ const MessagePage = () => {
   }, [currentPage]);
 
   useEffect(() => {
-    socket.on("hello", (data: string) => {
+    socket.on("hello", () => {
       toast.success("hello");
     });
   }, []);
@@ -162,15 +150,8 @@ const MessagePage = () => {
 
   const getchat = useSelector((state: RootState) => state.accessTocken.chats);
 
-  const getselectedchat = useSelector(
-    (state: RootState) => state.accessTocken.SelectedChat
-  );
-  const userToken = useSelector(
-    (state: RootState) => state.accessTocken.userTocken
-  );
 
   useEffect(() => {
-    // const socketInstance = initilizeSocket(userToken);
     const FindAllUsers = async () => {
       const { data } = await axiosClient.get(`${API_CHAT_URL}/getusers`);
       if (data.message === "Get all users") {
@@ -271,7 +252,7 @@ const MessagePage = () => {
 
   useEffect(() => {
     if (searchusers) {
-      const filtered = findAllUsers.filter((user) =>
+      const filtered= findAllUsers.filter((user) =>
         user.name.toLowerCase().includes(searchusers.toLowerCase())
       );
       setfindtheUsers(filtered);
@@ -368,7 +349,7 @@ const MessagePage = () => {
     getGroupchats();
   }, [currentgroupPage]);
 
-  const handleSubmit = async (e: Event) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!groupName || selectedUsers.length === 0) {
       toast.error("Please provide a group name and select at least one user.");
@@ -383,7 +364,6 @@ const MessagePage = () => {
 
       if (response.data.message === "created new Group") {
         toast.success("Group created successfully!");
-        setsaveGroupinfo(response.data.createdGroup);
         setIsFormVisible(!isFormVisible);
         setGroupName("");
         setSearchTerm("");
@@ -399,7 +379,7 @@ const MessagePage = () => {
     }
   };
 
-  const FindUserSearch = (term) => {
+  const FindUserSearch = (term:string) => {
     setsearchusers(term);
     const filtered = findAllUsers.filter((user) =>
       user.name.toLowerCase().includes(term.toLowerCase())
@@ -407,7 +387,7 @@ const MessagePage = () => {
     setfindtheUsers(filtered);
   };
 
-  const handleUserSearch = (term) => {
+  const handleUserSearch = (term:string) => {
     setSearchTerm(term);
     const filtered = getAlluser.filter((user) =>
       user.name.toLowerCase().includes(term.toLowerCase())
@@ -415,14 +395,14 @@ const MessagePage = () => {
     setFilteredUsers(filtered);
   };
 
-  const handleUserSelect = (user: any) => {
-    if (!selectedUsers.some((u: any) => u._id === user._id)) {
+  const handleUserSelect = (user: IUser) => {
+    if (!selectedUsers.some((u: IUser) => u._id === user._id)) {
       setSelectedUsers([...selectedUsers, user]);
     }
   };
 
-  const handleRemoveUser = (userId) => {
-    const updatedUsers = selectedUsers.filter((user) => user._id !== userId);
+  const handleRemoveUser = (userId:string) => {
+    const updatedUsers = selectedUsers.filter((user:any) => user._id !== userId);
     setSelectedUsers(updatedUsers);
   };
 
@@ -434,7 +414,7 @@ const MessagePage = () => {
     <div className="bg-black text-white min-h-screen">
       <Navbar2 />
       <div className="flex ">
-        {/* <SideBar2 /> */}
+      
         <SideNavBar />
         <main className="w-4/5 ml-auto ">
           <div className="max-w-xl mt-5 mx-auto p-6">
@@ -614,12 +594,7 @@ const MessagePage = () => {
               )}
 
               <div className="space-y-6">
-                {Loading ? (
-                  <div className="flex justify-center items-center">
-                    <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full"></div>
-                  </div>
-                ) : (
-                  <>
+               
                     {getAlluser.length > 0 && (
                       <div>
                         <h2 className="text-xl font-semibold mb-4 flex items-center">
@@ -803,8 +778,8 @@ const MessagePage = () => {
                           </p>
                         </div>
                       )}
-                  </>
-                )}
+                  
+              
               </div>
               <div className="flex justify-center mt-8">
                 <nav className="flex space-x-2">

@@ -19,12 +19,12 @@ interface IComment {
 
 
 
+
 interface RenderRepliesProps {
   post: IPost;
   parentCommentId: string;
   saveid: string;
   replyingTo: ReplyingToState | null;
-
   replyContent: string;
   handleReply: (postId: string, commentId: string) => void;
   handleReplySubmit: (
@@ -51,9 +51,14 @@ interface IPost {
 
 
 interface ChildComponentProps {
-  post: IPost;
+  post: any;
   saveid: string;
-  UpdateLikepost: () => void;
+  UpdateLikepost: (page: number) => void;
+  parentCommentId: string;
+  replyingTo: ReplyingToState | null;
+  replyContent: string;
+  handleReply: (postId: string, commentId: string) => void;
+  setReplyContent: React.Dispatch<React.SetStateAction<string>>;
 }
 
 const RenderReplies: React.FC<RenderRepliesProps> = ({
@@ -67,7 +72,7 @@ const RenderReplies: React.FC<RenderRepliesProps> = ({
   setReplyContent,
 }: {
   post: IPost;
-  parentCommentId: string;
+  parentCommentId: any;
   saveid: string;
   replyingTo: ReplyingToState | null;
   replyContent: string;
@@ -141,17 +146,17 @@ const RenderReplies: React.FC<RenderRepliesProps> = ({
                 </button>
               </div>
             )}
-            
+
             <RenderReplies
               post={post}
               parentCommentId={reply._id}
               saveid={saveid}
               replyingTo={replyingTo}
               replyContent={replyContent}
+              handleReplySubmit={handleReplySubmit}
               handleReply={handleReply}
               setReplyContent={setReplyContent}
             />
-
           </div>
         </div>
       </div>
@@ -161,7 +166,7 @@ const RenderReplies: React.FC<RenderRepliesProps> = ({
 
 
 
-const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepost, }) => {
+const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepost }) => {
   const [replyingTo, setReplyingTo] = useState<ReplyingToState | null>(null);
   const [replyContent, setReplyContent] = useState("");
 
@@ -195,7 +200,7 @@ const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepo
       );
 
       if (data.message === "updated succefully") {
-        UpdateLikepost();
+        UpdateLikepost(1);
         setReplyContent("");
         setReplyingTo(null);
       }else{
@@ -230,8 +235,8 @@ const CommentSection: React.FC<ChildComponentProps> = ({post,saveid,UpdateLikepo
     <div className="mt-4">
       {post.comments.length > 0 ? (
         post.comments
-          .filter((comment) => !comment.parentComment)
-          .map((comment, index) => (
+          .filter((comment:any) => !comment.parentComment)
+          .map((comment:any, index:number) => (
             <div
               key={index}
               className="border-b text-left border-gray-500 py-2 flex items-start"

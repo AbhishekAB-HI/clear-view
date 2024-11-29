@@ -1,8 +1,4 @@
-import React from 'react'
 import {
-  FaHome,
-  FaUsers,
-  FaUserFriends,
   FaRegFileAlt,
   FaSignOutAlt,
 } from "react-icons/fa";

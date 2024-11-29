@@ -6,24 +6,22 @@ import toast from "react-hot-toast";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { CreatePostHomeModalProps, IAllNotification, IUser } from "../Interfaces/Interface";
-import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
 import axios from "axios";
 import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css";
 import io, { Socket } from "socket.io-client";
 import { useSelector } from "react-redux";
 import { store } from "../../Redux-store/Reduxstore";
-import axiosClient from "../../Services/Axiosinterseptor";
+import { createNewPost } from "../../Services/User_API/Createnewpost";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
-let selectedChatCompare: any;
 const CreateHomePostModal = ({
   togglepostModal,
   updatehomeState,
   userid,
 }: CreatePostHomeModalProps) => {
+
   type RootState = ReturnType<typeof store.getState>;
-  
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -45,6 +43,7 @@ const CreateHomePostModal = ({
   );
 
   useEffect(() => {
+let selectedChatCompare: any;
     socket = io(ENDPOINT);
     if (userDetails) {
       socket.emit("setup", userDetails);
@@ -123,11 +122,10 @@ const CreateHomePostModal = ({
     }
   };
 
-  const [SaveAllUserData, setSaveAllUserData] = useState<IUser[]>([]);
-
  const sendPostNotify = async (userInfo: IUser,postdetails:IAllNotification) => {
    try {
      if (socket) {
+    
        socket.emit("newpost", userInfo, postdetails);
      }
    } catch (error) {
@@ -169,17 +167,10 @@ const CreateHomePostModal = ({
     formData.append("userId", userid || "");
 
     try {
-      const response = await axiosClient.post(
-        `${API_USER_URL}/createpost`,
-        formData,
-        {
-          headers: { "Content-Type": CONTENT_TYPE_MULTER },
-        }
-      );
-
-      if (response.data.message === "Post uploaded successfully") {
+      const response = await createNewPost(formData);
+      if (response.success) {
         toast.success("Post uploaded successfully");
-        sendPostNotify(response.data.userinfo, response.data.postdetail);
+        sendPostNotify(response.userdetail, response.postinfo);
         updatehomeState(1);
         togglepostModal();
       } else {

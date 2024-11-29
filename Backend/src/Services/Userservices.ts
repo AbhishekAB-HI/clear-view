@@ -1,4 +1,3 @@
-import { error } from "console";
 import {
   IUser,
   Checkuser,
@@ -8,17 +7,19 @@ import {
 import { Posts, Postsget } from "../Entities/Postentities";
 import {
   IAllNotification,
-  TokenResponce,
-} from "../Interface/userInterface/Userdetail";
-import { userPayload } from "../Interface/userInterface/Userpayload";
+} from "../Entities/Notificationentitities";
+import { TokenResponce } from "../Types/Servicetype/UserInterface";
+import { userPayload } from "../Types/Commontype/TockenInterface";
 import userRepository from "../Repository/Userrepository";
 import { generateAccessToken, generateRefreshToken } from "../Utils/Jwt";
 import HashPassword from "../Utils/Hashpassword";
-import { adminuserId } from "../Entities/Adminentities";
+import { adminuserId } from "../Types/Servicetype/Admininterface";
 import mongoose, { ObjectId } from "mongoose";
+import { IUserServices } from "../Interface/Users/UserServices";
+import { IUserRepository } from "../Interface/Users/UserRepository";
 
-class userServises {
-  constructor(private userRepository: userRepository) {}
+class userServises implements IUserServices {
+  constructor(private userRepository: IUserRepository) {}
 
   async createUser(userData: Partial<IUser>): Promise<IUser | undefined> {
     if (!userData.email) {
@@ -92,7 +93,7 @@ class userServises {
       }
       if (isPasswordValid) {
         const userPayload: userPayload = {
-          id: verifyuser._id as unknown,
+          id: verifyuser._id as ObjectId,
         };
         let accessToken = generateAccessToken(userPayload);
         let refreshToken = generateRefreshToken(userPayload);
@@ -103,7 +104,7 @@ class userServises {
     }
   }
 
-  async verifymail(userdata: string): Promise<Confirmuser> {
+  async verifymail(userdata: string): Promise<Confirmuser | undefined  |null> {
     let getData = userdata;
     const checkEmail = await this.userRepository.FindEmail(getData);
     if (!checkEmail) {
@@ -116,7 +117,7 @@ class userServises {
     return getUser;
   }
 
-  async verifyotp(otp: number, email: string): Promise<Checkuser> {
+  async verifyotp(otp: number, email: string): Promise<Checkuser | undefined | null> {
     console.log(otp, "get otp numbers");
     const getUser = await this.userRepository.checkingforgetotp(otp, email);
 
@@ -144,8 +145,6 @@ class userServises {
     return getComment;
   }
 
-  async userService() {}
-
   async getAllReplyhere(): Promise<Posts[]> {
     const findReply = await this.userRepository.findAllReply();
 
@@ -160,8 +159,12 @@ class userServises {
     userId: string,
     text: string,
     logeduserId: string | unknown
-  ) {
+  ): Promise<void> {
     try {
+            console.log(
+              userId,
+              "service to report1111111111111111111111111111111111111"
+            );
       const userDetails = await this.userRepository.sendTheReportReason(
         userId,
         text,
@@ -207,10 +210,9 @@ class userServises {
 
   async findBlockedUsers(
     userId: unknown,
-    page:number,
-    limit:number
+    page: number,
+    limit: number
   ): Promise<{ Allusers: IUser[]; totalblockuser: number } | undefined> {
-
     const blockedUsers = await this.userRepository.findBlockedUserinRepo(
       userId,
       page,
@@ -218,11 +220,10 @@ class userServises {
     );
 
     if (!blockedUsers?.Allusers || !blockedUsers?.totalblockuser) {
-      return{
-        Allusers:[],
-        totalblockuser:0
-      }
-          
+      return {
+        Allusers: [],
+        totalblockuser: 0,
+      };
     }
 
     const { Allusers, totalblockuser } = blockedUsers;
@@ -231,8 +232,6 @@ class userServises {
       Allusers,
       totalblockuser,
     };
-
-
   }
 
   async passLikePostID(
@@ -249,7 +248,7 @@ class userServises {
     postId: string,
     userId: mongoose.Types.ObjectId,
     comment: string
-  ) {
+  ): Promise<Posts | null> {
     const commentPost = await this.userRepository.commentthePost(
       postId,
       userId,
@@ -261,7 +260,11 @@ class userServises {
     return commentPost;
   }
 
-  async passPostID(postId: string, text: string, userId: string) {
+  async passPostID(
+    postId: string,
+    text: string,
+    userId: string
+  ): Promise<IUser | null> {
     const Reported = await this.userRepository.RepostPost(postId, text, userId);
     if (!Reported) {
       throw new Error("No post found");
@@ -301,7 +304,7 @@ class userServises {
     }
   }
 
-  async sendResendotp(email: string) {
+  async sendResendotp(email: string): Promise<void> {
     try {
       if (!email) {
         throw new Error("No otp or email");
@@ -382,7 +385,7 @@ class userServises {
     }
   }
 
-  async sendPostid(postId: string) {
+  async sendPostid(postId: string): Promise<void> {
     try {
       let getpostid = await this.userRepository.postidreceived(postId);
       return getpostid;
@@ -465,7 +468,11 @@ class userServises {
     }
   }
 
-  async PassUserDetails(userId: string, password: string, newpassword: string) {
+  async PassUserDetails(
+    userId: string,
+    password: string,
+    newpassword: string
+  ): Promise<void> {
     try {
       const findUser = await this.userRepository.findUserData(userId);
 

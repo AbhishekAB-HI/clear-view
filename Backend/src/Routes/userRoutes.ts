@@ -1,7 +1,7 @@
 import { Router} from "express";
 import UserController from "../Controllers/Usercontrollers";
 import userRepository from "../Repository/Userrepository";
-import userServises from "../Servises/Userservises";
+import userServises from "../Services/Userservices";
 import dotenv from "dotenv";
 import AuthenticationMiddleware from "../Middlewares/Userauthmiddleware";
 import { upload } from "../Config/Multerconfig";
@@ -15,45 +15,39 @@ const userController = new UserController(newUserservise);
 
 // User Registration and Authentication
 
-router.post("/register", async (req, res) => userController.userRegister(req, res));
-router.post("/login", async (req, res) => userController.userLogin(req, res));
-router.post("/verifyotp", async (req, res) =>userController.userCheckOtp(req, res));
-router.patch("/resendotp", async (req, res) =>userController.resendotp(req, res));
-router.patch("/forgetpassword", async (req, res) =>userController.setforgetpass(req, res));
-router.post("/forgetmail", async (req, res) =>userController.verifymailforget(req, res));
-router.post("/verifyforgetotp", async (req, res) =>userController.forgetotp(req, res));
-router.post("/auth/refreshtoken", async (req, res) =>userController.refreshTocken(req, res));
-router.patch("/updatePassword",AuthenticationMiddleware,async (req, res) => userController.updatePassword(req, res));
-
+router.post("/register", userController.userRegister.bind(userController));
+router.post("/login",userController.userLogin.bind(userController));
+router.post("/verifyotp", userController.userCheckOtp.bind(userController));
+router.patch("/resendotp", userController.resendotp.bind(userController));
+router.patch("/forgetpassword",userController.setforgetpass.bind(userController));
+router.post("/forgetmail",userController.verifymailforget.bind(userController));
+router.post("/verifyforgetotp", userController.forgetotp.bind(userController));
+router.post("/auth/refreshtoken",userController.refreshTocken.bind(userController));
+router.patch("/updatePassword",AuthenticationMiddleware,userController.updatePassword.bind(userController));
 
 // Post Interactions
- 
-router.patch("/likepost",AuthenticationMiddleware, async (req, res) => userController.LikePost(req, res));
-router.patch("/commentpost", AuthenticationMiddleware, async (req, res) =>userController.commentPost(req, res));
-router.post("/replycomment", AuthenticationMiddleware, async (req, res) =>userController.replycommentPost(req, res));
-router.get("/getreplys", AuthenticationMiddleware, async (req, res) =>userController.getReplyComments(req, res));
-router.patch("/reportpost", AuthenticationMiddleware, async (req, res) =>
-  userController.ReportPost(req, res)
-);
-router.patch("/updatelastseen", AuthenticationMiddleware, async (req, res) =>userController.userLastseen(req, res));
-router.get("/allposts",AuthenticationMiddleware, async (req, res) =>userController.getAllPost(req, res));
-router.delete("/deletepost/:id",AuthenticationMiddleware, async (req, res) =>userController.deletePost(req, res));
-router.post("/createpost",AuthenticationMiddleware,upload.fields([{ name: "images", maxCount: 4 },{ name: "videos", maxCount: 4 },]),
-async (req, res) =>  userController.createPost(req, res));
-router.post("/editpost",AuthenticationMiddleware,upload.fields([{ name: "images", maxCount: 4 },{ name: "videos", maxCount: 4 },]),
-  async (req, res) => userController.editPost(req, res)
-);
+
+router.patch("/likepost",AuthenticationMiddleware,userController.LikePost.bind(userController));
+router.patch("/commentpost",AuthenticationMiddleware,userController.commentPost.bind(userController));
+router.post("/replycomment",AuthenticationMiddleware,userController.replycommentPost.bind(userController));
+router.get("/getreplys",AuthenticationMiddleware,userController.getReplyComments.bind(userController));
+router.patch("/reportpost",AuthenticationMiddleware,userController.ReportPost.bind(userController));
+router.patch("/updatelastseen",AuthenticationMiddleware,userController.userLastseen.bind(userController));
+router.get("/allposts",AuthenticationMiddleware,userController.getAllPost.bind(userController));
+router.delete("/deletepost/:id",AuthenticationMiddleware,userController.deletePost.bind(userController));
+router.post("/createpost",AuthenticationMiddleware,upload.fields([{ name: "images", maxCount: 4 },{ name: "videos", maxCount: 4 },]),userController.createPost.bind(userController));
+router.post("/editpost",AuthenticationMiddleware,upload.fields([{ name: "images", maxCount: 4 },{ name: "videos", maxCount: 4 },]),userController.editPost.bind(userController));
 
 // User Interactions
-router.get("/getuserinfo", AuthenticationMiddleware, async (req, res) => userController.getUserInfos(req, res));
-router.patch("/reportuser", AuthenticationMiddleware, async (req, res) =>userController.ReportTheUser(req, res));
-router.get("/getprofile", AuthenticationMiddleware, async (req, res) =>userController.getProfileview(req, res));
-router.get("/blockeduser", AuthenticationMiddleware, async (req, res) =>userController.getBlockedUsers(req, res));
-router.get("/getuserid",AuthenticationMiddleware, async (req, res) =>userController.getIduser(req, res));
-router.get("/userprofile", AuthenticationMiddleware, async (req, res) =>userController.userProfile(req, res));
-router.get("/searched", AuthenticationMiddleware, async (req, res) =>userController.allUsers(req, res));
-router.get("/userposts", AuthenticationMiddleware, async (req, res) =>userController.getuserPost(req, res));
-router.post("/updateprofile",AuthenticationMiddleware,upload.single("image"),async (req, res) =>userController.updateProfile(req,res));
+router.get("/getuserinfo",AuthenticationMiddleware,userController.getUserInfos.bind(userController));
+router.patch("/reportuser",AuthenticationMiddleware,userController.ReportTheUser.bind(userController));
+router.get("/getprofile",AuthenticationMiddleware,userController.getProfileview.bind(userController));
+router.get("/blockeduser",AuthenticationMiddleware,userController.getBlockedUsers.bind(userController));
+router.get("/getuserid",AuthenticationMiddleware,userController.getIduser.bind(userController));
+router.get("/userprofile",AuthenticationMiddleware,userController.userProfile.bind(userController));
+router.get("/searched",AuthenticationMiddleware,userController.allUsers.bind(userController));
+router.get("/userposts",AuthenticationMiddleware,userController.getuserPost.bind(userController));
+router.post("/updateprofile",AuthenticationMiddleware,upload.single("image"),userController.updateProfile.bind(userController));
 
 
 export default router;

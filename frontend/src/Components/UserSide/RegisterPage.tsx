@@ -4,7 +4,6 @@ import newlogo from "../images/newslogo.jpg";
 import { useState } from "react";
 import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
-import Navbar from "./Navbar";
 import CryptoJS from "crypto-js";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
@@ -16,7 +15,6 @@ import { FaSpinner } from "react-icons/fa";
 const Registerpage: React.FC = () => {
   
   const navigate = useNavigate();
-  const [Emailerror, setEmailerror] = useState("");
   const [loading, setLoading] = useState(false);
 
   const validationSchema = Yup.object().shape({
@@ -209,11 +207,6 @@ const Registerpage: React.FC = () => {
                     className="text-red-500 mb-2"
                   />
 
-                  {Emailerror && (
-                    <h5 className="mb-2 text-left" style={{ color: "red" }}>
-                      {Emailerror}
-                    </h5>
-                  )}
 
                   <button
                     type="submit"

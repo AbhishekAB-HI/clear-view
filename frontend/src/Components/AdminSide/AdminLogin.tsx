@@ -2,17 +2,16 @@ import "tailwindcss/tailwind.css";
 import newlogo from "../images/newslogo.jpg";
 import { Toaster, toast } from "react-hot-toast";
 import axios from "axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Navbar from "./Navbar";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useDispatch } from "react-redux";
 import { setAdminAccessTocken } from "../../Redux-store/Redux-slice";
-import { API_ADMIN_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
+import { adminLogin } from "../../Services/Admin_API/Adminlogin.ts";
 const AdminLoginpage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-
   const validationSchema = Yup.object().shape({
     email: Yup.string()
       .email("Invalid email address")
@@ -31,20 +30,14 @@ const AdminLoginpage: React.FC = () => {
 
   const handleSubmit = async (values: { email: string; password: string }) => {
     try {
-      const { data } = await axios.post(`${API_ADMIN_URL}/adminlogin`, values, {
-        headers: {
-          "Content-Type": CONTENT_TYPE_JSON,
-        },
-      });
-
-      if (data.message === "adminLogin succesfully") {
-        console.log(data.AdminTocken, "admintoc............");
-        dispatch(setAdminAccessTocken(data.AdminTocken));
-        toast.success("Admin Logined successfully");
-        navigate("/Adminhome");
-      }else{
-        toast.error("admin login failed")
-      }
+      const response = await adminLogin(values.email, values.password);
+     if (response.success) {
+       dispatch(setAdminAccessTocken(response.token));
+       toast.success("Admin logged in successfully");
+       navigate("/Adminhome");
+     } else {
+       toast.error(response.message || "Login failed");
+     }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorMessage =

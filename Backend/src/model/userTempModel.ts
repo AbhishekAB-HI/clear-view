@@ -38,3 +38,13 @@ const UserTempSchemadata = mongoose.model<IUserReturn>(
 );
 
 export default UserTempSchemadata;
+
+
+
+
+
+
+
+
+
+

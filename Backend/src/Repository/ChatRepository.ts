@@ -1,6 +1,6 @@
 import mongoose, { ObjectId, Types } from "mongoose";
 import { IUser } from "../Entities/Userentities";
-import { Chats, FormattedChat, IUser1 } from "../Entities/Chatentities";
+import { Chats, Chats1, FormattedChat, IUser1 } from "../Entities/Chatentities";
 import ChatSchemamodel from "../Model/Chatmodel";
 import UserSchemadata from "../Model/Usermodel";
 import NotifiactSchemaModal from "../Model/NotificationSchema";
@@ -12,25 +12,50 @@ import GetAllNotificationsSchema from "../Model/AllnotificationSchema";
 import {
   IAllNotification,
   IFollowNotification,
-} from "../Interface/userInterface/Userdetail";
+} from "../Entities/Notificationentitities";
+import { IChatRepository } from "../Interface/Chats/ChatRepository";
 
-class chatRepository {
-  async findAccessgroupchat(chatId: string): Promise<Chats | null> {
-    let isChat = await ChatSchemamodel.findById(chatId)
-      .populate("users", "-password")
-      .populate("latestMessage");
-    isChat = await ChatSchemamodel.populate(isChat, {
-      path: "latestMessage.sender",
-      select: "name pic email",
-    });
-    return isChat;
+class chatRepository implements IChatRepository {
+  async findTheChatHere(chatId: string): Promise<Chats | null> {
+    try {
+      const Chats = await ChatSchemamodel.findById(chatId)
+        .populate("users", "-password")
+        .populate("latestMessage");
+      if (!Chats) {
+        console.log(`Chat with ID ${chatId} not found.`);
+        return null;
+      }
+      return Chats;
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
   }
 
-  async findAccesschat(
-    userId: string | unknown,
-    chatId: string
-  ): Promise<Chats | null> {
-    let isChat = await ChatSchemamodel.find({
+  async findAndPopulateChat(chatinfo: Chats | unknown): Promise<Chats | null> {
+    try {
+      return await ChatSchemamodel.populate(chatinfo, {
+        path: "latestMessage.sender",
+        select: "name pic email",
+      });
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  // async findAccessgroupchat(chatId: string): Promise<Chats | null> {
+  //   let isChat = await ChatSchemamodel.findById(chatId)
+  //     .populate("users", "-password")
+  //     .populate("latestMessage");
+  //   isChat = await ChatSchemamodel.populate(isChat, {
+  //     path: "latestMessage.sender",
+  //     select: "name pic email",
+  //   });
+  //   return isChat;
+  // }
+  async findExistingChat(userId: string, chatId: string): Promise<Chats[]> {
+    return await ChatSchemamodel.find({
       isGroupchat: false,
       $and: [
         { users: { $elemMatch: { $eq: userId } } },
@@ -39,61 +64,87 @@ class chatRepository {
     })
       .populate("users", "-password")
       .populate("latestMessage");
+  }
 
-    isChat = await ChatSchemamodel.populate(isChat, {
+  async populateLatestMessage(chat: Chats[]): Promise<Chats[]> {
+    return await ChatSchemamodel.populate(chat, {
       path: "latestMessage.sender",
       select: "name pic email",
     });
-
-    function generateRandomString(length: any) {
-      const characters =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-      let result = "";
-
-      for (let i = 0; i < length; i++) {
-        result += characters.charAt(
-          Math.floor(Math.random() * characters.length)
-        );
-      }
-
-      return result;
-    }
-
-    let getPincode = generateRandomString(20);
-
-    if (isChat.length > 0) {
-      let fullChat = isChat[0];
-
-      const deletedNotifications = await NotifiactSchemaModal.deleteMany({
-        chat: fullChat._id,
-      });
-
-      if (deletedNotifications.deletedCount > 0) {
-        console.log(
-          `${deletedNotifications.deletedCount} notifications deleted for chat ID: ${fullChat._id}`
-        );
-      } else {
-        console.log(`No notifications found for chat ID: ${fullChat._id}`);
-      }
-      return fullChat;
-    } else {
-      const chatData = {
-        chatName: "sender",
-        isGroupchat: false,
-        users: [userId, chatId],
-        roomId: getPincode,
-      };
-      const createChat = await ChatSchemamodel.create(chatData);
-
-      const fullChat = await ChatSchemamodel.findOne(createChat._id).populate(
-        "users",
-        "-password"
-      );
-      return fullChat;
-    }
   }
 
-  async createNewGroup(groupname: string, userLists: IUser[], userId: unknown) {
+  async deleteNotificationsByChat(chatId: string): Promise<void> {
+    const result = await NotifiactSchemaModal.deleteMany({ chat: chatId });
+  }
+
+  async createChat(chatData: Partial<Chats>): Promise<Chats> {
+    return await ChatSchemamodel.create(chatData);
+  }
+
+  async findChatById(chatId: string): Promise<Chats | null> {
+    return await ChatSchemamodel.findOne({ _id: chatId }).populate(
+      "users",
+      "-password"
+    );
+  }
+
+  // async findAccesschat(
+  //   userId: string | unknown,
+  //   chatId: string
+  // ): Promise<Chats | null> {
+  //   let isChat = await ChatSchemamodel.find({
+  //     isGroupchat: false,
+  //     $and: [
+  //       { users: { $elemMatch: { $eq: userId } } },
+  //       { users: { $elemMatch: { $eq: chatId } } },
+  //     ],
+  //   })
+  //     .populate("users", "-password")
+  //     .populate("latestMessage");
+
+  //   isChat = await ChatSchemamodel.populate(isChat, {
+  //     path: "latestMessage.sender",
+  //     select: "name pic email",
+  //   });
+
+  //   let getPincode = generateRandomString(20);
+
+  //   if (isChat.length > 0) {
+  //     let fullChat = isChat[0];
+  //     const deletedNotifications = await NotifiactSchemaModal.deleteMany({
+  //       chat: fullChat._id,
+  //     });
+
+  //     if (deletedNotifications.deletedCount > 0) {
+  //       console.log(
+  //         `${deletedNotifications.deletedCount} notifications deleted for chat ID: ${fullChat._id}`
+  //       );
+  //     } else {
+  //       console.log(`No notifications found for chat ID: ${fullChat._id}`);
+  //     }
+  //     return fullChat;
+  //   } else {
+  //     const chatData = {
+  //       chatName: "sender",
+  //       isGroupchat: false,
+  //       users: [userId, chatId],
+  //       roomId: getPincode,
+  //     };
+  //     const createChat = await ChatSchemamodel.create(chatData);
+
+  //     const fullChat = await ChatSchemamodel.findOne(createChat._id).populate(
+  //       "users",
+  //       "-password"
+  //     );
+  //     return fullChat;
+  //   }
+  // }
+
+  async createNewGroup(
+    groupname: string,
+    userLists: IUser[],
+    userId: unknown
+  ): Promise<Chats | undefined | null> {
     try {
       const newGroupChat = new ChatSchemamodel({
         chatName: groupname,
@@ -140,25 +191,6 @@ class chatRepository {
     try {
       const UserFounded = await UserSchemadata.findById(userId);
       return UserFounded;
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
-  async getUserIdstatus(userId: unknown) {
-    try {
-      const UserFounded = await UserSchemadata.findById(userId);
-      const findAllusers = await UserSchemadata.find();
-      const eachuserids = findAllusers.map((user) => user._id);
-
-      console.log(UserFounded, "UserFound");
-      console.log(eachuserids, "All User IDs");
-
-      const isFollowingAny = eachuserids.some((userid) =>
-        UserFounded?.following.includes(userid as any)
-      );
-
-      console.log(isFollowingAny, "Following status");
     } catch (error) {
       console.log(error);
     }
@@ -257,7 +289,6 @@ class chatRepository {
         "Follownotifications.email": userData.email,
       });
       if (existingFollowingUser) {
-        console.log("2222222222222222222222222222222222222222");
         return {
           followingUser: existingFollowingUser,
           isAlreadyFollowing: true,
@@ -293,78 +324,6 @@ class chatRepository {
       };
     }
   }
-
-  // async addrepFollowers(
-  //   userId: any,
-  //   loggedUserId: any
-  // ): Promise<{
-  //   followingUser: unknown | null;
-  //   isAlreadyFollowing: boolean | null;
-  // }> {
-  //   try {
-  //     if (
-  //       !mongoose.isValidObjectId(userId) ||
-  //       !mongoose.isValidObjectId(loggedUserId)
-  //     ) {
-  //       throw new Error(
-  //         "Invalid userId or loggedUserId. Must be valid ObjectIds."
-  //       );
-  //     }
-
-  //     const [followingUser, followerUser] = await Promise.all([
-  //       UserSchemadata.findById(loggedUserId),
-  //       UserSchemadata.findById(userId),
-  //     ]);
-
-  //     if (!followingUser || !followerUser) {
-  //       throw new Error("User not found");
-  //     }
-
-  //     const isAlreadyFollower = followerUser.followers?.includes(loggedUserId);
-  //     const isAlreadyFollowing = followingUser.following?.includes(userId);
-
-  //     // Update follower and following lists
-  //     await Promise.all([
-  //       UserSchemadata.findByIdAndUpdate(
-  //         userId,
-  //         isAlreadyFollower
-  //           ? { $pull: { followers: loggedUserId } }
-  //           : { $addToSet: { followers: loggedUserId } },
-  //         { new: true }
-  //       ),
-  //       UserSchemadata.findByIdAndUpdate(
-  //         loggedUserId,
-  //         isAlreadyFollowing
-  //           ? { $pull: { following: userId } }
-  //           : { $addToSet: { following: userId } },
-  //         { new: true }
-  //       ),
-  //     ]);
-
-  //     // Handle notifications
-  //     const SaveuserFollowinfo = {
-  //       userId: new mongoose.Types.ObjectId(userId),
-  //       userName: followingUser.name,
-  //       image: followingUser.image,
-  //       email: followingUser.email,
-  //       followuserId: followingUser._id,
-  //     };
-
-  //     const notification = await GetAllNotificationsSchema.findOneAndUpdate(
-  //       { "Follownotifications.email": followingUser.email },
-  //       { $addToSet: { Follownotifications: SaveuserFollowinfo } },
-  //       { new: true, upsert: true }
-  //     );
-
-  //     return {
-  //       followingUser: notification,
-  //       isAlreadyFollowing: !isAlreadyFollowing,
-  //     };
-  //   } catch (error) {
-  //     console.error("Error updating followers:", error);
-  //     return { followingUser: null, isAlreadyFollowing: null };
-  //   }
-  // }
 
   async findAllPostNotifications(
     postid: unknown
@@ -472,7 +431,7 @@ class chatRepository {
 
   async findAllNotifications(
     userId: unknown
-  ): Promise<Notification[] | undefined> {
+  ): Promise<Notification[] | unknown> {
     try {
       const Chats = await ChatSchemamodel.find({ users: userId });
       const findAllchatid = Chats.map((chat) => chat._id);
@@ -494,7 +453,7 @@ class chatRepository {
     }
   }
 
-  async FindAllUsers(userId: unknown) {
+  async FindAllUsers(userId: unknown): Promise<IUser[] | null | undefined> {
     try {
       const findAllusers = await UserSchemadata.find({ _id: { $ne: userId } });
       if (!findAllusers) {
@@ -519,8 +478,7 @@ class chatRepository {
       const notificationsData = Follownotifications.flatMap((doc) =>
         doc.Follownotifications.filter(
           (notification) =>
-            (notification.userId as mongoose.Types.ObjectId).toString() ===
-            userId.toString()
+            (notification.userId as string).toString() === userId.toString()
         ).map((notification) => ({
           userName: notification.userName,
           email: notification.email,
@@ -576,7 +534,47 @@ class chatRepository {
     }
   }
 
-  async findAllFollowers(userId: string | unknown,page: number,limit: number): Promise<{ users: IUser[]; totalfollowers: number } | undefined> {
+  async findthelogedusers(
+    userId: string
+  ): Promise<{ blockedUsers: IUser[]; totalfollower: number } | null> {
+    try {
+      const currentUser = await UserSchemadata.findById(userId);
+      return {
+        blockedUsers: currentUser?.blockedUser || [],
+        totalfollower: currentUser?.followers.length || 0,
+      };
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async findFollowersUsers(
+    userId: string | unknown,
+    page: number,
+    limit: number
+  ): Promise<IUser[] | null> {
+    try {
+      const offset = (page - 1) * limit;
+      const foundUsers = await UserSchemadata.findById(userId, {
+        followers: 1,
+      })
+        .populate("followers")
+        .skip(offset)
+        .limit(limit);
+
+      return foundUsers?.followers || [];
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async findAllFollowers(
+    userId: string | unknown,
+    page: number,
+    limit: number
+  ): Promise<{ users: IUser[]; totalfollowers: number } | undefined> {
     try {
       const offset = (page - 1) * limit;
       const currentUser = await UserSchemadata.findById(userId);
@@ -605,21 +603,29 @@ class chatRepository {
     }
   }
 
-  async findAllOtherusers(userId: string | unknown,page: number,limit: number): Promise<{ Allusers: IUser[] | undefined; totalusers: number } | undefined> {
+  async findAllOtherusers(
+    userId: string | unknown,
+    page: number,
+    limit: number
+  ): Promise<
+    { Allusers: IUser[] | undefined; totalusers: number } | undefined
+  > {
     try {
       const offset = (page - 1) * limit;
       const findcurrentuser = await UserSchemadata.findById(userId);
       if (!findcurrentuser) {
         throw new Error("User not found");
       }
-   
-      const foundUsers = await UserSchemadata.find({
-        _id: { $ne: userId }, 
-      }).skip(offset).limit(limit);
 
-       const Totalusers = await UserSchemadata.countDocuments({
-         _id: { $ne: userId },
-       });
+      const foundUsers = await UserSchemadata.find({
+        _id: { $ne: userId },
+      })
+        .skip(offset)
+        .limit(limit);
+
+      const Totalusers = await UserSchemadata.countDocuments({
+        _id: { $ne: userId },
+      });
 
       return {
         Allusers: foundUsers,
@@ -798,41 +804,78 @@ class chatRepository {
     }
   }
 
-  async findOtherusers(
+  async findcurrentuser(
+    userId: string
+  ): Promise<{ blockedUsers: IUser[]; totalfollowing: number } | null> {
+    try {
+      const currentUser = await UserSchemadata.findById(userId);
+      return {
+        blockedUsers: currentUser?.blockedUser || [],
+        totalfollowing: currentUser?.following.length || 0,
+      };
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
+  }
+
+  async findFollowingUsers(
     userId: string | unknown,
     page: number,
     limit: number
-  ): Promise<{ followusers: IUser[]; totalfollow: number } | undefined> {
+  ): Promise<IUser[] | null> {
     try {
-      const currentUser = await UserSchemadata.findById(userId);
-      if (!currentUser) {
-        throw new Error("User not found");
-      }
       const offset = (page - 1) * limit;
-
-      const blockedUsers = currentUser.blockedUser || [];
-
-      const foundUsers = await UserSchemadata.findById(userId, { following: 1 })
+      const foundUsers = await UserSchemadata.findById(userId, {
+        following: 1,
+      })
         .populate("following")
         .skip(offset)
         .limit(limit);
 
-      const totalfollowing = currentUser?.following.length;
-
-      const following = foundUsers?.following || [];
-
-      const filteredFollowing = following.filter(
-        (following: any) => !blockedUsers.includes(following._id.toString())
-      );
-
-      return {
-        totalfollow: totalfollowing,
-        followusers: filteredFollowing,
-      };
+      return foundUsers?.following || [];
     } catch (error) {
       console.log(error);
+      return null;
     }
   }
+
+  // async findOtherusers(
+  //   userId: string | unknown,
+  //   page: number,
+  //   limit: number
+  // ): Promise<{ followusers: IUser[]; totalfollow: number } | undefined> {
+  //   try {
+  //     const currentUser = await UserSchemadata.findById(userId);
+  //     if (!currentUser) {
+  //       throw new Error("User not found");
+  //     }
+  //     const offset = (page - 1) * limit;
+
+  //     const blockedUsers = currentUser?.blockedUser || [];
+  //     const totalfollowing = currentUser?.following.length;
+
+  //     const foundUsers = await UserSchemadata.findById(userId, {
+  //       following: 1,
+  //     })
+  //       .populate("following")
+  //       .skip(offset)
+  //       .limit(limit);
+
+  //     const following = foundUsers?.following || [];
+
+  //     const filteredFollowing = following.filter(
+  //       (following: any) => !blockedUsers.includes(following._id.toString())
+  //     );
+
+  //     return {
+  //       totalfollow: totalfollowing,
+  //       followusers: filteredFollowing,
+  //     };
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 }
 
 export default chatRepository;

@@ -1,13 +1,11 @@
-import React, { ChangeEvent, useState } from "react";
-import profileimg from "../images/Userlogo.png";
+import React, {  useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import * as Yup from "yup";
 import { useFormik } from "formik";
-import { FaSpinner, FaUpload, FaTrashAlt } from "react-icons/fa";
+import { FaSpinner,  } from "react-icons/fa";
 import { EditProfileModalProps } from "../Interfaces/Interface";
-import { API_USER_URL, CONTENT_TYPE_JSON, CONTENT_TYPE_MULTER } from "../Constants/Constants";
-import axiosClient from "../../Services/Axiosinterseptor";
+import { updatePassword } from "../../Services/User_API/Editpassword";
 
 const EditPasswordModal: React.FC<EditProfileModalProps> = ({
   toggleModal,
@@ -46,14 +44,11 @@ const EditPasswordModal: React.FC<EditProfileModalProps> = ({
       }
       setLoading(true);
       try {
-        const { data } = await axiosClient.patch(
-          `${API_USER_URL}/updatePassword`,
-          formData
-        );
-        if (data.message === "Update password") {
+        const response = await updatePassword(formData);
+        if (response.success) {
           toast.success("Profile updated");
           updateProfileState();
-          toggleModal()
+          toggleModal();
         } else {
           toast.error("Profile updation failed");
         }

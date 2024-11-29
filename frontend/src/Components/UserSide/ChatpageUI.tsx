@@ -14,38 +14,37 @@ import { useSelector } from "react-redux";
 import { store } from "../../Redux-store/Reduxstore";
 import axios from "axios";
 import data from "@emoji-mart/data";
-import io, { Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
 import Picker from "@emoji-mart/react";
-import ThreeDot from "react-loading";
 import { IoSend } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { OrbitProgress } from "react-loading-indicators";
 import Swal from "sweetalert2";
 import Navbar2 from "./Navbar2";
-import {
-  API_MESSAGE_URL,
-  CONTENT_TYPE_MULTER,
-} from "../Constants/Constants";
-import { ActiveUsersType, userInfo } from "../Interfaces/Interface";
+import { ActiveUsersType, userInfo, YourComponentProps } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
-import { ActiveUsershere, handleTyping, initilizeSocket, joinChatRoom, sendMessage, setupOnMessageReceived, stopTyping } from "./GlobalSocket/CreateSocket";
+import {
+  ActiveUsershere,
+  initilizeSocket,
+  joinChatRoom,
+  sendMessage,
+  setupOnMessageReceived,
+} from "./GlobalSocket/CreateSocket";
 import { setSelectedChat } from "../../Redux-store/Redux-slice";
-import axiosClient from "../../Services/Axiosinterseptor";
-const ENDPOINT = "http://localhost:3000";
+import {
+  chechuserblocking,
+  findAllmessage,
+  getuserdetails,
+  getuserid,
+  Sendmessages,
+} from "../../Services/User_API/Chatpage";
 let socket: Socket;
 let selectedChatCompare: any;
-
-interface YourComponentProps {
-  userToken: string;
-  users:any[]; 
-}
-const ChatPage: React.FC<YourComponentProps> = (users) => {
+const ChatPage: React.FC<YourComponentProps> = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState<string>("");
   const { chatId, dataId } = useParams<{ chatId: any; dataId: any }>();
-  const [socketConnected, setSocketConnected] = useState(false);
-  const [postContent, setPostContent] = useState("");
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -54,38 +53,37 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [menuOpenPost, setMenuOpenPost] = useState<string | null>(null);
   const [typing, setTyping] = useState(false);
-  const [istyping, setIsTyping] = useState(false);
   const [userId, setUserId] = useState<string | any>(null);
   const [userStatus, setuserStatus] = useState(false);
   const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
-  const [isOnline,setIsOnline] = useState(false)
+  const [isOnline, setIsOnline] = useState(false);
 
   useEffect(() => {
     const socketInstance = initilizeSocket(userToken);
     ActiveUsershere(setActiveUsers);
     const onMessageReceived = (newMessageReceived: any) => {
-      if (!selectedChatCompare ||selectedChatCompare._id !== newMessageReceived.chat._id) {
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare._id !== newMessageReceived.chat._id
+      ) {
         setMessages((prevMessages) => [...prevMessages, newMessageReceived]);
         scrollToBottom();
       } else {
       }
     };
 
-    
     setupOnMessageReceived(onMessageReceived);
     return () => {
       socketInstance.off("message received");
     };
-  }, [])
+  }, []);
 
   useEffect(() => {
     const GetUserId = async () => {
       try {
-        const { data } = await axios.get(
-          `${API_MESSAGE_URL}/getuserimage/${chatId}`
-        );
-        if (data.message === "Get user id") {
-          setuserinfo(data.userinfo);
+        const response = await getuserdetails(chatId);
+        if (response.success) {
+          setuserinfo(response.userdetails);
         } else {
           toast.error("User id not found");
         }
@@ -113,7 +111,7 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
         console.log("Error fetching posts:", error);
       }
     };
-    
+
     GetUserId();
   }, []);
 
@@ -124,7 +122,6 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
   useEffect(() => {
     handleOnline();
   }, [activeUsers]);
-
 
   const handleJoinRoom = useCallback(() => {
     navigate(`/room/${dataId}`);
@@ -155,7 +152,6 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
     }
   };
 
-
   const handleEmojiSelect = (emoji: any) => {
     setNewMessage((prevContent) => prevContent + emoji.native);
     setShowEmojiPicker(false);
@@ -180,9 +176,9 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
   const fetchMessages = async () => {
     if (!selectedChat) return;
     try {
-      const { data } = await axiosClient.get(`${API_MESSAGE_URL}/${dataId}`);
-      if (data.message === "Get all messages") {
-        setMessages(data.Allmessage);
+      const response = await findAllmessage(dataId);
+      if (response.success) {
+        setMessages(response.getmessages);
         joinChatRoom(dataId);
       } else {
         toast.error("Failed to get all messages");
@@ -210,11 +206,9 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
     }
   };
 
-
   const handleSubmit = async (e: FormEvent) => {
     setLoading(true);
     e.preventDefault();
-    // socket.emit("stop typing", dataId);
 
     if (
       !newMessage.trim() &&
@@ -230,25 +224,19 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
         formData.append("content", newMessage);
       }
       formData.append("chatId", dataId);
-      postImages.forEach((image, index) => {
+      postImages.forEach((image,) => {
         formData.append(`images`, image);
       });
-      postVideos.forEach((video, index) => {
+      postVideos.forEach((video, ) => {
         formData.append(`videos`, video);
       });
 
-      const { data } = await axiosClient.post(`${API_MESSAGE_URL}`, formData, {
-        headers: {
-          "Content-Type": CONTENT_TYPE_MULTER,
-        },
-      });
-
-      if (data) {
-        // socket.emit("new message", data);
+      const response = await Sendmessages(formData);
+      if (response.success) {
         setLoading(false);
-        sendMessage(data);
-        setMessages([...messages, data]);
-        setSelectedChat([...messages, data]);
+        sendMessage(response.getData);
+        setMessages([...messages, response.getData]);
+        setSelectedChat([...messages, response.getData]);
         setNewMessage("");
         setPostImages([]);
         setPostVideos([]);
@@ -289,7 +277,6 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
       const confirmationText = isActive
         ? "Are you sure you want to block this user?"
         : "Are you sure you want to unblock this user? ";
-
       Swal.fire({
         title: confirmationText,
         icon: "warning",
@@ -299,9 +286,9 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
         confirmButtonText: actionText,
       }).then(async (result) => {
         if (result.isConfirmed) {
-          const { data } = await axiosClient.patch(`${API_MESSAGE_URL}/blockuser`,{ userId, LogedUserId },);
-          if (data.message == "User blocked") {
-            setuserStatus(data.userStatus);
+          const response = await chechuserblocking(userId, LogedUserId);
+          if (response.success) {
+            setuserStatus(response.userStatus);
           } else {
             toast.error("User blocked Failed");
           }
@@ -330,9 +317,6 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
     }
   };
 
-
-
-
   useEffect(() => {
     fetchMessages();
     selectedChatCompare = selectedChat;
@@ -343,9 +327,9 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
     const getUserToken = async () => {
       if (!userToken) return;
       try {
-        const { data } = await axiosClient.get(`${API_MESSAGE_URL}/getuserid/${userToken}`);
-        if (data.message === "User id found") {
-          setUserId(data.userId);
+        const response = await getuserid(userToken);
+        if (response.success) {
+          setUserId(response.useriD);
         } else {
           toast.error("No id get here");
         }
@@ -380,21 +364,19 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
     setMenuOpenPost(menuOpenPost === userId ? null : userId);
   };
 
-
-  const handleOnline = () =>{
-
-    activeUsers.some((user) => user.userId === userinfo?._id)?setIsOnline(true):setIsOnline(false)
-    
-
-  }
+  const handleOnline = () => {
+    activeUsers.some((user) => user.userId === userinfo?._id)
+      ? setIsOnline(true)
+      : setIsOnline(false);
+  };
 
   const typingHandler = (e: ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
 
     if (!typing) {
       setTyping(true);
-      handleTyping(dataId);
-      // socket.emit("typing", dataId);
+      // handleTyping(dataId);
+      socket.emit("typing", dataId);
     }
     let lastTypingTime = new Date().getTime();
     var timerLength = 3000;
@@ -402,8 +384,8 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
       var timeNow = new Date().getTime();
       var timeDiff = timeNow - lastTypingTime;
       if (timeDiff >= timerLength && typing) {
-        stopTyping(dataId);
-        // socket.emit("stop typing", dataId);
+        // stopTyping(dataId);
+        socket.emit("stop typing", dataId);
         setTyping(false);
       }
     }, timerLength);
@@ -537,7 +519,7 @@ const ChatPage: React.FC<YourComponentProps> = (users) => {
                 </div>
               ))}
               <div ref={messagesEndRef} />
-              {istyping && <ThreeDot />}
+         
               {loading && (
                 <OrbitProgress
                   color="#32cd32"

@@ -1,7 +1,7 @@
 import {  createSlice } from "@reduxjs/toolkit";
 
-export interface IUser extends Document {
-  id: any;
+ interface IUser extends Document {
+  _id: any;
   name: string;
   email: string;
   password: string;
@@ -13,7 +13,11 @@ export interface IUser extends Document {
   image?: string;
 }
 
-export interface Chats {
+
+
+
+
+ interface Chats {
   _id: any;
   chatName: string;
   isGroupchat: boolean;

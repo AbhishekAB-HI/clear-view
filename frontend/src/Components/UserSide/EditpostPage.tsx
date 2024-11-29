@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { FaImage, FaVideo, FaSmile, FaSpinner } from "react-icons/fa";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
@@ -6,9 +6,8 @@ import toast from "react-hot-toast";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { EditPostModalProps } from "../Interfaces/Interface";
-import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
 import axios from "axios";
-import axiosClient from "../../Services/Axiosinterseptor";
+import { editpost } from "../../Services/User_API/Createnewpost";
 
 
 const EditPostModal = ({toggleeditpostModal,updateState,postid,
@@ -81,17 +80,8 @@ const EditPostModal = ({toggleeditpostModal,updateState,postid,
     formData.append("postId", postid || "");
 
     try {
-      const response = await axiosClient.post(
-        `${API_USER_URL}/editpost`,
-        formData,
-        {
-          headers: {
-            "Content-Type": CONTENT_TYPE_MULTER,
-          },
-        }
-      );
-
-      if (response.data.message === "Post updated successfully") {
+      const response = await editpost(formData);
+      if (response.success) {
         toast.success("Post updated successfully");
         updateState();
         toggleeditpostModal();

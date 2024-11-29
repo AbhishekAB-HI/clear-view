@@ -6,12 +6,21 @@ export interface Chats {
   _id: ObjectId;
   chatName: string;
   isGroupchat: boolean;
-  users: IUser[];
+  users: any[];
   latestMessage: Message;
   groupAdmin: IUser[];
   createdAt: Date;
   updatedAt: Date;
 }
+export interface Chats1 {
+  _id: ObjectId;
+  chatName: string;
+  isGroupchat: boolean;
+  users: string[];
+  roomId: string;
+}
+
+
 
 export interface Message extends Document {
   sender: mongoose.Types.ObjectId;

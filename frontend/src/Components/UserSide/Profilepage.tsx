@@ -1,5 +1,5 @@
-import React, { ChangeEvent, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import  {  useEffect, useState } from "react";
+import {  useNavigate } from "react-router-dom";
 import { store } from "../../Redux-store/Reduxstore";
 import {
   FaChevronLeft,
@@ -13,7 +13,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
 import { Pagination, Navigation } from "swiper/modules";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -38,28 +38,23 @@ import { Heart, InboxIcon, Users, Users2Icon } from "lucide-react";
 import RenderReplies from "./RenderReplies";
 import EmojiPicker from "emoji-picker-react";
 import SideNavBar2 from "./Sidebar2";
-import { ThreeDot } from "react-loading-indicators";
-import { initilizeSocket, sendfollow } from "./GlobalSocket/CreateSocket";
+import {  sendfollow } from "./GlobalSocket/CreateSocket";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
 const HomeProfilepage = () => {
   type RootState = ReturnType<typeof store.getState>;
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
+ 
   const [profileInfo, setprofileInfo] = useState<IUser | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showPassEdit, setshowPassEdit] = useState(false);
   const [showpostModal, setShowpostModal] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [UserId, setUserId] = useState<string | null>(null);
-  const [userPost, setuserPost] = useState<IPost[]>([]);
   const [menuOpen, setMenuOpen] = useState(null);
-  const [editpostUserId, seteditpostUserId] = useState<string | null>(null);
   const [postid, setPostid] = useState<string | null>(null);
   const [ShoweditpostModal, setShoweditpostModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [filteredPost, setFilteredPost] = useState<IPost[]>([]);
   const [userinfo, setuserinfo] = useState<IUser | null>(null);
   const [Blockeduserinfo, setBlockeduserinfo] = useState<IUser[] | null>(null);
@@ -74,9 +69,8 @@ const HomeProfilepage = () => {
   const [postsPerPage] = useState(2);
   const [totalPosts, setTotalPosts] = useState(0);
   const [activeTab, setActiveTab] = useState("Posts");
-  const [userStatus, setuserStatus] = useState(null);
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
-  const [userStatus1, setuserStatus1] = useState(false);
+
 
   const [postsPerblockPage] = useState(1);
   const [currentblockPage, setblockCurrentPage] = useState(1);
@@ -90,8 +84,7 @@ const HomeProfilepage = () => {
   const [getAllfollowinguser, setgetAllfollowinguser] = useState<IUser[]>([]);
 
   const [totalFollowing, settotalFollowingpost] = useState(0);
-  const [LikeNotifications, setLikeNotifications] =
-    useState<IAllNotification>();
+
   const [curretfollowingpage, setcurretfollowingpage] = useState(1);
   const userToken = useSelector(
     (state: RootState) => state.accessTocken.userTocken
@@ -103,7 +96,7 @@ const HomeProfilepage = () => {
     const getAllPost = async () => {
       try {
         const { data } = await axiosClient.get(
-          `${API_CHAT_URL}/allusers?page=${curretfollowingpage}&limit=${postsPerPage}`
+          `${API_CHAT_URL}/findfollowing?page=${curretfollowingpage}&limit=${postsPerPage}`
         );
         if (data.message === "Other users found") {
           setgetAllfollowinguser(data.followusers);
@@ -142,7 +135,7 @@ const HomeProfilepage = () => {
   const getAllPost = async () => {
     try {
       const { data } = await axiosClient.get(
-        `${API_CHAT_URL}/allusers?page=${curretfollowingpage}&limit=${postsPerPage}`
+        `${API_CHAT_URL}/findfollowing?page=${curretfollowingpage}&limit=${postsPerPage}`
       );
       if (data.message === "Other users found") {
         setgetAllfollowinguser(data.followusers);
@@ -323,17 +316,7 @@ const HomeProfilepage = () => {
     };
   }, [userToken]);
 
-  useEffect(() => {
-    const socketInstance = initilizeSocket(userToken);
-    const UserfollowStatus = async () => {
-      try {
-        const { data } = await axiosClient.get(`${API_CHAT_URL}/userstatus`);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    UserfollowStatus();
-  }, []);
+ 
 
   useEffect(() => {
     const getAllPost = async () => {
@@ -526,7 +509,7 @@ const HomeProfilepage = () => {
       });
       if (data.message === "Post liked succesfully") {
         fetchdatas();
-        setLikeNotifications(data.getupdate);
+     
         sendLikePost(data.getupdate);
       } else {
         toast.error("Post liked Failed");
@@ -642,10 +625,6 @@ const HomeProfilepage = () => {
     setShoweditpostModal(true);
   };
 
-  const dispatch = useDispatch();
-  const usertocken = useSelector(
-    (state: RootState) => state.accessTocken.userTocken
-  );
 
   useEffect(() => {
     const fetchdata = async () => {
@@ -661,7 +640,7 @@ const HomeProfilepage = () => {
           `${API_USER_URL}/userposts?page=${currentPage}&limit=${postsPerPage}`
         );
         if (response.data.message === "User Post found") {
-          setuserPost(response.data.posts);
+    
           setFilteredPost(response.data.posts);
           setTotalPosts(response.data.total);
         } else {
@@ -728,7 +707,7 @@ const HomeProfilepage = () => {
         `${API_USER_URL}/userposts?page=${currentPage}&limit=${postsPerPage}`
       );
       if (response.data.message === "User Post found") {
-        setuserPost(response.data.posts);
+  
         setFilteredPost(response.data.posts);
         setTotalPosts(response.data.total);
       } else {
@@ -790,14 +769,11 @@ const HomeProfilepage = () => {
     }
   };
 
-  const [Loading, setLoading] = useState(false);
-  const [search, setSearch] = useState("");
-  const [searchResult, setSearchResult] = useState<IUser[]>([]);
+
   const [userID, setuserID] = useState<string>("");
-  const [userFound, setuserFound] = useState(null);
+ 
   const [menuOpenPost, setMenuOpenPost] = useState<string | null>(null);
-  const [followStates, setFollowStates] = useState({});
-  const [menuOpenPost1, setMenuOpenPost1] = useState(null);
+ 
 
   const updateUsers = async () => {
     try {
@@ -827,7 +803,7 @@ const HomeProfilepage = () => {
   const UpdateBlocking = async (userId: string, LogedUserId: unknown) => {
     try {
       const blockUser = userinfo?.blockedUser.some(
-        (userOne) => userOne === userId
+        (userOne:any) => userOne === userId
       );
       const actionText = blockUser ? "Unblock user" : "Block user";
       const confirmationText = blockUser
@@ -847,7 +823,7 @@ const HomeProfilepage = () => {
             { userId, LogedUserId }
           );
           if (data.message == "User blocked") {
-            setuserStatus(data.userStatus);
+        
             findBlockedUsers();
             getUserinfo();
             fetchdatas();
@@ -871,7 +847,7 @@ const HomeProfilepage = () => {
   const handleBlockUser = async (userId: string, LogedUserId: string) => {
     try {
       const blockUser = userinfo?.blockedUser.some(
-        (userOne) => userOne === userId
+        (userOne:any) => userOne === userId
       );
       const actionText = blockUser ? "Unblock user" : "Block user";
       const confirmationText = blockUser
@@ -891,7 +867,7 @@ const HomeProfilepage = () => {
             { userId, LogedUserId }
           );
           if (data.message == "User blocked") {
-            setuserStatus(data.userStatus);
+         
             findBlockedUsers();
             getUserinfo();
             fetchdatas();
@@ -992,6 +968,7 @@ const HomeProfilepage = () => {
   }, []);
 
   const handleReport = async ( userId: string) => {
+    console.log(userId,'222222222222222222');
      const reportReasons: { [key: string]: string } = {
        "1": "Inappropriate content",
        "2": "Spam or misleading",
@@ -1077,56 +1054,6 @@ const HomeProfilepage = () => {
 
 
 
-
-
-
-
-
-
-  // const handleReport = async (userID: string) => {
-  //   const { value: text } = await Swal.fire({
-  //     input: "textarea",
-  //     inputLabel: "Report User",
-  //     inputPlaceholder: "Type here...",
-  //     inputAttributes: {
-  //       "aria-label": "Type your message here",
-  //     },
-  //     showCancelButton: true,
-  //   });
-  //   if (text) {
-  //     try {
-  //       const { data } = await axiosClient.patch(`${API_USER_URL}/reportuser`, {
-  //         userID,
-  //         text,
-  //       });
-
-  //       if (data.message === "user Reported succesfully") {
-  //         toast.success("User Reported succesfully");
-  //       } else {
-  //         toast.error("User Reported Fails");
-  //       }
-  //     } catch (error) {
-  //       if (axios.isAxiosError(error)) {
-  //         const errorMessage =
-  //           error.response?.data?.message || "An error occurred";
-  //         toast.error(errorMessage);
-  //       } else {
-  //         toast.error("Unknown error occurred");
-  //       }
-  //       console.error("Error verifying OTP:", error);
-  //     }
-  //   } else {
-  //     if (text.length === 0) {
-  //       Swal.fire("Please text here");
-  //     }
-  //     navigate("/homepage");
-  //   }
-
-  //   try {
-  //   } catch (error) {
-  //     console.error("Error reporting post:", error);
-  //   }
-  // };
 
 
 
@@ -1456,9 +1383,9 @@ const HomeProfilepage = () => {
                               />
                             </div>
                             <div className="mt-4 max-h-40 overflow-y-auto">
-                              {post.likes.map((like) => (
+                              {post.likes.map((like, index) => (
                                 <div
-                                  key={like._id}
+                                  key={index}
                                   className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
                                 >
                                   <span className="text-gray-900 dark:text-gray-100">
@@ -1542,7 +1469,7 @@ const HomeProfilepage = () => {
                         <RenderReplies
                           UpdateLikepost={fetchdatas}
                           post={post}
-                          parentCommentId={comment._id}
+                          parentCommentId={comment as string}
                           saveid={userinfo?._id}
                           replyingTo={replyingTo}
                           replyContent={replyContent}
@@ -1801,21 +1728,21 @@ const HomeProfilepage = () => {
                           onClick={() => followUser(user._id, userID)}
                           color={
                             userinfo?.following.some(
-                              (userOne) => userOne._id === user._id
+                              (userOne: any) => userOne._id === user._id
                             )
                               ? "white"
                               : "blue"
                           }
                           className={
                             userinfo?.following.some(
-                              (userOne) => userOne._id === user._id
+                              (userOne: any) => userOne._id === user._id
                             )
                               ? "mr-10 mb-2 px-4 py-2 text-white font-semibold rounded-full border border-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors duration-300"
                               : "mr-10 mb-2 px-4 py-2 text-white font-semibold bg-blue-600 rounded-full border border-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors duration-300"
                           }
                         >
                           {userinfo?.following.some(
-                            (userOne) => userOne._id === user._id
+                            (userOne: any) => userOne._id === user._id
                           )
                             ? "Following"
                             : "Follow"}
@@ -1855,19 +1782,12 @@ const HomeProfilepage = () => {
               <div className="space-y-4 p-5  w-full ">
                 <div className="space-y-4">
                   {/* Loading or Results */}
-                  {Loading ? (
-                    <div className="flex justify-center items-center">
-                      <ThreeDot
-                        className="w-20 h-3 space-x-10"
-                        color="#3168cc"
-                      />
-                    </div>
-                  ) : getAlluser.length === 0 ? (
+                  { getAlluser.length === 0 ? (
                     <div className="flex justify-center items-center">
                       <p className="text-gray-400">No users found</p>
                     </div>
                   ) : (
-                    getAlluser.map((user, index) => (
+                    getAlluser.map((user) => (
                       <div
                         key={user._id}
                         className="flex items-center hover:cursor-pointer justify-between bg-gray-900 p-4 rounded-lg"

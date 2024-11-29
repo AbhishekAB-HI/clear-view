@@ -17,12 +17,10 @@ import Posthomepage from "./AddpostHome";
 import { Pagination, Navigation } from "swiper/modules";
 import RenderReplies from "./RenderReplies";
 import { Home, MessageSquare, Bell, Plus, InboxIcon } from "lucide-react";
-import { API_CHAT_URL, API_USER_URL } from "../Constants/Constants";
 import {
   ActiveUsersType,
   IAllNotification,
   IPost,
-  IUser,
   Notification,
   ReplyingToState,
 } from "../Interfaces/Interface";
@@ -30,9 +28,11 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import debounce from "lodash.debounce";
 import { Heart, Users } from "lucide-react";
 import io, { Socket } from "socket.io-client";
-import { LogoutActiveUsershere } from "./GlobalSocket/CreateSocket";
 import axiosClient from "../../Services/Axiosinterseptor";
 import moment from "moment";
+import { commentThePost, findAllposthome, getnotifications, reportThePost, updatelastseen } from "../../Services/User_API/Homepageapis";
+import { getuserinfomations } from "../../Services/User_API/FollowerApi";
+import { API_USER_URL } from "../Constants/Constants";
 
 let selectedChatCompare: any;
 const ENDPOINT = "http://localhost:3000";
@@ -43,8 +43,6 @@ const HomeLoginPage = () => {
   // STATE_MANAGEMENT===============================================================================================================================================================
 
   const [isOpen, setIsOpen] = useState(false);
-  const [Userpost, setPostList] = useState<IPost[]>([]);
-  const [LikeNotifications, setLikeNotifications] =useState<IAllNotification>();
   const dispatch = useDispatch();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredPost, setFilteredPost] = useState<IPost[]>([]);
@@ -55,16 +53,11 @@ const HomeLoginPage = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [replyingTo, setReplyingTo] = useState<ReplyingToState | null>(null);
   const [replyContent, setReplyContent] = useState("");
-  const [replyPost, setReplyPost] = useState<IPost[]>([]);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [AccOpen, setAccOpen] = useState(false);
   const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
-  const [postsPerPage] = useState(4);
-  const [totalPosts, setTotalPosts] = useState(0);
   const [Category, setCategory] = useState("Allpost");
   const [showLikesList, setShowLikesList] = useState(false);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [socketConnected, setSocketConnected] = useState(false);
   const [savelikeNotify, setsavelikeNotify] = useState<IAllNotification>();
   const [Savenewpost, setSavenewpost] = useState<IAllNotification[]>([]);
   const [page, setPage] = useState(1);
@@ -73,22 +66,12 @@ const HomeLoginPage = () => {
   const observer = useRef<IntersectionObserver | null>(null);
 
 
- 
-
-  const selectedChat = useSelector(
-    (state: RootState) => state.accessTocken.SelectedChat
-  );
-
   const userDetails = useSelector(
     (state: RootState) => state.accessTocken.userTocken
   );
 
   const [showpostModal, setShowpostModal] = useState(false);
 
-  //  const formatTime = (dateString: string) => {
-  //    const date = new Date(dateString);
-  //    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" ,hour12:true });
-  //  };
   moment.updateLocale("en", {
     relativeTime: {
       future: "in %s",
@@ -107,80 +90,27 @@ const HomeLoginPage = () => {
     },
   });
 
-
-
-
-
-
-
-
-
-
   const formatTime = (timestamp: string): string => {
-    const postTime = moment(timestamp); // Parse timestamp
-    return postTime.fromNow(); // Outputs "a few seconds ago," "5 hours ago," "yesterday," etc.
+    const postTime = moment(timestamp); 
+    return postTime.fromNow(); 
   };
-
-
-
-
-
-
-
 
   useEffect(() => {
     socket = io(ENDPOINT);
     if (userDetails) {
       socket.emit("setup", userDetails);
-      socket.on("connected", () => setSocketConnected(true));
     }
     return () => {
       socket.disconnect();
     };
   }, [userDetails]);
 
-  const [notifications, setNotifications] = useState<IUser[]>([]);
 
-  const getFollownotification = async (userId: string) => {
-    try {
-      const { data } = await axiosClient.get(
-        `${API_CHAT_URL}/getfollownotify?id=${userId}`
-      );
-      if (data.message === "get all notifications") {
-        setNotifications(data.follownotifications);
-      } else {
-        toast.error("User data not saved");
-      }
-    } catch (error) {
-      console.log(error);
-      if (axios.isAxiosError(error)) {
-        if (!error.response) {
-          toast.error("Network error. Please check your internet connection.");
-        } else {
-          const status = error.response.status;
-          if (status === 404) {
-            toast.error("Posts not found.");
-          } else if (status === 500) {
-            toast.error("Server error. Please try again later.");
-          } else {
-            toast.error("Something went wrong.");
-          }
-        }
-      } else if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("An unexpected error occurred.");
-      }
-      console.log("Error fetching posts:", error);
-    }
-  };
   const getNotifications = async () => {
     try {
-      const { data } = await axiosClient.get(
-        `${API_CHAT_URL}/getnotifications`
-      );
-      if (data.message === "get all notifications") {
-        setSaveAllNotifications(data.notifications);
+       const response = await getnotifications()
+      if (response.success) {
+        setSaveAllNotifications(response.notifications);
       } else {
         toast.error("All notifications Failed");
       }
@@ -232,13 +162,13 @@ const HomeLoginPage = () => {
 
     socket.on(
       "follow received",
-      (logeduserinfo, followingUser, followuserId) => {
+      (followingUser) => {
         toast.success("User follow you");
         setSavenewpost(followingUser);
       }
     );
 
-    socket.on("post update", (postedUserInfo, postdetails) => {
+    socket.on("post update", ( postdetails) => {
       toast.success("new post uploaded");
       setSavenewpost(postdetails);
     });
@@ -258,13 +188,9 @@ const HomeLoginPage = () => {
     setIsOpen(!isOpen);
   };
 
-  const handleLinkClick = () => {
-    setIsOpen(false);
-  };
-
+ 
   // STATE_MANAGEMENT===============================================================================================================================================================
 
-  const getchat = useSelector((state: RootState) => state.accessTocken.chats);
 
   // API ====================================================================================================================================================
 
@@ -275,9 +201,9 @@ const HomeLoginPage = () => {
   useEffect(() => {
     const getUserId = async () => {
       try {
-        const { data } = await axiosClient.get(`${API_USER_URL}/getuserid`);
-        if (data.message === "user id get") {
-          setsaveid(data.userId);
+        const response = await getuserinfomations()
+        if (response.success) {
+          setsaveid(response.useridfound);
         } else {
           toast.error("Failed to retrieve userid.");
         }
@@ -337,15 +263,16 @@ const HomeLoginPage = () => {
   const debouncedGetAllPost = useCallback(debounce(async (currentpage:number) => {
        setIsLoading(true);
       try {
-        const { data } = await axiosClient.get(
-          `${API_USER_URL}/allposts?search=${searchQuery}&category=${Category}&page=${currentpage}`
+        const response = await findAllposthome(
+          searchQuery,
+          Category,
+          currentpage
         );
-        if (data.message === "getAllpostdetails") {
-          // setPostList((prepost) => [...prepost, ...data.data.posts]);
-          setFilteredPost((prepost) => [...prepost, ...data.data.posts]);
-          const totalPages = data.data.totalPages || 0;
-          setHasMore(currentpage < totalPages); 
-    
+ 
+        if (response.success) {
+          setFilteredPost(() => [...response.allposts]);
+          const totalPages = response.totalPages || 0;
+          setHasMore(currentpage < totalPages);
         } else {
           toast.error("Failed to retrieve post details.");
         }
@@ -381,16 +308,14 @@ const HomeLoginPage = () => {
 
 
 
+
 const findAllthepost =async (currentpage: number) => {
     setIsLoading(true);
     try {
-      const { data } = await axiosClient.get(
-        `${API_USER_URL}/allposts?search=${searchQuery}&category=${Category}&page=${currentpage}`
-      );
-      console.log("333333333333333333333333333333333", data.data.posts);
-      if (data.message === "getAllpostdetails") {
-        setFilteredPost([...data.data.posts]);
-        const totalPages = data.data.totalPages || 0;
+     const response = await findAllposthome(searchQuery, Category, currentpage);
+      if (response.success) {
+        setFilteredPost([...response.allposts]);
+        const totalPages = response.totalPages || 0;
         setHasMore(currentpage < totalPages);
       } else {
         toast.error("Failed to retrieve post details.");
@@ -473,41 +398,7 @@ const findAllthepost =async (currentpage: number) => {
     }
   };
 
-  useEffect(() => {
-    const getAllreply = async () => {
-      try {
-        const { data } = await axiosClient.get(`${API_USER_URL}/getreplys`);
-        if (data.message === "get all reply comments") {
-          setReplyPost(data.posts);
-        } else {
-          toast.error("Failed to get the reply comment");
-        }
-      } catch (error: unknown) {
-        if (axios.isAxiosError(error)) {
-          if (!error.response) {
-            toast.error(
-              "Network error. Please check your internet connection."
-            );
-          } else {
-            const status = error.response.status;
-            if (status === 404) {
-              toast.error("Posts not found.");
-            } else if (status === 500) {
-              toast.error("Server error. Please try again later.");
-            } else {
-              toast.error("Something went wrong.");
-            }
-          }
-        } else if (error instanceof Error) {
-          toast.error(error.message);
-        } else {
-          toast.error("An unexpected error occurred.");
-        }
-        console.log("Error fetching posts:", error);
-      }
-    };
-    getAllreply();
-  }, []);
+
 
   const handleEmojiClick = (emojiData: { emoji: string }) => {
     setComment((prevComment) => prevComment + emojiData.emoji);
@@ -516,23 +407,18 @@ const findAllthepost =async (currentpage: number) => {
   const navigate = useNavigate();
   const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
 
-  const LogoutActiveUsershere = (
-    setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>
-  ) => {
+  const LogoutActiveUsershere = (setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>) => {
     socket.emit("get-users", (users: ActiveUsersType[]) => {
       setActiveUsers(users);
     });
   };
-
+  console.log(activeUsers,);
   const handleLogout = async () => {
     try {
       logoutUser(saveid);
       LogoutActiveUsershere(setActiveUsers);
-      const { data } = await axiosClient.patch(
-        `${API_USER_URL}/updatelastseen`
-      );
-
-      if (data.message === "lastTime updated") {
+      const response = await updatelastseen()
+      if (response.success) {
         toast.success("Logout successfull");
         navigate("/login");
       } else {
@@ -592,11 +478,10 @@ const findAllthepost =async (currentpage: number) => {
 
       if (text && text.trim().length > 0) {
         try {
-          const { data } = await axiosClient.patch(
-            `${API_USER_URL}/reportpost`,
-            { postId, text, userId }
-          );
-          if (data.message === "Post Reported succesfully") {
+
+          const response = await reportThePost(postId, text, userId);
+       
+          if (response.success) {
             toast.success("Post Reported successfully");
           } else {
             toast.error("Failed to Report");
@@ -646,12 +531,8 @@ const findAllthepost =async (currentpage: number) => {
       if (comment.length === 0) {
         toast.error("please write something...");
       }
-      const { data } = await axiosClient.patch(`${API_USER_URL}/commentpost`, {
-        postId,
-        userId,
-        comment,
-      });
-      if (data.message === "Post Commented succesfully") {
+      const response = await commentThePost(postId, userId, comment);
+      if (response.success) {
         debouncedGetAllPost(page);
         setComment("");
         setShowEmojiPicker(false);
@@ -683,9 +564,7 @@ const findAllthepost =async (currentpage: number) => {
 
 
 
-  const ChangeCategory =()=>{
-      
-  }
+ 
 
   const sendLikePost = async (postdetails: IAllNotification) => {
     try {
@@ -699,14 +578,16 @@ const findAllthepost =async (currentpage: number) => {
 
   const handleLike = async (postId: string, userId: string) => {
     try {
+      // const response = await likeupdate(postId, userId);
       const { data } = await axiosClient.patch(`${API_USER_URL}/likepost`, {
         postId,
         userId,
       });
       if (data.message === "Post liked succesfully") {
         debouncedGetAllPost(page);
-        setLikeNotifications(data.getupdate);
+      
         sendLikePost(data.getupdate);
+        console.log(data.getupdate,'22222222222222222');
       } else {
         toast.error("Post liked Failed");
       }
@@ -733,9 +614,7 @@ const findAllthepost =async (currentpage: number) => {
     }
   };
 
-  const userToken = useSelector(
-    (state: RootState) => state.accessTocken.userTocken
-  );
+
 
   const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
@@ -888,7 +767,7 @@ const findAllthepost =async (currentpage: number) => {
                 icon: <MessageSquare size={24} />,
                 text: "Messages",
                 path: "/message",
-                notificationCount: SaveAllNotifications?.length || 0,
+                notificationCount:  SaveAllNotifications.length ? SaveAllNotifications.length :null,
               },
               {
                 icon: <Users size={24} />,
@@ -906,7 +785,6 @@ const findAllthepost =async (currentpage: number) => {
                 text: "Notifications",
                 path: "/notifications",
                 followNotification:
-                  notifications.length !== 0 ||
                   savelikeNotify !== undefined ||
                   Savenewpost.length !== 0,
               },
@@ -935,14 +813,14 @@ const findAllthepost =async (currentpage: number) => {
                 >
                   {item.text}
                 </span>
-                {item.text === "Messages" && item.notificationCount > 0 && (
+                {item.text === "Messages"  && item?.notificationCount  && (
                   <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                     {item.notificationCount}
                   </span>
                 )}
 
                 {item.text === "Notifications" &&
-                  item.followNotification > 0 && (
+                  item?.followNotification  && (
                     <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                       1
                     </span>
@@ -1171,7 +1049,7 @@ const findAllthepost =async (currentpage: number) => {
                                 />
                               </div>
                               <div className="mt-4 max-h-40 overflow-y-auto">
-                                {post.likes.map((like) => (
+                                {post.likes.map((like: any) => (
                                   <div
                                     key={like._id}
                                     className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
@@ -1198,7 +1076,7 @@ const findAllthepost =async (currentpage: number) => {
                               <Heart
                                 size={20}
                                 className={`${
-                                  post.likes.some((like) => like._id === saveid)
+                                  post.likes.some((like:any) => like._id === saveid)
                                     ? "text-blue-600 fill-blue-600"
                                     : "text-gray-500 dark:text-gray-400 fill-transparent"
                                 }`}
@@ -1257,7 +1135,7 @@ const findAllthepost =async (currentpage: number) => {
                           <RenderReplies
                             UpdateLikepost={debouncedGetAllPost}
                             post={post}
-                            parentCommentId={comment._id}
+                            parentCommentId={comment  as string}
                             saveid={saveid}
                             replyingTo={replyingTo}
                             replyContent={replyContent}
@@ -1416,7 +1294,7 @@ const findAllthepost =async (currentpage: number) => {
                                 />
                               </div>
                               <div className="mt-4 max-h-40 overflow-y-auto">
-                                {post.likes.map((like) => (
+                                {post.likes.map((like:any) => (
                                   <div
                                     key={like._id}
                                     className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
@@ -1443,7 +1321,7 @@ const findAllthepost =async (currentpage: number) => {
                               <Heart
                                 size={20}
                                 className={`${
-                                  post.likes.some((like) => like._id === saveid)
+                                  post.likes.some((like:any) => like._id === saveid)
                                     ? "text-blue-600 fill-blue-600"
                                     : "text-gray-500 dark:text-gray-400 fill-transparent"
                                 }`}
@@ -1502,7 +1380,7 @@ const findAllthepost =async (currentpage: number) => {
                           <RenderReplies
                             UpdateLikepost={debouncedGetAllPost}
                             post={post}
-                            parentCommentId={comment._id}
+                            parentCommentId={comment as string}
                             saveid={saveid}
                             replyingTo={replyingTo}
                             replyContent={replyContent}

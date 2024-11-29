@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useState } from "react";
+import {  useEffect, useState } from "react";
 import { store } from "../../Redux-store/Reduxstore";
 import Lottie from "lottie-react";
 import logoWeb from "../animations/Animation - 1724244656671.json";
@@ -6,31 +6,27 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { clearuserAccessTocken } from "../../Redux-store/Redux-slice";
-import { FaBell, FaUserCircle } from "react-icons/fa";
+import {  FaUserCircle } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
-import { ActiveUsersType, IPost, Notification } from "../Interfaces/Interface";
-import { API_CHAT_URL, API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
+import { ActiveUsersType } from "../Interfaces/Interface";
+import {  API_USER_URL,  } from "../Constants/Constants";
 import toast from "react-hot-toast";
-import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
-import { LogoutActiveUsershere } from "./GlobalSocket/CreateSocket";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";
 const ENDPOINT = "http://localhost:3000";
+
+
 let socket: Socket;
 const Navbar2 = () => {
   type RootState = ReturnType<typeof store.getState>;
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filteredPost, setFilteredPost] = useState<IPost[]>([]);
-  const [Userpost, setPostList] = useState<IPost[]>([]);
-  const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
+
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [AccOpen, setAccOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
-    const [saveid, setsaveid] = useState<string | any>(null);
-   const getchat = useSelector((state: RootState) => state.accessTocken.chats);
+  const [saveid, setsaveid] = useState<string | any>(null);
+
   const userDetails = useSelector(
     (state: RootState) => state.accessTocken.userTocken
   );
@@ -50,24 +46,6 @@ const Navbar2 = () => {
 
 
 
-
-  useEffect(() => {
-    const getNotifications = async () => {
-      try {
-        const { data } = await axiosClient.get(
-          `${API_CHAT_URL}/getnotifications`
-        );
-        if (data.message === "get all notifications") {
-          setSaveAllNotifications(data.notifications);
-        }else{
-              toast.error("Notifications not get")
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    getNotifications();
-  }, []);
 
 
 
@@ -175,7 +153,7 @@ const Navbar2 = () => {
                 {AccOpen && (
                   <div
                     className="absolute lg:right-20 lg:top-0 w-32 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5" // Adjusted width and margin
-                    onMouseLeave={() => setIsOpen(false)}
+                 
                   >
                     <div className="py-1">
                       <Link

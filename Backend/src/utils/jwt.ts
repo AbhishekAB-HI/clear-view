@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { userPayload } from "../Interface/userInterface/Userpayload";
+import { adminPayload, userPayload } from "../Types/Commontype/TockenInterface";
 
 dotenv.config();
 
@@ -16,6 +16,11 @@ export const generateRefreshToken = (user: userPayload) => {
   return jwt.sign(user, refreshTokenSecret, { expiresIn: "7d" });
 };
 
-export const generateAdminAccessToken = (user: userPayload) => {
+export const generateAdminAccessToken = (user: adminPayload) => {
+  return jwt.sign(user, adminaccessTokenSecret, { expiresIn: "7h" });
+};
+
+
+export const generateAdminRefreshToken = (user: adminPayload) => {
   return jwt.sign(user, adminaccessTokenSecret, { expiresIn: "7h" });
 };

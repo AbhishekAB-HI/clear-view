@@ -7,8 +7,8 @@ import * as Yup from "yup";
 import CryptoJS from "crypto-js";
 import Lottie from "lottie-react";
 import logoWeb from "../animations/Animation - 1724244656671.json";
-import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 import toast from "react-hot-toast";
+import { forgetpassword } from "../../Services/User_API/Forgotsideapis";
 const ForgetPassPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,13 +38,13 @@ const ForgetPassPage: React.FC = () => {
     confirmpassword: string;
   }) => {
     const { password } = values;
-    const dataget = { password, email };
-
+ 
     try {
-      const { data } = await axios.patch( `${API_USER_URL}/forgetpassword`,dataget);
-      if (data.message === "Password Changed successfully") {
+   const dataget = { password, email };
+       const response = await forgetpassword(dataget);
+      if (response.success) {
         navigate("/login");
-      }else{
+      } else {
         toast.error("Password Changed  Failed");
       }
     } catch (error) {

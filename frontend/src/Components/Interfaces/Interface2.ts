@@ -20,11 +20,13 @@ export interface IReportPost {
 
 
 export interface IReportpost {
+  _id: Types.ObjectId;
   postId: Types.ObjectId;
   postreportReason: string;
   userinfo: Types.ObjectId;
-  postcontent: string | undefined;
-  postimage: [String] | string;
+  postcontent: string;
+  postimage: string;
+  postVideo: string;
   postedBy: string | undefined;
   reportedBy: string | undefined;
 }

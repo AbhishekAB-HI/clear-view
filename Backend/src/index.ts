@@ -12,11 +12,10 @@ import jwt from "jsonwebtoken";
 import logger from "./logger";
 import morgan from "morgan";
 import { Socket } from "socket.io";
-import {
-  ActiveUsersType,
-  IAllNotification,
-  NewMessage,
-} from "./Interface/userInterface/Userdetail";
+
+import { ActiveUsersType } from "./Types/Servicetype/UserInterface";
+import { NewMessage } from "./Types/Servicetype/MessageInterface";
+import{ IAllNotification} from "./Entities/Notificationentitities"
 import { IUser } from "./Entities/Userentities";
 import { Posts } from "./Entities/Postentities";
 
@@ -176,7 +175,8 @@ io.on("connection", (socket: Socket) => {
   socket.on("likepost", (postDetails: IAllNotification) => {
     postDetails?.LikeNotifications?.forEach((like) => {
       const targetUserId = like.postuserId; 
-      if (targetUserId) {
+      const posteduserid =like.likeduserId
+      if (targetUserId != posteduserid) {
         io.to(targetUserId).emit("Likenotification", postDetails);
         console.log(`Notification sent to user ${targetUserId}`);
       } else {
@@ -187,6 +187,7 @@ io.on("connection", (socket: Socket) => {
 
   socket.on("newpost", (postedUserInfo: Posts, postdetails:IAllNotification) => {
     console.log("New post received from:", postedUserInfo);
+    console.log("postedUserInfo.user.followers", postedUserInfo.user);
     const followers = postedUserInfo.user.followers || [];
     followers.forEach((followerId: any) => {
       io.to(followerId).emit("post update", postedUserInfo, postdetails);
@@ -206,6 +207,6 @@ io.on("connection", (socket: Socket) => {
     console.log("USER DISCONNECTED");
     socket.leave(userId);
   });
-
+ 
 
 });

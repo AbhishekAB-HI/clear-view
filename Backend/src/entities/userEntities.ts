@@ -17,19 +17,23 @@ export interface tockens {
 }
 
 export interface IReportUser {
-  userId: Types.ObjectId;
+  userId: string;
   reportReason: string;
-
+  Reportedby: string;
+  userimage: string | undefined;
+  username: string | undefined;
 }
 
 export interface IReportpost {
+  _id?: Types.ObjectId;
   postId: Types.ObjectId;
   postreportReason: string;
   userinfo: Types.ObjectId;
   postcontent: string | undefined;
   postimage: [String] | string;
+  postVideo: [String] | string;
   postedBy: string | undefined;
-  reportedBy:string | undefined
+  reportedBy: string | undefined;
 }
 
 export interface ReportedPost {
@@ -54,7 +58,7 @@ export interface IUser extends Document {
   following: IUser[];
   blockedUser: IUser[];
   blocked: IUser[];
-  ReportUser: IReportUser[];
+  ReportUser?: IReportUser[];
   ReportPost?: IReportpost[];
 }
 

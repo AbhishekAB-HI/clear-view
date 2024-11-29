@@ -4,9 +4,9 @@ import ChatSchemamodel from "../Model/Chatmodel";
 import messageSchemaModel from "../Model/Messagemodel";
 import UserSchemadata from "../Model/Usermodel";
 import NotifiactSchemaModal from "../Model/NotificationSchema";
-import FollowingSchemaData from "../Model/followSchema";
+import { IMessageRepository } from "../Interface/Messages/MessageRepository";
 
-class messageRepository {
+class messageRepository implements IMessageRepository {
   async sendAllDataToRepo(
     userId: string,
     content: string,
@@ -103,18 +103,6 @@ class messageRepository {
     }
 
     return Blocked;
-  }
-
-  async findUserProfilepage(
-    userid: string | unknown
-  ): Promise<IUser | undefined> {
-    const findUserId = await FollowingSchemaData.findById(userid);
-    const getemail = findUserId?.email;
-    const foundUser = await UserSchemadata.findOne({ email: getemail });
-    if (!foundUser) {
-      throw new Error("No user data get");
-    }
-    return foundUser;
   }
 
   async getAllmessages(chatid: string): Promise<Message[] | undefined> {

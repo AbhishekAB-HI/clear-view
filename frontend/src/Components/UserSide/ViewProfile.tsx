@@ -18,12 +18,11 @@ import axios from "axios";
 import {
   API_CHAT_URL,
   API_USER_URL,
-  CONTENT_TYPE_JSON,
 } from "../Constants/Constants";
 import toast from "react-hot-toast";
 import EmojiPicker from "emoji-picker-react";
 import RenderReplies from "./RenderReplies";
-import { IAllNotification, IUser, ReplyingToState } from "../Interfaces/Interface";
+import {  IUser, ReplyingToState } from "../Interfaces/Interface";
 import axiosClient from "../../Services/Axiosinterseptor";
 import { sendfollow } from "./GlobalSocket/CreateSocket";
 import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
@@ -35,7 +34,7 @@ let socket: Socket;
 const ViewProfilePage = () => {
   const location = useLocation();
   const { userID } = location.state || {};
-  const [userData, setuserData] = useState<IUser[]>([]);
+  const [userData, setuserData] = useState<IUser>();
   const [profileData, setprofileData] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [comment, setComment] = useState("");
@@ -167,7 +166,7 @@ const ViewProfilePage = () => {
     }
   };
 
-  const handleTabClick = (tab) => {
+  const handleTabClick = (tab:any) => {
     setActiveTab(tab);
   };
    type RootState = ReturnType<typeof store.getState>;
@@ -346,15 +345,7 @@ const ViewProfilePage = () => {
   const handleEmojiClick = (emojiData: { emoji: string }) => {
     setComment((prevComment) => prevComment + emojiData.emoji);
   };
-     const sendLikePost = async (postdetails: IAllNotification) => {
-       try {
-         if (socket) {
-           socket.emit("likepost", postdetails);
-         }
-       } catch (error) {
-         console.error("Error fetching or emitting data:", error);
-       }
-     };
+  
 
   const handleLike = async (postId: string, userId: string) => {
     try {
@@ -436,17 +427,17 @@ const ViewProfilePage = () => {
 
                 <div className="flex flex-col mt-5 md:mt-5">
                   <button
-                    onClick={() => followUser(userData._id, saveuserId)}
+                    onClick={() => followUser(userData?._id, saveuserId)}
                     color={
                       profileInfo?.following?.some(
-                        (userOne) => userOne === userData._id
+                        (userOne) => userOne === userData?._id
                       )
                         ? "white"
                         : "blue"
                     }
                     className={
                       profileInfo?.following?.some(
-                        (userOne) => userOne === userData._id
+                        (userOne) => userOne === userData?._id
                       )
                         ? "mr-10 mb-2 px-4 py-2 text-white font-semibold rounded-full border border-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors duration-300"
                         : "mr-10 mb-2 px-4 py-2 text-white font-semibold bg-blue-600 rounded-full border border-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors duration-300"
@@ -454,14 +445,14 @@ const ViewProfilePage = () => {
                   >
                     {/* <FaEdit className="mr-2" /> */}
                     {profileInfo?.following?.some(
-                      (userOne) => userOne === userData._id
+                      (userOne) => userOne === userData?._id
                     )
                       ? "Following"
                       : "Follow"}
                   </button>
 
                   <button
-                    onClick={() => accessChat(userData._id)} // Updated function call for clarity
+                    onClick={() => accessChat(userData?._id)} // Updated function call for clarity
                     className="mr-10 mt-10 mb-2 px-4 py-2 text-white font-semibold rounded-full border border-blue-600 hover:text-black hover:bg-white hover:border-black transition-colors duration-300"
                   >
                     Message
@@ -549,7 +540,7 @@ const ViewProfilePage = () => {
                         className="w-full h-80 relative"
                       >
                         {post.image &&
-                          post.image.slice(0, 4).map((imageSrc, index) => (
+                          post.image.slice(0, 4).map((imageSrc:any, index:number) => (
                             <SwiperSlide key={index}>
                               <img
                                 src={imageSrc}
@@ -589,7 +580,7 @@ const ViewProfilePage = () => {
                         pagination={{ clickable: true }}
                         className="w-full h-80 relative mt-0"
                       >
-                        {post.videos.map((videoSrc, index) => (
+                        {post.videos.map((videoSrc:any, index:number) => (
                           <SwiperSlide key={index}>
                             <video
                               controls
@@ -630,7 +621,7 @@ const ViewProfilePage = () => {
                             />
                           </div>
                           <div className="mt-4 max-h-40 overflow-y-auto">
-                            {post.likes.map((like) => (
+                            {post.likes.map((like:any) => (
                               <div
                                 key={like._id}
                                 className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
@@ -658,7 +649,7 @@ const ViewProfilePage = () => {
                             size={20}
                             className={`${
                               post.likes.some(
-                                (like) => like._id === userData?._id
+                                (like:any) => like._id === userData?._id
                               )
                                 ? "text-blue-600 fill-blue-600"
                                 : "text-gray-500 dark:text-gray-400 fill-transparent"
@@ -713,7 +704,7 @@ const ViewProfilePage = () => {
                       <RenderReplies
                         UpdateLikepost={GetUserInfo}
                         post={post}
-                        parentCommentId={comment._id}
+                        parentCommentId={comment as string}
                         saveid={userID}
                         replyingTo={replyingTo}
                         replyContent={replyContent}

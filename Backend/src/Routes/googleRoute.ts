@@ -1,5 +1,4 @@
 import { Router } from "express";
-import passportAuth from "../Googleauth/Passport";
 import {
   googleAuth,
   googleAuthCallback,

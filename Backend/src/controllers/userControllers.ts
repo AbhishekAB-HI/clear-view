@@ -1,17 +1,18 @@
-import userServises from "../Servises/Userservises";
+import userServises from "../Services/Userservices";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { userPayload } from "../Interface/userInterface/Userpayload";
+import { userPayload } from "../Types/Commontype/TockenInterface";
 import dotenv from "dotenv";
 import { ACCESS_TOKEN } from "../Config/Jwt";
 import cloudinary from "../Config/Cloudinaryconfig";
 import fs from "fs";
-import { generateAccessToken } from "../Utils/Jwt";
+import {  generateRefreshToken } from "../Utils/Jwt";
+import { IUserServices } from "../Interface/Users/UserServices";
 
 dotenv.config();
 
 class UserController {
-  constructor(private userService: userServises) {}
+  constructor(private userService: IUserServices) {}
 
   async userRegister(req: Request, res: Response): Promise<void> {
     try {
@@ -54,7 +55,11 @@ class UserController {
 
       return res
         .status(200)
-        .json({ message: "get User data", userDetails: getUserdata });
+        .json({
+          message: "get User data",
+          userDetails: getUserdata,
+          userIdget: userId,
+        });
     } catch (error) {
       console.log(error);
     }
@@ -115,7 +120,7 @@ class UserController {
     try {
       const email = req.body.email;
       const userData = await this.userService.verifymail(email);
-      const emailnew = userData.email;
+      const emailnew = userData?.email;
       res.status(200).json({ message: "confirm user", email: emailnew });
     } catch (error) {
       console.log(error);
@@ -169,19 +174,26 @@ class UserController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 2;
 
-      const FindUsers = await this.userService.findBlockedUsers(userId,page,limit);
+      const FindUsers = await this.userService.findBlockedUsers(
+        userId,
+        page,
+        limit
+      );
 
-      if (!FindUsers?.Allusers || !FindUsers.totalblockuser){
+      if (!FindUsers?.Allusers || !FindUsers.totalblockuser) {
         return res
           .status(200)
-          .json({ message: "Get Blocked users", Allusers: [], totalblockuser:0 });
-
+          .json({
+            message: "Get Blocked users",
+            Allusers: [],
+            totalblockuser: 0,
+          });
       }
 
       const { Allusers, totalblockuser } = FindUsers;
-        res
-          .status(200)
-          .json({ message: "Get Blocked users", Allusers, totalblockuser });
+      res
+        .status(200)
+        .json({ message: "Get Blocked users", Allusers, totalblockuser });
     } catch (error) {
       console.log(error);
     }
@@ -240,9 +252,13 @@ class UserController {
         process.env.ACCESS_TOKEN_PRIVATE_KEY || ACCESS_TOKEN
       ) as userPayload;
       const logeduserId = decoded.id;
-      const { userID, text } = req.body;
+      const { userId, text } = req.body;
+      console.log(
+        userId,
+        "userid to report1111111111111111111111111111111111111"
+      );
       const getUsers = await this.userService.sendReportReason(
-        userID,
+        userId,
         text,
         logeduserId
       );
@@ -326,7 +342,7 @@ class UserController {
         res.status(400).json({ message: "PostId is required" });
       }
       const getupdate = this.userService.passPostID(postId, text, userId);
-  
+
       res.status(200).json({ message: "Post Reported succesfully" });
     } catch (error) {
       console.log(error);
@@ -519,7 +535,7 @@ class UserController {
         if (err) {
           return res.status(403).json({ message: "Token expired or invalid" });
         }
-        const newAccessToken = generateAccessToken({ id: user.id });
+        const newAccessToken = generateRefreshToken({ id: user.id });
         res.json({ accessToken: newAccessToken });
       }
     );

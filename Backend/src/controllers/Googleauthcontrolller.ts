@@ -2,14 +2,11 @@ import { Request, Response } from "express";
 import passportAuth from "../Googleauth/Passport";
 import { generateAccessToken } from "../Utils/Jwt";
 import UserSchemadata from "../Model/Usermodel";
-import { userPayload } from "../Interface/userInterface/Userpayload";
+import { userPayload } from "../Types/Commontype/TockenInterface";
+import { ObjectId } from "mongoose";
+import { AuthenticatedRequest } from "../Types/Commontype/Googleauthinterface";
 
-interface AuthenticatedRequest {
-  user?: {
-    email?: string;
-    displayName?: string;
-  };
-}
+
 
 declare module "express-session" {
   interface Session {
@@ -36,7 +33,7 @@ export const authSuccess = async (req: AuthenticatedRequest, res: Response) => {
     const userdetails = await UserSchemadata.findOne({ email });
     if (userdetails) {
       const userPayload: userPayload = {
-        id: userdetails._id as unknown,
+        id: userdetails._id as ObjectId,
       };
       const tocken = generateAccessToken(userPayload);
       console.log(tocken, "tocken back end");
@@ -58,7 +55,7 @@ export const authSuccess = async (req: AuthenticatedRequest, res: Response) => {
       const saveuser = await userinfo.save();
       if (saveuser) {
         const userPayload: userPayload = {
-          id: saveuser._id as unknown,
+          id: saveuser._id as ObjectId,
         };
         const tocken = generateAccessToken(userPayload);
         console.log(tocken, "tocken back end");

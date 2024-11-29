@@ -1,9 +1,11 @@
 import { IUser } from "../Entities/Userentities";
 import { Message } from "../Entities/Chatentities";
 import messageRepository from "../Repository/Messagerepository";
+import { IMessageServices } from "../Interface/Messages/Messageservices";
+import { IMessageRepository } from "../Interface/Messages/MessageRepository";
 
-class MessageServices {
-  constructor(private messageRepo: messageRepository) {}
+class MessageServices implements IMessageServices {
+  constructor(private messageRepo: IMessageRepository) {}
 
   async sendAllmessages(
     userId: string,
@@ -25,18 +27,6 @@ class MessageServices {
     }
 
     return getAllmessges;
-  }
-
-  async viewProfilePage(userId: string | unknown): Promise<IUser | undefined> {
-    try {
-      const findUserStatus = await this.messageRepo.findUserProfilepage(userId);
-      if (!findUserStatus) {
-        throw new Error("No users get here");
-      }
-      return findUserStatus;
-    } catch (error) {
-      console.log(error);
-    }
   }
 
   async blockUserhere(

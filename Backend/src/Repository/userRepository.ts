@@ -12,8 +12,9 @@ import {
   sendVerifyMailforemail,
 } from "../Utils/Mail";
 import GetAllNotificationsSchema from "../Model/AllnotificationSchema";
-import { IAllNotification } from "../Interface/userInterface/Userdetail";
-class userRepository {
+import { IAllNotification } from "../Entities/Notificationentitities";
+import { IUserRepository } from "../Interface/Users/UserRepository";
+class userRepository implements IUserRepository {
   async userRegister(
     userData: Partial<IUser>
   ): Promise<IUserReturn | undefined> {
@@ -27,9 +28,6 @@ class userRepository {
       }
       const hashedPassword = await HashPassword.hashPassword(userData.password);
       const otp = generateOtp();
-      console.log(userData.email, "email 111111111111111111");
-      console.log(userData.name, "name11111111111111");
-      console.log(otp, "otpnumber1111111111111");
       await sendVerifyMail(userData.email, userData.name, otp);
       const updateData = {
         ...userData,
@@ -68,11 +66,13 @@ class userRepository {
     }
   }
 
-  async findUserInfo(userId: unknown) {
+  async findUserInfo(userId: unknown): Promise<IUser | undefined> {
     try {
       const getUserInfo = await UserSchemadata.findById(userId)
         .populate("followers", "name email image")
         .populate("following", "name email image");
+
+        console.log(getUserInfo,'user detailsssssssssssssssssssssssssssssssss');
 
       if (!getUserInfo) {
         throw new Error("No uses founded");
@@ -83,7 +83,7 @@ class userRepository {
     }
   }
 
-  async verifyresend(email: string) {
+  async verifyresend(email: string): Promise<IUserReturn | undefined> {
     try {
       const mailotp = generateOtp();
       await sendVerifyMailforemail(email, mailotp);
@@ -133,12 +133,12 @@ class userRepository {
     }
   }
 
-  async findByEmail(email: string) {
+  async findByEmail(email: string): Promise<IUser | null> {
     let userDetail = UserSchemadata.findOne({ email }).exec();
     return userDetail;
   }
 
-  async checkByEmail(userdata: any) {
+  async checkByEmail(userdata: any): Promise<IUser | undefined> {
     try {
       let email = userdata.email;
       let userDetail = await UserSchemadata.findOne({ email }).exec();
@@ -150,7 +150,7 @@ class userRepository {
       console.log(error);
     }
   }
-  async updateTime(email: string) {
+  async updateTime(email: string): Promise<void> {
     try {
       let userData = await UserSchemadata.findOneAndUpdate(
         { email },
@@ -162,7 +162,7 @@ class userRepository {
     }
   }
 
-  async checkByisActive(email: string) {
+  async checkByisActive(email: string): Promise<void> {
     try {
       let userData = await UserSchemadata.findOne({ email });
       if (!userData?.isActive) {
@@ -173,7 +173,10 @@ class userRepository {
     }
   }
 
-  async checkingforgetotp(otp: number, email: string) {
+  async checkingforgetotp(
+    otp: number,
+    email: string
+  ): Promise<IUser | undefined> {
     let getuser = await UserTempSchemadata.findOne({ email });
     if (!getuser) {
       throw new Error("User not found ");
@@ -189,7 +192,7 @@ class userRepository {
     postId: string,
     userId: mongoose.Types.ObjectId,
     comment: string
-  ) {
+  ): Promise<Posts | null> {
     const post = await newspostSchemadata.findById(postId);
     if (!post) {
       throw new Error("Post not found");
@@ -220,7 +223,7 @@ class userRepository {
     postId: string,
     userId: string,
     username: string
-  ) {
+  ): Promise<Posts | null> {
     const post = await newspostSchemadata.findById(postId);
     if (!post) {
       throw new Error("Post not found");
@@ -287,27 +290,97 @@ class userRepository {
     }
   }
 
+  // async RepostPost(
+  //   postid: string,
+  //   text: string,
+  //   userId: string
+  // ): Promise<IUser | undefined> {
+  //   try {
+  //     const reported = await UserSchemadata.findById(userId);
+  //     const postdetails = await newspostSchemadata
+  //       .findById(postid)
+  //       .populate("user");
+
+  //     const postImage =
+  //       Array.isArray(postdetails?.image) && postdetails?.image[0]
+  //         ? String(postdetails?.image[0])
+  //         : "";
+  //     const postVideo =
+  //       Array.isArray(postdetails?.videos) && postdetails?.videos[0]
+  //         ? String(postdetails?.videos[0])
+  //         : "";
+
+  //     if (reported) {
+  //       reported?.ReportPost?.push({
+  //         postId: new mongoose.Types.ObjectId(postid),
+  //         postreportReason: text,
+  //         userinfo: new mongoose.Types.ObjectId(userId),
+  //         postcontent: postdetails?.description,
+  //         postimage: postImage,
+  //         postVideo: postVideo,
+  //         postedBy: postdetails?.user.name,
+  //         reportedBy: reported.name,
+  //       });
+  //     } else {
+  //       throw new Error("issue with posting post report");
+  //     }
+  //     await reported.save();
+  //     return reported;
+  //   } catch (error) {
+  //     console.error("Error updating post:", error);
+  //   }
+  // }
   async sendTheReportReason(
     userID: string,
     text: string,
-    logeduserId: string | unknown
-  ) {
+    logeduserId: string
+  ): Promise<void> {
     try {
+      console.log(userID,'111111111111111111111111111111111111');
+      const findReporteduser = await UserSchemadata.findById(userID);
+      console.log(findReporteduser,'222222222222222222222222222222222222222222222222222222222');
       const findUser = await UserSchemadata.findById(logeduserId);
       if (findUser) {
-        findUser.ReportUser.push({
-          userId: new mongoose.Types.ObjectId(userID),
+        findUser?.ReportUser?.push({
+          userId: userID,
           reportReason: text,
-        });
+          Reportedby: findUser?.name ,
+          username: findReporteduser?.name ,
+          userimage: findReporteduser?.image ,
+        }); 
 
         await findUser.save();
+        console.log("Report reason successfully saved.");
       } else {
         console.log("User not found");
       }
     } catch (error) {
-      console.log(error);
+      console.error("Error saving the report reason:", error);
     }
   }
+
+  // async sendTheReportReason(
+  //   userID: string,
+  //   text: string,
+  //   logeduserId: string | unknown
+  // ): Promise<void> {
+  //   try {
+  //     const findUser = await UserSchemadata.findById(logeduserId);
+  //     if (findUser) {
+  //       findUser?.ReportUser?.push({
+  //         userId: new mongoose.Types.ObjectId(userID),
+  //         userreportReason: text,
+
+  //       });
+
+  //       await findUser.save();
+  //     } else {
+  //       console.log("User not found");
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // }
 
   async findAllReply(): Promise<Posts[]> {
     const matchingComments = await newspostSchemadata.aggregate([
@@ -403,6 +476,7 @@ class userRepository {
     if (sameuser) {
       return [];
     }
+    
 
     return savethepost;
   }
@@ -437,19 +511,26 @@ class userRepository {
     }
   }
 
-  
- 
-
-  async RepostPost(postid: string, text: string, userId: string) {
+  async RepostPost(
+    postid: string,
+    text: string,
+    userId: string
+  ): Promise<IUser | undefined> {
     try {
       const reported = await UserSchemadata.findById(userId);
-      const postdetails = await newspostSchemadata.findById(postid).populate("user")
+      const postdetails = await newspostSchemadata
+        .findById(postid)
+        .populate("user");
 
-    const postImage =
-      Array.isArray(postdetails?.image) && postdetails?.image[0]
-        ? String(postdetails?.image[0])
-        : ""; 
-         
+      const postImage =
+        Array.isArray(postdetails?.image) && postdetails?.image[0]
+          ? String(postdetails?.image[0])
+          : "";
+      const postVideo =
+        Array.isArray(postdetails?.videos) && postdetails?.videos[0]
+          ? String(postdetails?.videos[0])
+          : "";
+
       if (reported) {
         reported?.ReportPost?.push({
           postId: new mongoose.Types.ObjectId(postid),
@@ -457,6 +538,7 @@ class userRepository {
           userinfo: new mongoose.Types.ObjectId(userId),
           postcontent: postdetails?.description,
           postimage: postImage,
+          postVideo: postVideo,
           postedBy: postdetails?.user.name,
           reportedBy: reported.name,
         });
@@ -470,7 +552,10 @@ class userRepository {
     }
   }
 
-  async changingpassword(email: string, password: string) {
+  async changingpassword(
+    email: string,
+    password: string
+  ): Promise<IUser | null> {
     const hashedPassword = await HashPassword.hashPassword(password);
 
     const Changepassword = await UserSchemadata.findOneAndUpdate(
@@ -483,7 +568,9 @@ class userRepository {
     return Changepassword;
   }
 
-  async FindEmail(email: string | undefined) {
+  async FindEmail(
+    email: string | undefined
+  ): Promise<IUser | undefined | null> {
     try {
       let getUser = await UserSchemadata.findOne({ email: email });
       return getUser;
@@ -492,7 +579,9 @@ class userRepository {
     }
   }
 
-  async checkingmail(email: string | undefined) {
+  async checkingmail(
+    email: string | undefined
+  ): Promise<IUser | undefined | null> {
     try {
       const otp = generateOtp();
       await sendVerifyMailforemail(email, otp);
@@ -513,7 +602,7 @@ class userRepository {
     }
   }
 
-  async getUserProfile(userId: unknown) {
+  async getUserProfile(userId: unknown): Promise<IUser | undefined | null> {
     try {
       let userDetail = await UserSchemadata.findById(userId);
       if (userDetail) {
@@ -838,7 +927,7 @@ class userRepository {
     }
   }
 
-  async postidreceived(postId: string) {
+  async postidreceived(postId: string): Promise<void> {
     try {
       const deletePost = await newspostSchemadata.findById(postId);
       if (!deletePost) {
@@ -1005,7 +1094,7 @@ class userRepository {
     }
   }
 
-  async findUserData(userId: string) {
+  async findUserData(userId: string): Promise<IUser | undefined> {
     try {
       const finduserid = await UserSchemadata.findById(userId);
 

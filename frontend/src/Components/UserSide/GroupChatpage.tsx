@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
 } from "react";
-import ClientNew from "../../Redux-store/Axiosinterceptor";
 import { useSelector } from "react-redux";
 import { store } from "../../Redux-store/Reduxstore";
 import axios from "axios";
@@ -23,15 +22,9 @@ import toast from "react-hot-toast";
 import { OrbitProgress } from "react-loading-indicators";
 import Swal from "sweetalert2";
 import Navbar2 from "./Navbar2";
-import SideBar2 from "./Sidebar2";
-import {
-  API_MESSAGE_URL,
-  CONTENT_TYPE_JSON,
-  CONTENT_TYPE_MULTER,
-} from "../Constants/Constants";
 import { userInfo } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
-import axiosClient from "../../Services/Axiosinterseptor";
+import { chechuserblocking, findAllmessage, gettheuserinchat, getUserIdData, Sendmessages } from "../../Services/User_API/Chatpage";
 
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
@@ -42,8 +35,6 @@ const GroupChatPage = () => {
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState<string>("");
   const { chatId, dataId, groupname } = useParams<{chatId: string; dataId: any; groupname:string}>();
-  const [socketConnected, setSocketConnected] = useState(false);
-  const [postContent, setPostContent] = useState("");
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -59,9 +50,9 @@ const GroupChatPage = () => {
   useEffect(() => {
     const GetUserId = async () => {
       try {
-        const { data } = await axios.get(`${API_MESSAGE_URL}/getuserid/${chatId}`);
-        if (data.message == "Get user id") {
-          setuserinfo(data.userinfo);
+        const response = await gettheuserinchat(chatId);
+        if (response.success) {
+          setuserinfo(response.userinfo);
         } else {
           toast.error("User id not found");
         }
@@ -149,9 +140,9 @@ const GroupChatPage = () => {
   const fetchMessages = async () => {
     if (!selectedChat) return;
     try {
-      const { data } = await axiosClient.get(`${API_MESSAGE_URL}/${dataId}`);
-      if (data.message === "Get all messages") {
-        setMessages(data.Allmessage);
+      const response = await findAllmessage(dataId);
+      if (response.success) {
+        setMessages(response.getmessages);
         socket.emit("join chat", dataId);
       } else {
         toast.error("Failed to get all messages");
@@ -198,23 +189,20 @@ const GroupChatPage = () => {
         formData.append("content", newMessage);
       }
       formData.append("chatId", dataId);
-      postImages.forEach((image, index) => {
+      postImages.forEach((image) => {
         formData.append(`images`, image);
       });
-      postVideos.forEach((video, index) => {
+      postVideos.forEach((video) => {
         formData.append(`videos`, video);
       });
 
-      const { data } = await axiosClient.post(`${API_MESSAGE_URL}`, formData, {
-        headers: {
-          "Content-Type": CONTENT_TYPE_MULTER,
-        },
-      });
 
-      if (data) {
+      const response = await Sendmessages(formData);
+
+      if (response.success) {
         setLoading(false);
-        socket.emit("new message", data);
-        setMessages([...messages, data]);
+        socket.emit("new message", response.getData);
+        setMessages([...messages, response.getData]);
         setNewMessage("");
         setPostImages([]);
         setPostVideos([]);
@@ -261,12 +249,10 @@ const GroupChatPage = () => {
         confirmButtonText: actionText,
       }).then(async (result) => {
         if (result.isConfirmed) {
-          const { data } = await axiosClient.patch(
-            `${API_MESSAGE_URL}/blockuser`,
-            { userId, LogedUserId }
-          );
-          if (data.message == "User blocked") {
-            setuserStatus(data.userStatus);
+   
+          const response = await chechuserblocking(userId, LogedUserId);
+          if (response.success) {
+            setuserStatus(response.userStatus);
           } else {
             toast.error("User blocked Failed");
           }
@@ -298,7 +284,6 @@ const GroupChatPage = () => {
   useEffect(() => {
     socket = io(ENDPOINT);
     socket.emit("setup", userToken);
-    socket.on("connection", () => setSocketConnected(true));
     socket.on("typing", () => setIsTyping(true));
     socket.on("stop typing", () => setIsTyping(false));
   }, []);
@@ -313,11 +298,12 @@ const GroupChatPage = () => {
     const getUserToken = async () => {
       if (!userToken) return;
       try {
-        const { data } = await axios.get(
-          `${API_MESSAGE_URL}/getuserId/${userToken}`
-        );
-        if (data.message === "User id found") {
-          setUserId(data.userId);
+        const response = await getUserIdData(userToken);
+        // const { data } = await axios.get(
+        //   `${API_MESSAGE_URL}/getuserId/${userToken}`
+        // );
+        if (response.success) {
+          setUserId(response.useriD);
         } else {
           toast.error("No id get here");
         }

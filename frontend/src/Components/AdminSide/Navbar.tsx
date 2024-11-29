@@ -1,5 +1,4 @@
 
-import logo from '../images/logo.png'
 import Lottie from "lottie-react";
 import logoWeb from "../animations/Animation - 1724244656671.json";
 const Navbar = () => {

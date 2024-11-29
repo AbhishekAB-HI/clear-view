@@ -14,6 +14,8 @@ export interface passwords extends Document {
   harshpassword: string;
 }
 
+
+
 export interface Admintockens {
   admintocken: string;
 }

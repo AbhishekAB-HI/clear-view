@@ -8,10 +8,9 @@ import * as Yup from "yup";
 import toast from "react-hot-toast";
 import Lottie from "lottie-react";
 import logoWeb from "../animations/Animation - 1724244656671.json";
-import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
+import { forgetmail } from "../../Services/User_API/Forgotsideapis";
 const Forgetpassword: React.FC = () => {
   const navigate = useNavigate();
-
   const validationSchema = Yup.object().shape({
     email: Yup.string()
       .email("Invalid email address")
@@ -22,16 +21,16 @@ const Forgetpassword: React.FC = () => {
 
   const emaildata = { email: values.email };
     try {
-      const { data } = await axios.post(`${API_USER_URL}/forgetmail`,emaildata);
-      if (data.message === "confirm user") {
+      const response = await forgetmail(emaildata);
+      if (response.success) {
         const secretKey = "your-secret-key-crypto";
-        const emailget = data.email;
+        const emailget = response.emaildetail;
         const encryptedEmail = CryptoJS.AES.encrypt(
           emailget,
           secretKey
         ).toString();
         navigate("/forgetotp", { state: { email: encryptedEmail } });
-      }else{
+      } else {
         toast.error("confirm user failed");
       }
     } catch (error:unknown) {

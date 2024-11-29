@@ -6,8 +6,7 @@ import * as Yup from "yup";
 import { useFormik } from "formik";
 import { FaSpinner, FaUpload, FaTrashAlt } from "react-icons/fa";
 import { EditProfileModalProps } from "../Interfaces/Interface";
-import { API_USER_URL, CONTENT_TYPE_MULTER } from "../Constants/Constants";
-import axiosClient from "../../Services/Axiosinterseptor";
+import { updateprofile } from "../../Services/User_API/Editpassword";
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({
   toggleModal,
@@ -41,16 +40,8 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
       }
       setLoading(true);
       try {
-        const { data } = await axiosClient.post(
-          `${API_USER_URL}/updateprofile`,
-          formData,
-          {
-            headers: {
-              "Content-Type": CONTENT_TYPE_MULTER,
-            },
-          }
-        );
-        if (data.message === "userupdated successfully") {
+        const response = await updateprofile(formData);
+        if (response.success) {
           toast.success("Profile updated");
           updateProfileState();
           toggleModal();
@@ -188,40 +179,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({
                   <p className="text-red-500 text-sm">{formik.errors.name}</p>
                 ) : null}
               </div>
-              {/* <div>
-                <input
-                  type="password"
-                  name="password"
-                  value={formik.values.password}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Enter your current password"
-                  className="w-full px-4 py-3  text-black rounded-lg bg-gray-50 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  required
-                />
-                {formik.touched.password && formik.errors.password ? (
-                  <p className="text-red-500 text-sm">
-                    {formik.errors.password}
-                  </p>
-                ) : null}
-              </div> */}
-              {/* <div>
-                <input
-                  type="password"
-                  name="newpassword"
-                  value={formik.values.newpassword}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                  placeholder="Enter your new password"
-                  className="w-full px-4 py-3  text-black rounded-lg bg-gray-50 border border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  required
-                />
-                {formik.touched.newpassword && formik.errors.newpassword ? (
-                  <p className="text-red-500 text-sm">
-                    {formik.errors.newpassword}
-                  </p>
-                ) : null}
-              </div> */}
+              
               <button
                 type="submit"
                 className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200 flex justify-center items-center"

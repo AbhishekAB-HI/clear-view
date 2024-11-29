@@ -8,10 +8,12 @@
    image: string;
    videos: string;
    likeCount: number;
+   BlockPost: boolean;
    LikeStatement: boolean;
-   likes: string[];
+   likes: IUser[];
    comments: IComment[];
    userName: string;
+   createdAt:any
  }
 
  export interface IComment {
@@ -61,26 +63,32 @@ export interface EditProfileModalProps {
 }
 
 
-export interface IUser  {
-  _id: string;
+export interface IUser {
+  _id: any;
   name: string;
   email: string;
   password: string;
   isActive: boolean;
   isAdmin: boolean;
   isVerified?: boolean;
-  createdAt?: Date;
+  createdAt?: any;
   updatedAt?: Date;
-  image?: string;
+  image: string;
   followers: IUser[];
   following: IUser[];
   blockedUser: IUser[];
   reportedUser: IReportUser[];
+  lastSeen: any;
+
 }
+
 export interface IReportUser {
-  userId: IUser;
+  _id:any;
+  userId: Types.ObjectId;
   reportReason: string;
-  image: string;
+  Reportedby: string;
+  userimage:string
+  username:string
 }
 
 
@@ -102,10 +110,12 @@ export interface IUser1 extends Document {
 
 
 export interface FormattedChat {
+  _id:any
   chatName: string;
   lastMessage: string;
-  lastMessageTime: Date;
+  lastMessageTime: any;
   userId:string
+
 }
 
 
@@ -128,8 +138,8 @@ export interface Chats {
 }
 
 
-export interface Notification extends Document {
-  sender: mongoose.Types.ObjectId;
+export interface  Notification extends Document {
+  sender: any;
   content: string;
   image: string;
   videos: string;
@@ -137,6 +147,10 @@ export interface Notification extends Document {
   chat: mongoose.Types.ObjectId;
   readBy: mongoose.Types.ObjectId[];
 }
+
+
+
+
 
 
 
@@ -161,7 +175,46 @@ export interface IAllNotification {
   LikeNotifications: ILikeNotifications[];
   createdAt?: Date;
   updatedAt?: Date;
+  followuserId: string;
+  image?: string;
+  name?: string;
+  userName?:string
 }
+
+export interface LikeNotification {
+  Follownotifications: IFollowNotification[];
+  PostNotifications: IPostNotification[];
+  LikeNotifications: ILikeNotifications[];
+  createdAt?: Date;
+  updatedAt?: Date;
+  likeduserId: string;
+  postimage: string;
+  postcontent: string;
+  likedusername:string
+}
+
+
+
+export interface postinfos {
+  Follownotifications: IFollowNotification[];
+  PostNotifications: IPostNotification[];
+  LikeNotifications: ILikeNotifications[];
+  createdAt?: Date;
+  updatedAt?: Date;
+  followuserId: string;
+  image: string;
+  postUsername:string
+}
+
+
+
+
+
+
+
+
+
+
 
 export interface ILikeNotifications {
   postId: unknown;
@@ -173,6 +226,11 @@ export interface ILikeNotifications {
   email: string;
   likeduserId: unknown;
   likedstatus: unknown;
+}
+
+export interface YourComponentProps {
+  userToken: string;
+  users: any[];
 }
 
 

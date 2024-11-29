@@ -39,6 +39,15 @@ const UserSchema: Schema = new Schema(
         reportReason: {
           type: String,
         },
+        Reportedby: {
+          type: String,
+        },
+        username: {
+          type: String,
+        },
+        userimage: {
+          type: String,
+        },
       },
     ],
     ReportPost: [
@@ -54,6 +63,9 @@ const UserSchema: Schema = new Schema(
           type: String,
         },
         postimage: {
+          type: String,
+        },
+        postVideo: {
           type: String,
         },
         userinfo: {

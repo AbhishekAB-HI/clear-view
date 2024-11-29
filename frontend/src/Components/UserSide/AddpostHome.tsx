@@ -5,13 +5,17 @@ import data from "@emoji-mart/data";
 import toast from "react-hot-toast";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import { CreatePostHomeModalProps, IAllNotification, IUser } from "../Interfaces/Interface";
+import {
+  CreatePostHomeModalProps,
+  IAllNotification,
+  IUser,
+} from "../Interfaces/Interface";
 import axios from "axios";
 import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css";
 import io, { Socket } from "socket.io-client";
 import { useSelector } from "react-redux";
-import { store } from "../../Redux-store/Reduxstore";
+import { store } from "../../Redux-store/reduxstore";
 import { createNewPost } from "../../Services/User_API/Createnewpost";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
@@ -20,7 +24,6 @@ const CreateHomePostModal = ({
   updatehomeState,
   userid,
 }: CreatePostHomeModalProps) => {
-
   type RootState = ReturnType<typeof store.getState>;
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
@@ -38,17 +41,12 @@ const CreateHomePostModal = ({
     (state: RootState) => state.accessTocken.userTocken
   );
 
-  const selectedChat = useSelector(
-    (state: RootState) => state.accessTocken.SelectedChat
-  );
 
   useEffect(() => {
-let selectedChatCompare: any;
     socket = io(ENDPOINT);
     if (userDetails) {
       socket.emit("setup", userDetails);
     }
-    selectedChatCompare = selectedChat;
     return () => {
       socket.disconnect();
     };
@@ -122,17 +120,18 @@ let selectedChatCompare: any;
     }
   };
 
- const sendPostNotify = async (userInfo: IUser,postdetails:IAllNotification) => {
-   try {
-     if (socket) {
-    
-       socket.emit("newpost", userInfo, postdetails);
-     }
-   } catch (error) {
-     console.error("Error fetching or emitting data:", error);
-   }
- };
-
+  const sendPostNotify = async (
+    userInfo: IUser,
+    postdetails: IAllNotification
+  ) => {
+    try {
+      if (socket) {
+        socket.emit("newpost", userInfo, postdetails);
+      }
+    } catch (error) {
+      console.error("Error fetching or emitting data:", error);
+    }
+  };
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

@@ -1,9 +1,9 @@
 import axios from "axios";
-import { store } from "../Redux-store/Reduxstore";
+import { store } from "../Redux-store/reduxstore";
 import {
   clearuserAccessTocken,
   setUserAccessTocken,
-} from "../Redux-store/Redux-slice";
+} from "../Redux-store/redux-slice";
 import toast from "react-hot-toast";
 
 // ClientNew;

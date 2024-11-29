@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { useSelector } from "react-redux";
-import { store } from "../../Redux-store/Reduxstore";
+import { store } from "../../Redux-store/reduxstore";
 import axios from "axios";
 import data from "@emoji-mart/data";
 import { Socket } from "socket.io-client";
@@ -20,8 +20,8 @@ import { IoSend } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { OrbitProgress } from "react-loading-indicators";
 import Swal from "sweetalert2";
-import Navbar2 from "./Navbar2";
-import { ActiveUsersType, userInfo, YourComponentProps } from "../Interfaces/Interface";
+import Navbar2 from "../UserSide/Navbar2";
+import { ActiveUsersType, userInfo } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
 import {
   ActiveUsershere,
@@ -29,8 +29,8 @@ import {
   joinChatRoom,
   sendMessage,
   setupOnMessageReceived,
-} from "./GlobalSocket/CreateSocket";
-import { setSelectedChat } from "../../Redux-store/Redux-slice";
+} from "../UserSide/GlobalSocket/CreateSocket";
+import { setSelectedChat } from "../../Redux-store/redux-slice";
 import {
   chechuserblocking,
   findAllmessage,
@@ -40,7 +40,7 @@ import {
 } from "../../Services/User_API/Chatpage";
 let socket: Socket;
 let selectedChatCompare: any;
-const ChatPage: React.FC<YourComponentProps> = () => {
+const ChatPage: React.FC<{}> = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState<string>("");
@@ -224,10 +224,10 @@ const ChatPage: React.FC<YourComponentProps> = () => {
         formData.append("content", newMessage);
       }
       formData.append("chatId", dataId);
-      postImages.forEach((image,) => {
+      postImages.forEach((image) => {
         formData.append(`images`, image);
       });
-      postVideos.forEach((video, ) => {
+      postVideos.forEach((video) => {
         formData.append(`videos`, video);
       });
 
@@ -519,7 +519,7 @@ const ChatPage: React.FC<YourComponentProps> = () => {
                 </div>
               ))}
               <div ref={messagesEndRef} />
-         
+
               {loading && (
                 <OrbitProgress
                   color="#32cd32"

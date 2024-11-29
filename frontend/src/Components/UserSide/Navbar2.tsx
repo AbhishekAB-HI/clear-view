@@ -1,25 +1,23 @@
-import {  useEffect, useState } from "react";
-import { store } from "../../Redux-store/Reduxstore";
+import { useEffect, useState } from "react";
+import { store } from "../../Redux-store/reduxstore";
 import Lottie from "lottie-react";
 import logoWeb from "../animations/Animation - 1724244656671.json";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { clearuserAccessTocken } from "../../Redux-store/Redux-slice";
-import {  FaUserCircle } from "react-icons/fa";
+import { clearuserAccessTocken } from "../../Redux-store/redux-slice";
+import { FaUserCircle } from "react-icons/fa";
 import { AiOutlineSearch } from "react-icons/ai";
 import { ActiveUsersType } from "../Interfaces/Interface";
-import {  API_USER_URL,  } from "../Constants/Constants";
+import { API_USER_URL } from "../Constants/Constants";
 import toast from "react-hot-toast";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";
 const ENDPOINT = "http://localhost:3000";
 
-
 let socket: Socket;
 const Navbar2 = () => {
   type RootState = ReturnType<typeof store.getState>;
-
 
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [AccOpen, setAccOpen] = useState(false);
@@ -31,7 +29,6 @@ const Navbar2 = () => {
     (state: RootState) => state.accessTocken.userTocken
   );
 
-
   useEffect(() => {
     socket = io(ENDPOINT);
     if (userDetails) {
@@ -42,63 +39,58 @@ const Navbar2 = () => {
     };
   }, [userDetails]);
 
- 
+  useEffect(() => {
+    const getUserId = async () => {
+      try {
+        const { data } = await axiosClient.get(`${API_USER_URL}/getuserid`);
+        if (data.message === "user id get") {
+          setsaveid(data.userId);
+        } else {
+          toast.error("Failed to retrieve userid.");
+        }
+      } catch (error: unknown) {
+        if (axios.isAxiosError(error)) {
+          if (!error.response) {
+            toast.error(
+              "Network error. Please check your internet connection."
+            );
+          } else {
+            const status = error.response.status;
+            if (status === 404) {
+              toast.error("Posts not found");
+            } else if (status === 500) {
+              toast.error("Server error. Please try again later.");
+            } else {
+              toast.error("Something went wrong.");
+            }
+          }
+        } else if (error instanceof Error) {
+          toast.error(error.message);
+        } else {
+          toast.error("An unexpected error occurred.");
+        }
 
+        console.log("Error fetching posts:", error);
+      }
+    };
 
-
-
-
-
- useEffect(() => {
-   const getUserId = async () => {
-     try {
-       const { data } = await axiosClient.get(`${API_USER_URL}/getuserid`);
-       if (data.message === "user id get") {
-         setsaveid(data.userId);
-       } else {
-         toast.error("Failed to retrieve userid.");
-       }
-     } catch (error: unknown) {
-       if (axios.isAxiosError(error)) {
-         if (!error.response) {
-           toast.error("Network error. Please check your internet connection.");
-         } else {
-           const status = error.response.status;
-           if (status === 404) {
-             toast.error("Posts not found");
-           } else if (status === 500) {
-             toast.error("Server error. Please try again later.");
-           } else {
-             toast.error("Something went wrong.");
-           }
-         }
-       } else if (error instanceof Error) {
-         toast.error(error.message);
-       } else {
-         toast.error("An unexpected error occurred.");
-       }
-
-       console.log("Error fetching posts:", error);
-     }
-   };
-
-   getUserId();
- }, []);
-  
+    getUserId();
+  }, []);
 
   const logoutUser = (userId: string) => {
     if (socket) socket.emit("logout", userId);
   };
   const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
 
-
-   const LogoutActiveUsershere = (setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>) => {
-     if (socket) {
-       socket.emit("get-users", (users: ActiveUsersType[]) => {
-         setActiveUsers(users);
-       });
-     }
-   };
+  const LogoutActiveUsershere = (
+    setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>
+  ) => {
+    if (socket) {
+      socket.emit("get-users", (users: ActiveUsersType[]) => {
+        setActiveUsers(users);
+      });
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -121,9 +113,6 @@ const Navbar2 = () => {
     }
   };
 
-
-
-
   return (
     <nav className="fixed w-full top-0 left-0 z-50 bg-black border-b border-gray-700">
       <div className="px-4 py-3 pb-6 shadow-md">
@@ -138,8 +127,6 @@ const Navbar2 = () => {
             </h1>
           </div>
 
-         
-
           {/* Account Dropdown */}
           <div className="flex items-center space-x-4 md:space-x-6 lg:mr-10 text-white text-base md:text-lg">
             {userDetails ? (
@@ -153,7 +140,6 @@ const Navbar2 = () => {
                 {AccOpen && (
                   <div
                     className="absolute lg:right-20 lg:top-0 w-32 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5" // Adjusted width and margin
-                 
                   >
                     <div className="py-1">
                       <Link
@@ -199,8 +185,6 @@ const Navbar2 = () => {
           </div>
         </div>
       </div>
-
-      
     </nav>
   );
 };

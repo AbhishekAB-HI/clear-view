@@ -38,7 +38,7 @@ export interface CreatePostHomeModalProps {
 
 export interface CreatePostModalProps {
   togglepostModal: () => void;
-  updateState: () => void;
+  updateState: (page: number) => void;
   userid: string | null;
 }
 
@@ -50,7 +50,7 @@ export  interface userInfo {
 }
 
 export interface EditPostModalProps {
-  toggleeditpostModal: () => void;
+  toggleeditpostModal: () => void;  
   updateState: () => void;
   postid: string | null;
 }

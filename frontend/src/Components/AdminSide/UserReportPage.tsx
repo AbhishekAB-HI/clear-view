@@ -1,4 +1,3 @@
-import  {  useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Navbar from "./Navbar";
@@ -8,7 +7,6 @@ import { IReportUser } from "../Interfaces/Interface";
 import Adminsidebar from "./Adminsidebar";
 import { Button } from "@mui/material";
 import Table from "./Table&Paginations/Table";
-import Pagination from "./Table&Paginations/Pagination";
 import { deleteReportpost, reporttheuser } from "../../Services/Admin_API/Reportuser.ts";
 
 const truncateText = (text: string, maxLength: number) => {
@@ -16,10 +14,9 @@ const truncateText = (text: string, maxLength: number) => {
 };
 
 const UserReportmanagement = () => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [postsPerPage] = useState(5);
+
   const navigate = useNavigate();
-  const { totalPosts, getPost } = reporttheuser();
+  const {  getPost } = reporttheuser();
   
 
   const handleDeletePost = async (id: string) => {
@@ -63,7 +60,7 @@ const UserReportmanagement = () => {
       header: "No",
       accessor: (_: IReportUser, index?: number) =>
         index !== undefined
-          ? index + 1 + (currentPage - 1) * postsPerPage
+          ? index + 1 
           : null,
     },
     {
@@ -120,11 +117,7 @@ const UserReportmanagement = () => {
               columns={columns}
               emptyMessage="No Posts Found"
             />
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(totalPosts / postsPerPage)}
-              onPageChange={setCurrentPage}
-            />
+          
           </div>
         </main>
       </div>

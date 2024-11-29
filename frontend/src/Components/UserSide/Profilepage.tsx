@@ -1,6 +1,6 @@
-import  {  useEffect, useState } from "react";
-import {  useNavigate } from "react-router-dom";
-import { store } from "../../Redux-store/Reduxstore";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { store } from "../../Redux-store/reduxstore";
 import {
   FaChevronLeft,
   FaChevronRight,
@@ -18,10 +18,10 @@ import Swal from "sweetalert2";
 import axios from "axios";
 import toast from "react-hot-toast";
 import profileimg from "../images/Userlogo.png";
-import EditProfileModal from "./EditProfile";
-import Postpage from "./Addpost";
-import EditPostModal from "./EditPostPage";
-import Navbar2 from "./Navbar2";
+import EditProfileModal from "../UserSide/EditProfile";
+import Postpage from "../UserSide/Addpost";
+import EditPostModal from "../UserSide/EditpostPage";
+import Navbar2 from "../UserSide/Navbar2";
 import {
   IAllNotification,
   IPost,
@@ -33,19 +33,19 @@ import {
   API_MESSAGE_URL,
   API_USER_URL,
 } from "../Constants/Constants";
-import EditPasswordModal from "./EditPassword";
+import EditPasswordModal from "../UserSide/EditPassword";
 import { Heart, InboxIcon, Users, Users2Icon } from "lucide-react";
-import RenderReplies from "./RenderReplies";
+import RenderReplies from "../UserSide/RenderReplies";
 import EmojiPicker from "emoji-picker-react";
-import SideNavBar2 from "./Sidebar2";
-import {  sendfollow } from "./GlobalSocket/CreateSocket";
+import SideNavBar2 from "../UserSide/Sidebar2";
+import { sendfollow } from "../UserSide/GlobalSocket/CreateSocket";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
 const HomeProfilepage = () => {
   type RootState = ReturnType<typeof store.getState>;
- 
+
   const [profileInfo, setprofileInfo] = useState<IUser | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [showPassEdit, setshowPassEdit] = useState(false);
@@ -70,7 +70,6 @@ const HomeProfilepage = () => {
   const [totalPosts, setTotalPosts] = useState(0);
   const [activeTab, setActiveTab] = useState("Posts");
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
-
 
   const [postsPerblockPage] = useState(1);
   const [currentblockPage, setblockCurrentPage] = useState(1);
@@ -316,8 +315,6 @@ const HomeProfilepage = () => {
     };
   }, [userToken]);
 
- 
-
   useEffect(() => {
     const getAllPost = async () => {
       try {
@@ -509,7 +506,7 @@ const HomeProfilepage = () => {
       });
       if (data.message === "Post liked succesfully") {
         fetchdatas();
-     
+
         sendLikePost(data.getupdate);
       } else {
         toast.error("Post liked Failed");
@@ -625,7 +622,6 @@ const HomeProfilepage = () => {
     setShoweditpostModal(true);
   };
 
-
   useEffect(() => {
     const fetchdata = async () => {
       try {
@@ -640,7 +636,6 @@ const HomeProfilepage = () => {
           `${API_USER_URL}/userposts?page=${currentPage}&limit=${postsPerPage}`
         );
         if (response.data.message === "User Post found") {
-    
           setFilteredPost(response.data.posts);
           setTotalPosts(response.data.total);
         } else {
@@ -707,7 +702,6 @@ const HomeProfilepage = () => {
         `${API_USER_URL}/userposts?page=${currentPage}&limit=${postsPerPage}`
       );
       if (response.data.message === "User Post found") {
-  
         setFilteredPost(response.data.posts);
         setTotalPosts(response.data.total);
       } else {
@@ -769,11 +763,9 @@ const HomeProfilepage = () => {
     }
   };
 
-
   const [userID, setuserID] = useState<string>("");
- 
+
   const [menuOpenPost, setMenuOpenPost] = useState<string | null>(null);
- 
 
   const updateUsers = async () => {
     try {
@@ -803,7 +795,7 @@ const HomeProfilepage = () => {
   const UpdateBlocking = async (userId: string, LogedUserId: unknown) => {
     try {
       const blockUser = userinfo?.blockedUser.some(
-        (userOne:any) => userOne === userId
+        (userOne: any) => userOne === userId
       );
       const actionText = blockUser ? "Unblock user" : "Block user";
       const confirmationText = blockUser
@@ -823,7 +815,6 @@ const HomeProfilepage = () => {
             { userId, LogedUserId }
           );
           if (data.message == "User blocked") {
-        
             findBlockedUsers();
             getUserinfo();
             fetchdatas();
@@ -847,7 +838,7 @@ const HomeProfilepage = () => {
   const handleBlockUser = async (userId: string, LogedUserId: string) => {
     try {
       const blockUser = userinfo?.blockedUser.some(
-        (userOne:any) => userOne === userId
+        (userOne: any) => userOne === userId
       );
       const actionText = blockUser ? "Unblock user" : "Block user";
       const confirmationText = blockUser
@@ -867,7 +858,6 @@ const HomeProfilepage = () => {
             { userId, LogedUserId }
           );
           if (data.message == "User blocked") {
-         
             findBlockedUsers();
             getUserinfo();
             fetchdatas();
@@ -967,50 +957,50 @@ const HomeProfilepage = () => {
     getAllPost();
   }, []);
 
-  const handleReport = async ( userId: string) => {
-    console.log(userId,'222222222222222222');
-     const reportReasons: { [key: string]: string } = {
-       "1": "Inappropriate content",
-       "2": "Spam or misleading",
-       "3": "Harassment or bullying",
-       "4": "I don't want to see this",
-       "6": "Adult content",
-       "5": "Other (please specify)",
-     };
+  const handleReport = async (userId: string) => {
+    console.log(userId, "222222222222222222");
+    const reportReasons: { [key: string]: string } = {
+      "1": "Inappropriate content",
+      "2": "Spam or misleading",
+      "3": "Harassment or bullying",
+      "4": "I don't want to see this",
+      "6": "Adult content",
+      "5": "Other (please specify)",
+    };
 
-     const { value: reasonKey } = await Swal.fire({
-       title: "Report Post",
-       input: "select",
-       inputOptions: reportReasons,
-       inputPlaceholder: "Select a reason",
-       showCancelButton: true,
-       confirmButtonText: "Next",
-       inputValidator: (value) => {
-         if (!value) {
-           return "Please select a reason!";
-         }
-       },
-     });
+    const { value: reasonKey } = await Swal.fire({
+      title: "Report Post",
+      input: "select",
+      inputOptions: reportReasons,
+      inputPlaceholder: "Select a reason",
+      showCancelButton: true,
+      confirmButtonText: "Next",
+      inputValidator: (value) => {
+        if (!value) {
+          return "Please select a reason!";
+        }
+      },
+    });
 
-     if (reasonKey) {
-       let text = reportReasons[reasonKey as keyof typeof reportReasons];
+    if (reasonKey) {
+      let text = reportReasons[reasonKey as keyof typeof reportReasons];
 
-       if (reasonKey === "5") {
-         const { value: customText } = await Swal.fire({
-           input: "textarea",
-           inputLabel: "Please specify the reason",
-           inputPlaceholder: "Type your reason here...",
-           inputAttributes: {
-             "aria-label": "Type your message here",
-           },
-           showCancelButton: true,
-         });
+      if (reasonKey === "5") {
+        const { value: customText } = await Swal.fire({
+          input: "textarea",
+          inputLabel: "Please specify the reason",
+          inputPlaceholder: "Type your reason here...",
+          inputAttributes: {
+            "aria-label": "Type your message here",
+          },
+          showCancelButton: true,
+        });
 
-         text = customText;
-       }
+        text = customText;
+      }
 
-       if (text && text.trim().length > 0) {
-         try {
+      if (text && text.trim().length > 0) {
+        try {
           const { data } = await axiosClient.patch(
             `${API_USER_URL}/reportuser`,
             {
@@ -1018,46 +1008,37 @@ const HomeProfilepage = () => {
               text,
             }
           );
-           if (data.message === "user Reported succesfully") {
-             toast.success("user Reported successfully");
-           } else {
-             toast.error("Failed to Report");
-           }
-         } catch (error: unknown) {
-           if (axios.isAxiosError(error)) {
-             if (!error.response) {
-               toast.error(
-                 "Network error. Please check your internet connection."
-               );
-             } else {
-               const status = error.response.status;
-               if (status === 404) {
-                 toast.error("Posts not found.");
-               } else if (status === 500) {
-                 toast.error("Server error. Please try again later.");
-               } else {
-                 toast.error("Something went wrong.");
-               }
-             }
-           } else if (error instanceof Error) {
-             toast.error(error.message);
-           } else {
-             toast.error("An unexpected error occurred.");
-           }
-           console.log("Error fetching posts:", error);
-         }
-       }
-     }
-   };
-
-
-
-
-
-
-
-
-
+          if (data.message === "user Reported succesfully") {
+            toast.success("user Reported successfully");
+          } else {
+            toast.error("Failed to Report");
+          }
+        } catch (error: unknown) {
+          if (axios.isAxiosError(error)) {
+            if (!error.response) {
+              toast.error(
+                "Network error. Please check your internet connection."
+              );
+            } else {
+              const status = error.response.status;
+              if (status === 404) {
+                toast.error("Posts not found.");
+              } else if (status === 500) {
+                toast.error("Server error. Please try again later.");
+              } else {
+                toast.error("Something went wrong.");
+              }
+            }
+          } else if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error("An unexpected error occurred.");
+          }
+          console.log("Error fetching posts:", error);
+        }
+      }
+    }
+  };
 
   return (
     <div className="bg-black text-white min-h-screen">
@@ -1782,7 +1763,7 @@ const HomeProfilepage = () => {
               <div className="space-y-4 p-5  w-full ">
                 <div className="space-y-4">
                   {/* Loading or Results */}
-                  { getAlluser.length === 0 ? (
+                  {getAlluser.length === 0 ? (
                     <div className="flex justify-center items-center">
                       <p className="text-gray-400">No users found</p>
                     </div>

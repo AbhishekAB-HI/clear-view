@@ -1,23 +1,20 @@
-import {
-  FaRegFileAlt,
-  FaSignOutAlt,
-} from "react-icons/fa";
-import { Link, useNavigate } from 'react-router-dom';
-import { clearAdminAccessTocken } from '../../Redux-store/Redux-slice';
-import { useDispatch } from 'react-redux';
-import { Home, Users } from 'lucide-react';
+import { FaRegFileAlt, FaSignOutAlt } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
+import { clearAdminAccessTocken } from "../../Redux-store/redux-slice.ts";
+import { useDispatch } from "react-redux";
+import { Home, Users } from "lucide-react";
 const Adminsidebar = () => {
-const dispatch = useDispatch();
-const navigate = useNavigate();
-    const handleLogout = () => {
-      try {
-        dispatch(clearAdminAccessTocken());
-        localStorage.removeItem("admintocken");
-        navigate("/Adminlogin");
-      } catch (error) {
-        console.log(error);
-      }
-    };
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    try {
+      dispatch(clearAdminAccessTocken());
+      localStorage.removeItem("admintocken");
+      navigate("/Adminlogin");
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <div>
@@ -113,10 +110,8 @@ const navigate = useNavigate();
           )}
         </nav>
       </aside>
-
-     
     </div>
   );
-}
+};
 
-export default Adminsidebar
+export default Adminsidebar;

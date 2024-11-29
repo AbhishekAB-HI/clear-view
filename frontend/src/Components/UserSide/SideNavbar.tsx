@@ -1,14 +1,12 @@
-import  { useEffect, useState } from "react";
-import {FaBars} from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaBars } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import { Home, MessageSquare, Users, Bell,} from "lucide-react";
+import { Home, MessageSquare, Users, Bell } from "lucide-react";
 import { useSelector } from "react-redux";
-import { store } from "../../Redux-store/Reduxstore";
-import {
-  API_CHAT_URL,
-} from "../Constants/Constants";
+import { store } from "../../Redux-store/reduxstore";
+import { API_CHAT_URL } from "../Constants/Constants";
 import toast from "react-hot-toast";
-import { IAllNotification,Notification } from "../Interfaces/Interface";
+import { IAllNotification, Notification } from "../Interfaces/Interface";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";
 const ENDPOINT = "http://localhost:3000";
@@ -19,13 +17,13 @@ const SideNavBar = () => {
 
   type RootState = ReturnType<typeof store.getState>;
 
-  const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
+  const [SaveAllNotifications, setSaveAllNotifications] = useState<
+    Notification[]
+  >([]);
 
   const userDetails = useSelector(
     (state: RootState) => state.accessTocken.userTocken
   );
-
-  
 
   useEffect(() => {
     socket = io(ENDPOINT);
@@ -44,7 +42,7 @@ const SideNavBar = () => {
       );
       if (data.message === "get all notifications") {
         setSaveAllNotifications(data.notifications);
-      }else{
+      } else {
         toast.error("No notifications");
       }
     } catch (error) {
@@ -52,13 +50,8 @@ const SideNavBar = () => {
     }
   };
 
-
-
-
   const [Savenewpost, setSavenewpost] = useState<IAllNotification[]>([]);
   const [savelikeNotify, setsavelikeNotify] = useState<IAllNotification>();
-  
-    
 
   useEffect(() => {
     socket.on("notification received", (newMessageReceived: any) => {
@@ -71,34 +64,26 @@ const SideNavBar = () => {
       }
     });
   }, []);
- 
 
   useEffect(() => {
-    socket.on("follow received",( followingUser) => {
-         toast.success("User follow you");
-        setSavenewpost(followingUser);
-      }
-    );
+    socket.on("follow received", (followingUser) => {
+      toast.success("User follow you");
+      setSavenewpost(followingUser);
+    });
 
-    socket.on("Likenotification",(postDetails)=>{
-     toast.success("User Liked your post");
+    socket.on("Likenotification", (postDetails) => {
+      toast.success("User Liked your post");
       setsavelikeNotify(postDetails);
     });
 
-  
-    socket.on("post update", ( postdetails) => {
+    socket.on("post update", (postdetails) => {
       toast.success("new post uploaded");
       setSavenewpost(postdetails);
     });
   }, []);
 
-
-
-
-
-
   const groupedNotifications = Array.isArray(SaveAllNotifications)
-    ? SaveAllNotifications.reduce((acc:any, notification:any) => {
+    ? SaveAllNotifications.reduce((acc: any, notification: any) => {
         const senderId = notification.sender._id;
         if (!acc[senderId]) {
           acc[senderId] = { ...notification, count: 1 };
@@ -111,14 +96,12 @@ const SideNavBar = () => {
 
   const groupedNotificationsArray = Object.values(groupedNotifications);
 
-
   // Toggle sidebar visibility
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
 
   // Close sidebar after a link is clicked
-
 
   return (
     <>
@@ -147,7 +130,7 @@ const SideNavBar = () => {
               notificationCount:
                 SaveAllNotifications?.length ||
                 groupedNotificationsArray?.length ||
-                null
+                null,
             },
             {
               icon: <Users size={24} />,
@@ -164,9 +147,7 @@ const SideNavBar = () => {
               text: "Notifications",
               path: "/notifications",
               followNotification:
-           
-                Savenewpost.length !== 0 ||
-                savelikeNotify !== undefined,
+                Savenewpost.length !== 0 || savelikeNotify !== undefined,
             },
             {
               icon: <Users size={24} />,
@@ -193,12 +174,12 @@ const SideNavBar = () => {
               >
                 {item.text}
               </span>
-              {item.text === "Messages" && item.notificationCount  && (
+              {item.text === "Messages" && item.notificationCount && (
                 <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                   {item.notificationCount}
                 </span>
               )}
-              {item.text === "Notifications" && item.followNotification  && (
+              {item.text === "Notifications" && item.followNotification && (
                 <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                   1
                 </span>

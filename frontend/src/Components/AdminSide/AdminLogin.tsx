@@ -7,7 +7,7 @@ import Navbar from "./Navbar";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useDispatch } from "react-redux";
-import { setAdminAccessTocken } from "../../Redux-store/Redux-slice";
+import { setAdminAccessTocken } from "../../Redux-store/redux-slice.ts";
 import { adminLogin } from "../../Services/Admin_API/Adminlogin.ts";
 const AdminLoginpage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,13 +31,13 @@ const AdminLoginpage: React.FC = () => {
   const handleSubmit = async (values: { email: string; password: string }) => {
     try {
       const response = await adminLogin(values.email, values.password);
-     if (response.success) {
-       dispatch(setAdminAccessTocken(response.token));
-       toast.success("Admin logged in successfully");
-       navigate("/Adminhome");
-     } else {
-       toast.error(response.message || "Login failed");
-     }
+      if (response.success) {
+        dispatch(setAdminAccessTocken(response.token));
+        toast.success("Admin logged in successfully");
+        navigate("/Adminhome");
+      } else {
+        toast.error(response.message || "Login failed");
+      }
     } catch (error) {
       if (axios.isAxiosError(error)) {
         const errorMessage =

@@ -3,7 +3,7 @@ import "swiper/css";
 import "swiper/css/pagination";
 import { Pagination, Navigation } from "swiper/modules";
 import profileimg from "../images/Userlogo.png";
-import Navbar2 from "./Navbar2";
+import Navbar2 from "../UserSide/Navbar2";
 import SideNavBar from "./SideNavbar";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Heart, Users, Users2Icon } from "lucide-react";
@@ -15,19 +15,16 @@ import {
 } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import axios from "axios";
-import {
-  API_CHAT_URL,
-  API_USER_URL,
-} from "../Constants/Constants";
+import { API_CHAT_URL, API_USER_URL } from "../Constants/Constants";
 import toast from "react-hot-toast";
 import EmojiPicker from "emoji-picker-react";
-import RenderReplies from "./RenderReplies";
-import {  IUser, ReplyingToState } from "../Interfaces/Interface";
+import RenderReplies from "../UserSide/RenderReplies";
+import { IUser, ReplyingToState } from "../Interfaces/Interface";
 import axiosClient from "../../Services/Axiosinterseptor";
-import { sendfollow } from "./GlobalSocket/CreateSocket";
-import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
+import { sendfollow } from "../UserSide/GlobalSocket/CreateSocket";
+import { setChats, setSelectedChat } from "../../Redux-store/redux-slice";
 import { useDispatch, useSelector } from "react-redux";
-import { store } from "../../Redux-store/Reduxstore";
+import { store } from "../../Redux-store/reduxstore";
 import io, { Socket } from "socket.io-client";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
@@ -45,10 +42,8 @@ const ViewProfilePage = () => {
   const [activeTab, setActiveTab] = useState("Posts");
   const [profileInfo, setprofileInfo] = useState<IUser | null>(null);
   const [saveuserId, setSaveuserid] = useState("");
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
-
-
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const renderPageNumbers = () => {
     let pages = [];
@@ -91,36 +86,29 @@ const ViewProfilePage = () => {
     return pages;
   };
 
-    const viewProfile = async (userID: string) => {
-      try {
-        if (userID === profileInfo?._id) {
-          navigate("/profile");
-        } else {
-          navigate("/viewProfile", { state: { userID } });
-        }
-      } catch (error) {
-        console.log(error);
+  const viewProfile = async (userID: string) => {
+    try {
+      if (userID === profileInfo?._id) {
+        navigate("/profile");
+      } else {
+        navigate("/viewProfile", { state: { userID } });
       }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  const userDetails = useSelector(
+    (state: RootState) => state.accessTocken.userTocken
+  );
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    if (userDetails) {
+      socket.emit("setup", userDetails);
+    }
+    return () => {
+      socket.disconnect();
     };
-      const userDetails = useSelector(
-        (state: RootState) => state.accessTocken.userTocken
-      );
-      useEffect(() => {
-        socket = io(ENDPOINT);
-        if (userDetails) {
-          socket.emit("setup", userDetails);
-        }
-        return () => {
-          socket.disconnect();
-        };
-      }, [userDetails]);
-
-
-
-
-
-
-
+  }, [userDetails]);
 
   useEffect(() => {
     const fetchProfiledata = async () => {
@@ -166,46 +154,45 @@ const ViewProfilePage = () => {
     }
   };
 
-  const handleTabClick = (tab:any) => {
+  const handleTabClick = (tab: any) => {
     setActiveTab(tab);
   };
-   type RootState = ReturnType<typeof store.getState>;
-    const getchat = useSelector((state: RootState) => state.accessTocken.chats);
+  type RootState = ReturnType<typeof store.getState>;
+  const getchat = useSelector((state: RootState) => state.accessTocken.chats);
 
-
-   const accessChat = async (chatId: String) => {
-     try {
-       const { data } = await axiosClient.post(`${API_CHAT_URL}`, { chatId });
-       if (data.message === "Chat created succesfully") {
-         if (!getchat.find((c) => c._id === data.fullChat._id))
-           dispatch(setChats([data.fullChat, ...getchat]));
-         dispatch(setSelectedChat(data.fullChat));
-         navigate(`/chatpage/${chatId}/${data.fullChat._id}`);
-       } else {
-         toast.error("Chat created  Failed");
-       }
-     } catch (error) {
-       if (axios.isAxiosError(error)) {
-         if (!error.response) {
-           toast.error("Network error. Please check your internet connection.");
-         } else {
-           const status = error.response.status;
-           if (status === 404) {
-             toast.error("Posts not found.");
-           } else if (status === 500) {
-             toast.error("Server error. Please try again later.");
-           } else {
-             toast.error("Something went wrong.");
-           }
-         }
-       } else if (error instanceof Error) {
-         toast.error(error.message);
-       } else {
-         toast.error("An unexpected error occurred.");
-       }
-       console.log("Error fetching posts:", error);
-     }
-   };
+  const accessChat = async (chatId: String) => {
+    try {
+      const { data } = await axiosClient.post(`${API_CHAT_URL}`, { chatId });
+      if (data.message === "Chat created succesfully") {
+        if (!getchat.find((c) => c._id === data.fullChat._id))
+          dispatch(setChats([data.fullChat, ...getchat]));
+        dispatch(setSelectedChat(data.fullChat));
+        navigate(`/chatpage/${chatId}/${data.fullChat._id}`);
+      } else {
+        toast.error("Chat created  Failed");
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (!error.response) {
+          toast.error("Network error. Please check your internet connection.");
+        } else {
+          const status = error.response.status;
+          if (status === 404) {
+            toast.error("Posts not found.");
+          } else if (status === 500) {
+            toast.error("Server error. Please try again later.");
+          } else {
+            toast.error("Something went wrong.");
+          }
+        }
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error("An unexpected error occurred.");
+      }
+      console.log("Error fetching posts:", error);
+    }
+  };
 
   const followUser = async (userId: string, LoguserId: string) => {
     try {
@@ -264,9 +251,6 @@ const ViewProfilePage = () => {
   useEffect(() => {
     GetUserInfo();
   }, [currentPage]);
-
-
-
 
   const handleReply = (postId: string, commentId: string) => {
     if (replyingTo?.commentId === commentId) {
@@ -345,11 +329,13 @@ const ViewProfilePage = () => {
   const handleEmojiClick = (emojiData: { emoji: string }) => {
     setComment((prevComment) => prevComment + emojiData.emoji);
   };
-  
 
   const handleLike = async (postId: string, userId: string) => {
     try {
-      const { data } = await axiosClient.patch(`${API_USER_URL}/likepost`,{ postId, userId });
+      const { data } = await axiosClient.patch(`${API_USER_URL}/likepost`, {
+        postId,
+        userId,
+      });
       if (data.message === "Post liked succesfully") {
         GetUserInfo();
       } else {
@@ -540,15 +526,17 @@ const ViewProfilePage = () => {
                         className="w-full h-80 relative"
                       >
                         {post.image &&
-                          post.image.slice(0, 4).map((imageSrc:any, index:number) => (
-                            <SwiperSlide key={index}>
-                              <img
-                                src={imageSrc}
-                                alt={`post-image-${index}`}
-                                className="w-full h-full object-cover rounded-lg"
-                              />
-                            </SwiperSlide>
-                          ))}
+                          post.image
+                            .slice(0, 4)
+                            .map((imageSrc: any, index: number) => (
+                              <SwiperSlide key={index}>
+                                <img
+                                  src={imageSrc}
+                                  alt={`post-image-${index}`}
+                                  className="w-full h-full object-cover rounded-lg"
+                                />
+                              </SwiperSlide>
+                            ))}
 
                         {post.image && post.image.length > 1 && (
                           <>
@@ -580,7 +568,7 @@ const ViewProfilePage = () => {
                         pagination={{ clickable: true }}
                         className="w-full h-80 relative mt-0"
                       >
-                        {post.videos.map((videoSrc:any, index:number) => (
+                        {post.videos.map((videoSrc: any, index: number) => (
                           <SwiperSlide key={index}>
                             <video
                               controls
@@ -621,7 +609,7 @@ const ViewProfilePage = () => {
                             />
                           </div>
                           <div className="mt-4 max-h-40 overflow-y-auto">
-                            {post.likes.map((like:any) => (
+                            {post.likes.map((like: any) => (
                               <div
                                 key={like._id}
                                 className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
@@ -649,7 +637,7 @@ const ViewProfilePage = () => {
                             size={20}
                             className={`${
                               post.likes.some(
-                                (like:any) => like._id === userData?._id
+                                (like: any) => like._id === userData?._id
                               )
                                 ? "text-blue-600 fill-blue-600"
                                 : "text-gray-500 dark:text-gray-400 fill-transparent"

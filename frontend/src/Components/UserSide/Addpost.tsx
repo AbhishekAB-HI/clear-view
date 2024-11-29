@@ -5,17 +5,20 @@ import data from "@emoji-mart/data";
 import toast from "react-hot-toast";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
-import {  CreatePostModalProps, IAllNotification, IUser } from "../Interfaces/Interface";
+import {
+  CreatePostModalProps,
+  IAllNotification,
+  IUser,
+} from "../Interfaces/Interface";
 import axios from "axios";
 import Cropper from "cropperjs";
 import io, { Socket } from "socket.io-client";
 import "cropperjs/dist/cropper.css";
 import { createNewPost } from "../../Services/User_API/Createnewpost";
 import { useSelector } from "react-redux";
-import { store } from "../../Redux-store/Reduxstore";
+import { store } from "../../Redux-store/reduxstore";
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
-let selectedChatCompare: any;
 const CreatePostModal = ({
   togglepostModal,
   updateState,
@@ -33,25 +36,20 @@ const CreatePostModal = ({
   const cropperRef = useRef<Cropper | null>(null);
   const [enableCrop, setEnableCrop] = useState(false);
 
-   type RootState = ReturnType<typeof store.getState>;
-    const userDetails = useSelector(
-      (state: RootState) => state.accessTocken.userTocken
-    );
+  type RootState = ReturnType<typeof store.getState>;
+  const userDetails = useSelector(
+    (state: RootState) => state.accessTocken.userTocken
+  );
 
-    const selectedChat = useSelector(
-      (state: RootState) => state.accessTocken.SelectedChat
-    );
-
-   useEffect(() => {
-     socket = io(ENDPOINT);
-     if (userDetails) {
-       socket.emit("setup", userDetails);
-     }
-     selectedChatCompare = selectedChat;
-     return () => {
-       socket.disconnect();
-     };
-   }, [userDetails]);
+  useEffect(() => {
+    socket = io(ENDPOINT);
+    if (userDetails) {
+      socket.emit("setup", userDetails);
+    }
+    return () => {
+      socket.disconnect();
+    };
+  }, [userDetails]);
 
   const validationSchema = Yup.object({
     content: Yup.string()
@@ -120,20 +118,19 @@ const CreatePostModal = ({
       });
     }
   };
-  
- const sendPostNotify = async (
-   userInfo: IUser,
-   postdetails: IAllNotification
- ) => {
-   try {
-     if (socket) {
-       socket.emit("newpost", userInfo, postdetails);
-     }
-   } catch (error) {
-     console.error("Error fetching or emitting data:", error);
-   }
- };
 
+  const sendPostNotify = async (
+    userInfo: IUser,
+    postdetails: IAllNotification
+  ) => {
+    try {
+      if (socket) {
+        socket.emit("newpost", userInfo, postdetails);
+      }
+    } catch (error) {
+      console.error("Error fetching or emitting data:", error);
+    }
+  };
 
   const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -171,7 +168,7 @@ const CreatePostModal = ({
       if (response.success) {
         sendPostNotify(response.userdetail, response.postinfo);
         toast.success("Post uploaded successfully");
-        updateState();
+        updateState(1);
         togglepostModal();
       } else {
         toast.error("Post upload failed");

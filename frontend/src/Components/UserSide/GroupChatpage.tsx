@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import { useSelector } from "react-redux";
-import { store } from "../../Redux-store/Reduxstore";
+import { store } from "../../Redux-store/reduxstore";
 import axios from "axios";
 import data from "@emoji-mart/data";
 import io, { Socket } from "socket.io-client";
@@ -21,10 +21,16 @@ import { IoSend } from "react-icons/io5";
 import toast from "react-hot-toast";
 import { OrbitProgress } from "react-loading-indicators";
 import Swal from "sweetalert2";
-import Navbar2 from "./Navbar2";
+import Navbar2 from "../UserSide/Navbar2";
 import { userInfo } from "../Interfaces/Interface";
 import SideNavBar from "./SideNavbar";
-import { chechuserblocking, findAllmessage, gettheuserinchat, getUserIdData, Sendmessages } from "../../Services/User_API/Chatpage";
+import {
+  chechuserblocking,
+  findAllmessage,
+  gettheuserinchat,
+  getUserIdData,
+  Sendmessages,
+} from "../../Services/User_API/Chatpage";
 
 const ENDPOINT = "http://localhost:3000";
 let socket: Socket;
@@ -34,7 +40,11 @@ const GroupChatPage = () => {
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState<string>("");
-  const { chatId, dataId, groupname } = useParams<{chatId: string; dataId: any; groupname:string}>();
+  const { chatId, dataId, groupname } = useParams<{
+    chatId: string;
+    dataId: any;
+    groupname: string;
+  }>();
   const [postImages, setPostImages] = useState<File[]>([]);
   const [postVideos, setPostVideos] = useState<File[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -196,7 +206,6 @@ const GroupChatPage = () => {
         formData.append(`videos`, video);
       });
 
-
       const response = await Sendmessages(formData);
 
       if (response.success) {
@@ -233,7 +242,11 @@ const GroupChatPage = () => {
     }
   };
 
-  const handleBlockUser = async (userId: string,LogedUserId: string,isActive: boolean) => {
+  const handleBlockUser = async (
+    userId: string,
+    LogedUserId: string,
+    isActive: boolean
+  ) => {
     try {
       const actionText = isActive ? "Block user" : "Unblock user";
       const confirmationText = isActive
@@ -249,7 +262,6 @@ const GroupChatPage = () => {
         confirmButtonText: actionText,
       }).then(async (result) => {
         if (result.isConfirmed) {
-   
           const response = await chechuserblocking(userId, LogedUserId);
           if (response.success) {
             setuserStatus(response.userStatus);

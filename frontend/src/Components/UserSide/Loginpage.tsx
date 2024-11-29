@@ -6,19 +6,18 @@ import { useNavigate, Link } from "react-router-dom";
 import { Formik, Field, Form, ErrorMessage } from "formik";
 import * as Yup from "yup";
 import { useState } from "react";
-import {  toast } from "react-hot-toast";
+import { toast } from "react-hot-toast";
 import { useDispatch } from "react-redux";
 import logoWeb from "../animations/Animation - 1724244656671.json";
 import {
   setUserAccessTocken,
   setUserRefreshtocken,
-} from "../../Redux-store/Redux-slice";
+} from "../../Redux-store/redux-slice";
 import Lottie from "lottie-react";
 import { FaSpinner } from "react-icons/fa";
 import { googleSignIn, loginPage } from "../../Services/User_API/Homepageapis";
 
 const Loginpage: React.FC = () => {
-
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
@@ -40,7 +39,7 @@ const Loginpage: React.FC = () => {
 
   const handlesubmit = async (values: { email: string; password: string }) => {
     try {
-      setLoading(true)
+      setLoading(true);
       const response = await loginPage(values);
       if (response.success) {
         toast.success("Login successfully");
@@ -59,8 +58,8 @@ const Loginpage: React.FC = () => {
         toast.error("Unknown error occurred");
       }
       console.error("Error verifying OTP:", error);
-    }finally{
-       setLoading(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -70,10 +69,7 @@ const Loginpage: React.FC = () => {
         <div className="px-4 py-3 pb-5 shadow-md">
           <div className="container mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-0">
-              <Lottie
-                animationData={logoWeb}
-                className="w-24  sm:w-36" 
-              />
+              <Lottie animationData={logoWeb} className="w-24  sm:w-36" />
               <h1
                 className="text-3xl sm:text-4xl  text-white  font-bold"
                 style={{ fontFamily: "Viaoda Libre" }}
@@ -155,7 +151,6 @@ const Loginpage: React.FC = () => {
                     className="text-red-500 mb-2"
                   />
 
-
                   <button
                     type="submit"
                     className="bg-white text-black py-1 rounded text-lg mb-5"
@@ -163,11 +158,11 @@ const Loginpage: React.FC = () => {
                     disabled={isSubmitting}
                   >
                     {loading ? (
-                    <div className="flex justify-center items-center ">
+                      <div className="flex justify-center items-center ">
                         <FaSpinner className="animate-spin text-xl m-1" />
                       </div>
                     ) : (
-                    "Log in"
+                      "Log in"
                     )}
                   </button>
                 </Form>

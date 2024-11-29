@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useSelector } from "react-redux";
-import { store } from "../Redux-store/Reduxstore";
+import { store } from "../Redux-store/reduxstore.ts";
 import { useLocation, useNavigate } from "react-router-dom";
 
 type RootState = ReturnType<typeof store.getState>;

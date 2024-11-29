@@ -2,8 +2,8 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { setChats, setSelectedChat } from "../../Redux-store/Redux-slice";
-import { store } from "../../Redux-store/Reduxstore";
+import { setChats, setSelectedChat } from "../../Redux-store/redux-slice";
+import { store } from "../../Redux-store/reduxstore";
 import Navbar2 from "./Navbar2";
 import { API_CHAT_URL } from "../Constants/Constants";
 import axios from "axios";
@@ -23,7 +23,9 @@ let selectedChatCompare: any;
 const MessagePage = () => {
   const [getAlluser, setgetAlluser] = useState<IUser[]>([]);
   const [saveAllmessage, setsaveAllmessage] = useState<FormattedChat[]>([]);
-  const [saveAllgroupmessage, setsaveAllgroupmessage] = useState<FormattedChat[]>([]);
+  const [saveAllgroupmessage, setsaveAllgroupmessage] = useState<
+    FormattedChat[]
+  >([]);
   const [saveAllUsers, setsaveAllUsers] = useState<IUser[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<IUser[]>([]);
   const [groupName, setGroupName] = useState("");
@@ -34,7 +36,9 @@ const MessagePage = () => {
   const [saveTheUser, setsaveTheUser] = useState<FormattedChat[]>([]);
   const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
   const [findAllUsers, setfindAllUsers] = useState<IUser[]>([]);
-  const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
+  const [SaveAllNotifications, setSaveAllNotifications] = useState<
+    Notification[]
+  >([]);
   const [postsPerPage] = useState(2);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPosts, setTotalPosts] = useState(0);
@@ -44,8 +48,6 @@ const MessagePage = () => {
   const navigate = useNavigate();
   type RootState = ReturnType<typeof store.getState>;
   const [isFormVisible, setIsFormVisible] = useState(false);
-
-
 
   // Function to toggle form visibility
   const toggleForm = () => {
@@ -60,7 +62,6 @@ const MessagePage = () => {
   const userDetails = useSelector(
     (state: RootState) => state.accessTocken.userTocken
   );
-
 
   useEffect(() => {
     socket = io(ENDPOINT);
@@ -149,7 +150,6 @@ const MessagePage = () => {
   }, []);
 
   const getchat = useSelector((state: RootState) => state.accessTocken.chats);
-
 
   useEffect(() => {
     const FindAllUsers = async () => {
@@ -252,7 +252,7 @@ const MessagePage = () => {
 
   useEffect(() => {
     if (searchusers) {
-      const filtered= findAllUsers.filter((user) =>
+      const filtered = findAllUsers.filter((user) =>
         user.name.toLowerCase().includes(searchusers.toLowerCase())
       );
       setfindtheUsers(filtered);
@@ -379,7 +379,7 @@ const MessagePage = () => {
     }
   };
 
-  const FindUserSearch = (term:string) => {
+  const FindUserSearch = (term: string) => {
     setsearchusers(term);
     const filtered = findAllUsers.filter((user) =>
       user.name.toLowerCase().includes(term.toLowerCase())
@@ -387,7 +387,7 @@ const MessagePage = () => {
     setfindtheUsers(filtered);
   };
 
-  const handleUserSearch = (term:string) => {
+  const handleUserSearch = (term: string) => {
     setSearchTerm(term);
     const filtered = getAlluser.filter((user) =>
       user.name.toLowerCase().includes(term.toLowerCase())
@@ -401,8 +401,10 @@ const MessagePage = () => {
     }
   };
 
-  const handleRemoveUser = (userId:string) => {
-    const updatedUsers = selectedUsers.filter((user:any) => user._id !== userId);
+  const handleRemoveUser = (userId: string) => {
+    const updatedUsers = selectedUsers.filter(
+      (user: any) => user._id !== userId
+    );
     setSelectedUsers(updatedUsers);
   };
 
@@ -414,7 +416,6 @@ const MessagePage = () => {
     <div className="bg-black text-white min-h-screen">
       <Navbar2 />
       <div className="flex ">
-      
         <SideNavBar />
         <main className="w-4/5 ml-auto ">
           <div className="max-w-xl mt-5 mx-auto p-6">
@@ -594,192 +595,182 @@ const MessagePage = () => {
               )}
 
               <div className="space-y-6">
-               
-                    {getAlluser.length > 0 && (
-                      <div>
-                        <h2 className="text-xl font-semibold mb-4 flex items-center">
-                          <Users className="mr-2 text-blue-500" />
-                          Users
-                        </h2>
-                        <div className="space-y-4">
-                          {getAlluser.map((user, index) => (
-                            <div
-                              key={index}
-                              onClick={() => accessChat(user._id)}
-                              className="flex items-center bg-gray-900 hover:bg-gray-800 rounded-lg p-4 cursor-pointer transition-colors"
-                            >
-                              {/* Online/Offline Dot Indicator */}
-                              <span
-                                className={`h-3 w-3 rounded-full mr-0 mt-10 ${
-                                  activeUsers.some(
-                                    (activeUser) =>
-                                      activeUser.userId === user._id
+                {getAlluser.length > 0 && (
+                  <div>
+                    <h2 className="text-xl font-semibold mb-4 flex items-center">
+                      <Users className="mr-2 text-blue-500" />
+                      Users
+                    </h2>
+                    <div className="space-y-4">
+                      {getAlluser.map((user, index) => (
+                        <div
+                          key={index}
+                          onClick={() => accessChat(user._id)}
+                          className="flex items-center bg-gray-900 hover:bg-gray-800 rounded-lg p-4 cursor-pointer transition-colors"
+                        >
+                          {/* Online/Offline Dot Indicator */}
+                          <span
+                            className={`h-3 w-3 rounded-full mr-0 mt-10 ${
+                              activeUsers.some(
+                                (activeUser) => activeUser.userId === user._id
+                              )
+                                ? "bg-green-500" // Green dot for online
+                                : "bg-gray-400" // Gray dot for offline
+                            }`}
+                          ></span>
+
+                          <img
+                            src={user.image}
+                            alt={user.name}
+                            className="w-12 h-12 rounded-full mr-4 object-cover"
+                          />
+                          <div className="flex flex-col space-y-1">
+                            <p className="text-lg text-left font-medium">
+                              {user.name}
+                            </p>
+                            {saveAllmessage &&
+                              saveAllmessage.map(
+                                (message, index) =>
+                                  message.userId === user._id && (
+                                    <div key={index}>
+                                      <p className="text-left text-md">
+                                        {SaveAllNotifications.length > 0 &&
+                                        SaveAllNotifications[
+                                          SaveAllNotifications.length - 1
+                                        ].sender._id === message.userId ? (
+                                          <span className="text-white font-extrabold">
+                                            {
+                                              SaveAllNotifications[
+                                                SaveAllNotifications.length - 1
+                                              ].content
+                                            }
+                                            {SaveAllNotifications.length >
+                                              2 && (
+                                              <span className="ml-2 bg-blue-500 text-white rounded-full px-2 py-1 text-sm">
+                                                +
+                                                {SaveAllNotifications.length -
+                                                  1}
+                                              </span>
+                                            )}
+                                          </span>
+                                        ) : (
+                                          <span className="text-gray-400 font-semibold">
+                                            {message.lastMessage}
+                                          </span>
+                                        )}
+                                      </p>
+
+                                      <p className="text-gray-500 text-left text-xs">
+                                        {formatTime(message.lastMessageTime)}
+                                      </p>
+                                    </div>
                                   )
-                                    ? "bg-green-500" // Green dot for online
-                                    : "bg-gray-400" // Gray dot for offline
-                                }`}
-                              ></span>
+                              )}
 
-                              <img
-                                src={user.image}
-                                alt={user.name}
-                                className="w-12 h-12 rounded-full mr-4 object-cover"
-                              />
-                              <div className="flex flex-col space-y-1">
-                                <p className="text-lg text-left font-medium">
-                                  {user.name}
-                                </p>
-                                {saveAllmessage &&
-                                  saveAllmessage.map(
-                                    (message, index) =>
-                                      message.userId === user._id && (
-                                        <div key={index}>
-                                          <p className="text-left text-md">
-                                            {SaveAllNotifications.length > 0 &&
-                                            SaveAllNotifications[
-                                              SaveAllNotifications.length - 1
-                                            ].sender._id === message.userId ? (
-                                              <span className="text-white font-extrabold">
-                                                {
-                                                  SaveAllNotifications[
-                                                    SaveAllNotifications.length -
-                                                      1
-                                                  ].content
-                                                }
-                                                {SaveAllNotifications.length >
-                                                  2 && (
-                                                  <span className="ml-2 bg-blue-500 text-white rounded-full px-2 py-1 text-sm">
-                                                    +
-                                                    {SaveAllNotifications.length -
-                                                      1}
-                                                  </span>
-                                                )}
-                                              </span>
-                                            ) : (
-                                              <span className="text-gray-400 font-semibold">
-                                                {message.lastMessage}
-                                              </span>
-                                            )}
-                                          </p>
-
-                                          <p className="text-gray-500 text-left text-xs">
-                                            {formatTime(
-                                              message.lastMessageTime
-                                            )}
-                                          </p>
-                                        </div>
-                                      )
-                                  )}
-
-                                {activeUsers.some(
-                                  (activeUser) => activeUser.userId === user._id
-                                ) ? (
-                                  <></>
-                                ) : (
-                                  <p className="text-gray-500">
-                                    Last seen :{" "}
-                                    <small>{formatTime(user.lastSeen)}</small>{" "}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex justify-center mt-8">
-                      <nav className="flex space-x-2">
-                        <button
-                          className={`text-lg text-blue-500 ${
-                            currentPage === 1 && "opacity-50 cursor-not-allowed"
-                          }`}
-                          onClick={() =>
-                            setCurrentPage((prev) => Math.max(prev - 1, 1))
-                          }
-                          disabled={currentPage === 1}
-                        >
-                          {"<"}
-                        </button>
-                        {Array.from(
-                          { length: totalPages },
-                          (_, i) => i + 1
-                        ).map((page) => (
-                          <button
-                            key={page}
-                            className={`text-sm ${
-                              page === currentPage
-                                ? "bg-blue-500 text-white"
-                                : "bg-gray-700 text-blue-500"
-                            } px-3 py-1 rounded-md`}
-                            onClick={() => setCurrentPage(page)}
-                          >
-                            {page}
-                          </button>
-                        ))}
-                        <button
-                          className={`text-sm text-blue-500 ${
-                            currentPage === totalPages &&
-                            "opacity-50 cursor-not-allowed"
-                          }`}
-                          onClick={() =>
-                            setCurrentPage((prev) =>
-                              Math.min(prev + 1, totalPages)
-                            )
-                          }
-                          disabled={currentPage === totalPages}
-                        >
-                          {">"}
-                        </button>
-                      </nav>
-                    </div>
-
-                    {/* Group Chats */}
-                    {saveTheUser.length > 0 && (
-                      <div className="mt-10">
-                        <h2 className="text-xl font-semibold mb-4 flex items-center">
-                          <MessageCircle className="mr-2 text-blue-500" />
-                          Group Chats
-                        </h2>
-                        <div className="space-y-4 ">
-                          <div>
-                            {saveTheUser.map((group) => (
-                              <div
-                                key={group._id}
-                                onClick={() =>
-                                  accessgroupChat(group._id, group.chatName)
-                                }
-                                className="flex items-center mt-5 bg-gray-900 hover:bg-gray-800 rounded-lg p-4 cursor-pointer transition-colors"
-                              >
-                                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mr-4">
-                                  <Users className="w-6 h-6 text-white" />
-                                </div>
-                                <div>
-                                  <p className="text-lg font-medium">
-                                    {group.chatName}
-                                  </p>
-                                </div>
-                              </div>
-                            ))}
+                            {activeUsers.some(
+                              (activeUser) => activeUser.userId === user._id
+                            ) ? (
+                              <></>
+                            ) : (
+                              <p className="text-gray-500">
+                                Last seen :{" "}
+                                <small>{formatTime(user.lastSeen)}</small>{" "}
+                              </p>
+                            )}
                           </div>
                         </div>
-                      </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-center mt-8">
+                  <nav className="flex space-x-2">
+                    <button
+                      className={`text-lg text-blue-500 ${
+                        currentPage === 1 && "opacity-50 cursor-not-allowed"
+                      }`}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      disabled={currentPage === 1}
+                    >
+                      {"<"}
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          className={`text-sm ${
+                            page === currentPage
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-700 text-blue-500"
+                          } px-3 py-1 rounded-md`}
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </button>
+                      )
                     )}
+                    <button
+                      className={`text-sm text-blue-500 ${
+                        currentPage === totalPages &&
+                        "opacity-50 cursor-not-allowed"
+                      }`}
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                    >
+                      {">"}
+                    </button>
+                  </nav>
+                </div>
 
-                    {getAlluser.length === 0 &&
-                      saveAllgroupmessage.length === 0 && (
-                        <div className="flex flex-col items-center justify-center text-center bg-gray-900 rounded-lg p-10">
-                          <MessageCircle className="w-16 h-16 text-blue-500 mb-4" />
-                          <h2 className="text-2xl font-bold mb-2">
-                            No Chats Found
-                          </h2>
-                          <p className="text-gray-400">
-                            Start a conversation by creating a new group or
-                            finding users
-                          </p>
-                        </div>
-                      )}
-                  
-              
+                {/* Group Chats */}
+                {saveTheUser.length > 0 && (
+                  <div className="mt-10">
+                    <h2 className="text-xl font-semibold mb-4 flex items-center">
+                      <MessageCircle className="mr-2 text-blue-500" />
+                      Group Chats
+                    </h2>
+                    <div className="space-y-4 ">
+                      <div>
+                        {saveTheUser.map((group) => (
+                          <div
+                            key={group._id}
+                            onClick={() =>
+                              accessgroupChat(group._id, group.chatName)
+                            }
+                            className="flex items-center mt-5 bg-gray-900 hover:bg-gray-800 rounded-lg p-4 cursor-pointer transition-colors"
+                          >
+                            <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mr-4">
+                              <Users className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                              <p className="text-lg font-medium">
+                                {group.chatName}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {getAlluser.length === 0 &&
+                  saveAllgroupmessage.length === 0 && (
+                    <div className="flex flex-col items-center justify-center text-center bg-gray-900 rounded-lg p-10">
+                      <MessageCircle className="w-16 h-16 text-blue-500 mb-4" />
+                      <h2 className="text-2xl font-bold mb-2">
+                        No Chats Found
+                      </h2>
+                      <p className="text-gray-400">
+                        Start a conversation by creating a new group or finding
+                        users
+                      </p>
+                    </div>
+                  )}
               </div>
               <div className="flex justify-center mt-8">
                 <nav className="flex space-x-2">

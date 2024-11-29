@@ -12,7 +12,7 @@ import { useDispatch } from "react-redux";
 import {
   setUserAccessTocken,
   setUserRefreshtocken,
-} from "../../Redux-store/Redux-slice";
+} from "../../Redux-store/redux-slice";
 import { API_USER_URL, CONTENT_TYPE_JSON } from "../Constants/Constants";
 
 const Otppage: React.FC = () => {
@@ -150,8 +150,8 @@ const Otppage: React.FC = () => {
 
       if (data.message === "resend otp successfully") {
         toast.success("OTP resent successfully");
-      }else{
-      toast.success("OTP resent Failed");
+      } else {
+        toast.success("OTP resent Failed");
       }
       startTimer(30);
       window.location.reload();

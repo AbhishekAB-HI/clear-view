@@ -2,8 +2,8 @@ import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import logoWeb from "../animations/Animation - 1724244656671.json";
 import { Link, useNavigate } from "react-router-dom";
 import Lottie from "lottie-react";
-import { store } from "../../Redux-store/Reduxstore";
-import { clearuserAccessTocken } from "../../Redux-store/Redux-slice";
+import { store } from "../../Redux-store/reduxstore";
+import { clearuserAccessTocken } from "../../Redux-store/redux-slice";
 import { FaBars, FaComment, FaPaperPlane, FaUserCircle } from "react-icons/fa";
 import { MdMoreVert } from "react-icons/md";
 import profileimg from "../images/Userlogo.png";
@@ -13,9 +13,9 @@ import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import EmojiPicker from "emoji-picker-react";
 import { AiOutlineSearch } from "react-icons/ai";
-import Posthomepage from "./AddpostHome";
+import Posthomepage from "../UserSide/AddpostHome";
 import { Pagination, Navigation } from "swiper/modules";
-import RenderReplies from "./RenderReplies";
+import RenderReplies from "../UserSide/RenderReplies";
 import { Home, MessageSquare, Bell, Plus, InboxIcon } from "lucide-react";
 import {
   ActiveUsersType,
@@ -30,7 +30,13 @@ import { Heart, Users } from "lucide-react";
 import io, { Socket } from "socket.io-client";
 import axiosClient from "../../Services/Axiosinterseptor";
 import moment from "moment";
-import { commentThePost, findAllposthome, getnotifications, reportThePost, updatelastseen } from "../../Services/User_API/Homepageapis";
+import {
+  commentThePost,
+  findAllposthome,
+  getnotifications,
+  reportThePost,
+  updatelastseen,
+} from "../../Services/User_API/Homepageapis";
 import { getuserinfomations } from "../../Services/User_API/FollowerApi";
 import { API_USER_URL } from "../Constants/Constants";
 
@@ -55,7 +61,9 @@ const HomeLoginPage = () => {
   const [replyContent, setReplyContent] = useState("");
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [AccOpen, setAccOpen] = useState(false);
-  const [SaveAllNotifications, setSaveAllNotifications] = useState<Notification[]>([]);
+  const [SaveAllNotifications, setSaveAllNotifications] = useState<
+    Notification[]
+  >([]);
   const [Category, setCategory] = useState("Allpost");
   const [showLikesList, setShowLikesList] = useState(false);
   const [savelikeNotify, setsavelikeNotify] = useState<IAllNotification>();
@@ -64,7 +72,6 @@ const HomeLoginPage = () => {
   const [hasMore, setHasMore] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
-
 
   const userDetails = useSelector(
     (state: RootState) => state.accessTocken.userTocken
@@ -91,8 +98,8 @@ const HomeLoginPage = () => {
   });
 
   const formatTime = (timestamp: string): string => {
-    const postTime = moment(timestamp); 
-    return postTime.fromNow(); 
+    const postTime = moment(timestamp);
+    return postTime.fromNow();
   };
 
   useEffect(() => {
@@ -105,10 +112,9 @@ const HomeLoginPage = () => {
     };
   }, [userDetails]);
 
-
   const getNotifications = async () => {
     try {
-       const response = await getnotifications()
+      const response = await getnotifications();
       if (response.success) {
         setSaveAllNotifications(response.notifications);
       } else {
@@ -149,7 +155,6 @@ const HomeLoginPage = () => {
     });
   }, []);
 
-
   const logoutUser = (userId: string) => {
     socket.emit("logout", userId);
   };
@@ -160,15 +165,12 @@ const HomeLoginPage = () => {
       setsavelikeNotify(postDetails);
     });
 
-    socket.on(
-      "follow received",
-      (followingUser) => {
-        toast.success("User follow you");
-        setSavenewpost(followingUser);
-      }
-    );
+    socket.on("follow received", (followingUser) => {
+      toast.success("User follow you");
+      setSavenewpost(followingUser);
+    });
 
-    socket.on("post update", ( postdetails) => {
+    socket.on("post update", (postdetails) => {
       toast.success("new post uploaded");
       setSavenewpost(postdetails);
     });
@@ -188,9 +190,7 @@ const HomeLoginPage = () => {
     setIsOpen(!isOpen);
   };
 
- 
   // STATE_MANAGEMENT===============================================================================================================================================================
-
 
   // API ====================================================================================================================================================
 
@@ -201,7 +201,7 @@ const HomeLoginPage = () => {
   useEffect(() => {
     const getUserId = async () => {
       try {
-        const response = await getuserinfomations()
+        const response = await getuserinfomations();
         if (response.success) {
           setsaveid(response.useridfound);
         } else {
@@ -236,39 +236,36 @@ const HomeLoginPage = () => {
     getUserId();
   }, []);
 
-     const lastPostRef = useCallback(
-       (node: HTMLElement | null) => {
-         if (isLoading) return;
-         if (observer.current) observer.current.disconnect();
+  const lastPostRef = useCallback(
+    (node: HTMLElement | null) => {
+      if (isLoading) return;
+      if (observer.current) observer.current.disconnect();
 
-         observer.current = new IntersectionObserver((entries) => {
-           if (entries[0].isIntersecting && hasMore) {
-             setPage((prevPage) => prevPage + 1);
-           }
-         });
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          setPage((prevPage) => prevPage + 1);
+        }
+      });
 
-         if (node) observer.current.observe(node);
-       },
-       [isLoading, hasMore]
-     );
+      if (node) observer.current.observe(node);
+    },
+    [isLoading, hasMore]
+  );
 
-     
   const UpdateHomestate = (page: number) => {
     findAllthepost(page);
   };
 
-
-
-
-  const debouncedGetAllPost = useCallback(debounce(async (currentpage:number) => {
-       setIsLoading(true);
+  const debouncedGetAllPost = useCallback(
+    debounce(async (currentpage: number) => {
+      setIsLoading(true);
       try {
         const response = await findAllposthome(
           searchQuery,
           Category,
           currentpage
         );
- 
+
         if (response.success) {
           setFilteredPost(() => [...response.allposts]);
           const totalPages = response.totalPages || 0;
@@ -298,21 +295,21 @@ const HomeLoginPage = () => {
           toast.error("An unexpected error occurred.");
         }
         console.log("Error fetching posts:", error);
-      }finally{
-         setIsLoading(false);
+      } finally {
+        setIsLoading(false);
       }
     }, 300),
     [searchQuery, Category]
   );
 
-
-
-
-
-const findAllthepost =async (currentpage: number) => {
+  const findAllthepost = async (currentpage: number) => {
     setIsLoading(true);
     try {
-     const response = await findAllposthome(searchQuery, Category, currentpage);
+      const response = await findAllposthome(
+        searchQuery,
+        Category,
+        currentpage
+      );
       if (response.success) {
         setFilteredPost([...response.allposts]);
         const totalPages = response.totalPages || 0;
@@ -343,38 +340,21 @@ const findAllthepost =async (currentpage: number) => {
     } finally {
       setIsLoading(false);
     }
-  }
-
+  };
 
   useEffect(() => {
-    setPage(1)
+    setPage(1);
     findAllthepost(page);
   }, [Category]);
-
-
-
-
-
-
-
-
 
   useEffect(() => {
     setPage(1);
     findAllthepost(page);
   }, [searchQuery]);
 
-
-
-
-
-   useEffect(() => {
-     debouncedGetAllPost(page);
-   }, [page]);
-
-
-
-
+  useEffect(() => {
+    debouncedGetAllPost(page);
+  }, [page]);
 
   const handleAllPost = (value: string) => {
     setCategory(value);
@@ -398,8 +378,6 @@ const findAllthepost =async (currentpage: number) => {
     }
   };
 
-
-
   const handleEmojiClick = (emojiData: { emoji: string }) => {
     setComment((prevComment) => prevComment + emojiData.emoji);
   };
@@ -407,17 +385,19 @@ const findAllthepost =async (currentpage: number) => {
   const navigate = useNavigate();
   const [activeUsers, setActiveUsers] = useState<ActiveUsersType[]>([]);
 
-  const LogoutActiveUsershere = (setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>) => {
+  const LogoutActiveUsershere = (
+    setActiveUsers: React.Dispatch<React.SetStateAction<ActiveUsersType[]>>
+  ) => {
     socket.emit("get-users", (users: ActiveUsersType[]) => {
       setActiveUsers(users);
     });
   };
-  console.log(activeUsers,);
+  console.log(activeUsers);
   const handleLogout = async () => {
     try {
       logoutUser(saveid);
       LogoutActiveUsershere(setActiveUsers);
-      const response = await updatelastseen()
+      const response = await updatelastseen();
       if (response.success) {
         toast.success("Logout successfull");
         navigate("/login");
@@ -478,9 +458,8 @@ const findAllthepost =async (currentpage: number) => {
 
       if (text && text.trim().length > 0) {
         try {
-
           const response = await reportThePost(postId, text, userId);
-       
+
           if (response.success) {
             toast.success("Post Reported successfully");
           } else {
@@ -512,7 +491,6 @@ const findAllthepost =async (currentpage: number) => {
       }
     }
   };
-
 
   const viewProfile = async (userID: string) => {
     try {
@@ -562,10 +540,6 @@ const findAllthepost =async (currentpage: number) => {
     }
   };
 
-
-
- 
-
   const sendLikePost = async (postdetails: IAllNotification) => {
     try {
       if (socket) {
@@ -585,9 +559,9 @@ const findAllthepost =async (currentpage: number) => {
       });
       if (data.message === "Post liked succesfully") {
         debouncedGetAllPost(page);
-      
+
         sendLikePost(data.getupdate);
-        console.log(data.getupdate,'22222222222222222');
+        console.log(data.getupdate, "22222222222222222");
       } else {
         toast.error("Post liked Failed");
       }
@@ -614,16 +588,11 @@ const findAllthepost =async (currentpage: number) => {
     }
   };
 
-
-
   const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
     setSearchQuery(query);
     setPage(1);
   };
-
-  
-
 
   // PAGE VIEW =================================================================================================================================================================
   return (
@@ -767,7 +736,9 @@ const findAllthepost =async (currentpage: number) => {
                 icon: <MessageSquare size={24} />,
                 text: "Messages",
                 path: "/message",
-                notificationCount:  SaveAllNotifications.length ? SaveAllNotifications.length :null,
+                notificationCount: SaveAllNotifications.length
+                  ? SaveAllNotifications.length
+                  : null,
               },
               {
                 icon: <Users size={24} />,
@@ -785,8 +756,7 @@ const findAllthepost =async (currentpage: number) => {
                 text: "Notifications",
                 path: "/notifications",
                 followNotification:
-                  savelikeNotify !== undefined ||
-                  Savenewpost.length !== 0,
+                  savelikeNotify !== undefined || Savenewpost.length !== 0,
               },
               {
                 icon: <Users size={24} />,
@@ -813,18 +783,17 @@ const findAllthepost =async (currentpage: number) => {
                 >
                   {item.text}
                 </span>
-                {item.text === "Messages"  && item?.notificationCount  && (
+                {item.text === "Messages" && item?.notificationCount && (
                   <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                     {item.notificationCount}
                   </span>
                 )}
 
-                {item.text === "Notifications" &&
-                  item?.followNotification  && (
-                    <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                      1
-                    </span>
-                  )}
+                {item.text === "Notifications" && item?.followNotification && (
+                  <span className="absolute top-0 left-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                    1
+                  </span>
+                )}
                 <div
                   className="absolute inset-y-0 left-0 w-1 bg-blue-600 
               transform -translate-x-full group-hover:translate-x-0
@@ -1076,7 +1045,9 @@ const findAllthepost =async (currentpage: number) => {
                               <Heart
                                 size={20}
                                 className={`${
-                                  post.likes.some((like:any) => like._id === saveid)
+                                  post.likes.some(
+                                    (like: any) => like._id === saveid
+                                  )
                                     ? "text-blue-600 fill-blue-600"
                                     : "text-gray-500 dark:text-gray-400 fill-transparent"
                                 }`}
@@ -1135,7 +1106,7 @@ const findAllthepost =async (currentpage: number) => {
                           <RenderReplies
                             UpdateLikepost={debouncedGetAllPost}
                             post={post}
-                            parentCommentId={comment  as string}
+                            parentCommentId={comment as string}
                             saveid={saveid}
                             replyingTo={replyingTo}
                             replyContent={replyContent}
@@ -1294,7 +1265,7 @@ const findAllthepost =async (currentpage: number) => {
                                 />
                               </div>
                               <div className="mt-4 max-h-40 overflow-y-auto">
-                                {post.likes.map((like:any) => (
+                                {post.likes.map((like: any) => (
                                   <div
                                     key={like._id}
                                     className="flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md cursor-pointer"
@@ -1321,7 +1292,9 @@ const findAllthepost =async (currentpage: number) => {
                               <Heart
                                 size={20}
                                 className={`${
-                                  post.likes.some((like:any) => like._id === saveid)
+                                  post.likes.some(
+                                    (like: any) => like._id === saveid
+                                  )
                                     ? "text-blue-600 fill-blue-600"
                                     : "text-gray-500 dark:text-gray-400 fill-transparent"
                                 }`}

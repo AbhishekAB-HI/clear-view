@@ -1,54 +1,36 @@
 import "./App.css";
-import Loginpage from "./Components/Userside/Loginpage";
-import Registerpage from "./Components/Userside/RegisterPage";
-import Otppage from "./Components/Userside/Otp";
+import Loginpage from "./Components/Userside/Loginpage.tsx";
+import Registerpage from "./Components/Userside/RegisterPage.tsx";
+import Otppage from "./Components/Userside/Otp.tsx";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import HomeLoginPage from "./Components/Userside/HomeLoginpage";
-import Forgetpassword from "./Components/Userside/Forgetpassword";
-import ForgetOtppage from "./Components/Userside/ForgotOtp";
-import ForgetPassPage from "./Components/Userside/Forgetpasspage";
-import AdminLoginpage from "./Components/AdminSide/Adminlogin";
-import AdminHomePage from "./Components/AdminSide/Adminhome";
-import { Toaster } from "react-hot-toast";
-import UserLogoutPrivateRoute from "./ProtectiveRoute/UserLogoutProtective";
-import AdminprivateRoute from "./ProtectiveRoute/AdminPrivateRoute";
-import AdminLogoutprivateRoute from "./ProtectiveRoute/AdminLogout";
-import HomeProfilepage from "./Components/Userside/Profilepage";
+import HomeLoginPage from "./Components/Userside/HomeLoginpage.tsx";
+import Forgetpassword from "./Components/Userside/Forgetpassword.tsx";
+import ForgetOtppage from "./Components/Userside/ForgotOtp.tsx";
+import ForgetPassPage from "./Components/Userside/Forgetpasspage.tsx";
+import AdminLoginpage from "./Components/AdminSide/Adminlogin.tsx";
+import AdminHomePage from "./Components/AdminSide/Adminhome.tsx";
+import  { Toaster } from "react-hot-toast";
+import UserLogoutPrivateRoute from "./ProtectiveRoute/UserLogoutProtective.ts";
+import AdminprivateRoute from "./ProtectiveRoute/AdminPrivateRoute.ts";
+import AdminLogoutprivateRoute from "./ProtectiveRoute/AdminLogout.ts";
+import HomeProfilepage from "./Components/Userside/Profilepage.tsx";
+import Newsmanagement from "./Components/AdminSide/Newsmanagemant.tsx";
+import MessagePage from "./Components/Userside/Message.tsx";
+import Reportmanagement from "./Components/AdminSide/Reportpost.tsx";
+import ChatPage from "./Components/Userside/ChatpageUI.tsx";
+import RoomPage from "./Components/Zego-cloud/RoomPage.tsx";
+import FollowersPage from "./Components/Userside/FollowersPage.tsx";
+import FollowingPage from "./Components/Userside/Following.tsx";
+import PeoplePage from "./Components/Userside/PeoplePage.tsx";
+import UserReportmanagement from "./Components/AdminSide/UserReportPage.tsx";
+import GroupChatPage from "./Components/Userside/GroupChatpage.tsx";
+import AdminDashboard from "./Components/AdminSide/AdminDashboard.tsx";
+import ViewProfilePage from "./Components/Userside/ViewProfile.tsx";
+import NotificationPage from "./Components/Userside/NotificationPage.tsx";
 
-import { useState } from "react";
-import Postpage from "./Components/Userside/Addpost";
-import EditPostModal from "./Components/Userside/EditPostPage";
-import Newsmanagement from "./Components/AdminSide/Newsmanagemant";
-import MessagePage from "./Components/Userside/Message";
-import Reportmanagement from "./Components/AdminSide/Reportpost";
-import ChatPage from "./Components/Userside/ChatpageUI";
-import { Videopage } from "./Components/Userside/Videopage";
-import RoomPage from "./Components/Zego-cloud/RoomPage";
-import FollowersPage from "./Components/Userside/FollowersPage";
-import FollowingPage from "./Components/Userside/Following";
-import PeoplePage from "./Components/Userside/PeoplePage";
-import UserReportmanagement from "./Components/AdminSide/UserReportPage";
-import GroupChatPage from "./Components/Userside/GroupChatpage";
-import AdminDashboard from "./Components/AdminSide/AdminDashboard";
-import ViewProfilePage from "./Components/Userside/ViewProfile";
-import NotificationPage from "./Components/Userside/NotificationPage";
 
-function App() {
-  const [showModal, setShowModal] = useState(false);
-  const [showpostModal, setShowpostModal] = useState(false);
-  const [ShoweditpostModal, setShoweditpostModal] = useState(false);
-  const toggleModal = () => {
-    setShowModal(!showModal);
-  };
 
-  const togglepostModal = () => {
-    setShowpostModal(!showpostModal);
-  };
-
-  const toggleeditpostModal = () => {
-    setShoweditpostModal(!ShoweditpostModal);
-  };
-
+const App = () => {
   return (
     <>
       <Router>
@@ -74,25 +56,16 @@ function App() {
             element={<GroupChatPage />}
           />
           <Route path="/profile" element={<HomeProfilepage />} />
-          {/* <Route path="/videopage/:roomId" element={<Videopage />} /> */}
           <Route path="/room/:roomId" element={<RoomPage />} />
           <Route path="/editprofile" />
-          <Route
-            path="/createpost"
-            element={<Postpage togglepostModal={togglepostModal} />}
-          />
+         
           <Route path="/message" element={<MessagePage />} />
           <Route path="/notifications" element={<NotificationPage />} />
 
           <Route path="/following" element={<FollowingPage />} />
           <Route path="/followers" element={<FollowersPage />} />
           <Route path="/people" element={<PeoplePage />} />
-          <Route
-            path="/editpost"
-            element={
-              <EditPostModal toggleeditpostModal={toggleeditpostModal} />
-            }
-          />
+         
           <Route path="/news" element={<Newsmanagement />} />
           <Route path="/reportpage" element={<Reportmanagement />} />
           <Route path="/userReportpage" element={<UserReportmanagement />} />
@@ -125,6 +98,6 @@ function App() {
       </Router>
     </>
   );
-}
+};
 
 export default App;

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import UserSchemadata from "../Model/Usermodel";
+import UserSchemadata from "../model/userModel";
 import { userPayload } from "../Types/Commontype/TockenInterface";
 import { ACCESS_TOKEN } from "../config/Jwt";
 

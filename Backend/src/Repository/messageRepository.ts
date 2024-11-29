@@ -1,9 +1,9 @@
 import { IUser } from "../entities/userEntities";
 import { Chats, Message } from "../entities/Chatentities";
-import ChatSchemamodel from "../Model/Chatmodel";
-import messageSchemaModel from "../Model/Messagemodel";
-import UserSchemadata from "../Model/Usermodel";
-import NotifiactSchemaModal from "../Model/NotificationSchema";
+import ChatSchemamodel from "../model/ChatModel";
+import messageSchemaModel from "../model/messageModel";
+import UserSchemadata from "../model/userModel";
+import NotifiactSchemaModal from "../model/NotificationSchema";
 import { IMessageRepository } from "../Interface/Messages/MessageRepository";
 
 class messageRepository implements IMessageRepository {

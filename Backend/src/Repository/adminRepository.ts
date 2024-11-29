@@ -1,7 +1,7 @@
 import { IUser, ReportedPost } from "../entities/userEntities";
 import { Posts } from "../entities/Postentities";
-import newspostSchemadata from "../Model/Newsmodal";
-import UserSchemadata from "../Model/Usermodel";
+import newspostSchemadata from "../model/newsModal";
+import UserSchemadata from "../model/userModel";
 import cloudinary from "../config/Cloudinaryconfig";
 import {
   ICounts,

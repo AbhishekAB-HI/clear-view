@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import ChatSchemamodel from "../Model/Chatmodel";
-import UserSchemadata from "../Model/Usermodel";
+import ChatSchemamodel from "../model/ChatModel";
+import UserSchemadata from "../model/userModel";
 import { ACCESS_TOKEN } from "../config/Jwt";
 import { userPayload } from "../Types/Commontype/TockenInterface";
 import jwt from "jsonwebtoken";

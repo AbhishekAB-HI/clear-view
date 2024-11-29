@@ -1,14 +1,14 @@
 import mongoose, { ObjectId, Types } from "mongoose";
 import { IUser } from "../entities/userEntities";
 import { Chats, Chats1, FormattedChat, IUser1 } from "../entities/Chatentities";
-import ChatSchemamodel from "../Model/Chatmodel";
-import UserSchemadata from "../Model/Usermodel";
-import NotifiactSchemaModal from "../Model/NotificationSchema";
+import ChatSchemamodel from "../model/ChatModel";
+import UserSchemadata from "../model/userModel";
+import NotifiactSchemaModal from "../model/NotificationSchema";
 import { Notification } from "../entities/Notification";
-import newspostSchemadata from "../Model/Newsmodal";
-import newspostSchemadataNotifications from "../Model/PostNotifications";
+import newspostSchemadata from "../model/newsModal";
+import newspostSchemadataNotifications from "../model/PostNotifications";
 import { Posts } from "../entities/Postentities";
-import GetAllNotificationsSchema from "../Model/AllnotificationSchema";
+import GetAllNotificationsSchema from "../model/AllnotificationSchema";
 import {
   IAllNotification,
   IFollowNotification,

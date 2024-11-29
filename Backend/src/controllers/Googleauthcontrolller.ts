@@ -1,12 +1,10 @@
 import { Request, Response } from "express";
 import passportAuth from "../Googleauth/Passport";
 import { generateAccessToken } from "../Utils/Jwt";
-import UserSchemadata from "../Model/Usermodel";
+import UserSchemadata from "../model/userModel";
 import { userPayload } from "../Types/Commontype/TockenInterface";
 import { ObjectId } from "mongoose";
 import { AuthenticatedRequest } from "../Types/Commontype/Googleauthinterface";
-
-
 
 declare module "express-session" {
   interface Session {

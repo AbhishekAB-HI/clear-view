@@ -1,9 +1,9 @@
 import mongoose, { ObjectId } from "mongoose";
 import { IUser, IUserReturn } from "../entities/userEntities";
 import { Posts, Postsget } from "../entities/Postentities";
-import newspostSchemadata from "../Model/Newsmodal";
-import UserSchemadata from "../Model/Usermodel";
-import UserTempSchemadata from "../Model/Usertempmodel";
+import newspostSchemadata from "../model/newsModal";
+import UserSchemadata from "../model/userModel";
+import UserTempSchemadata from "../model/Usertempmodel";
 import cloudinary from "../config/Cloudinaryconfig";
 import HashPassword from "../Utils/Hashpassword";
 import {
@@ -11,7 +11,7 @@ import {
   sendVerifyMail,
   sendVerifyMailforemail,
 } from "../Utils/Mail";
-import GetAllNotificationsSchema from "../Model/AllnotificationSchema";
+import GetAllNotificationsSchema from "../model/AllnotificationSchema";
 import { IAllNotification } from "../entities/Notificationentitities";
 import { IUserRepository } from "../Interface/Users/UserRepository";
 class userRepository implements IUserRepository {

@@ -12,7 +12,6 @@ import jwt from "jsonwebtoken";
 import logger from "./logger";
 import morgan from "morgan";
 import { Socket } from "socket.io";
-
 import { ActiveUsersType } from "./Types/Servicetype/UserInterface";
 import { NewMessage } from "./Types/Servicetype/MessageInterface";
 import { IAllNotification } from "./entities/Notificationentitities";
@@ -47,8 +46,7 @@ app.use(
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false },
-  })
-);
+  }))
 
 app.use(
   cors({
